@@ -283,7 +283,7 @@ export const articles: Article[] = [
 export const lawyers: Lawyer[] = [
   {
     slug: "sara-mohammadi",
-    image: "/images/lawyers/sara-mohammadi.jpg",
+    image: "/images/lawyers/sara-mohammadi-official.jpg",
     name: "سارا محمدی",
     title: "وکیل پایه یک دادگستری",
     specialty: "حقوق قراردادها",
@@ -297,7 +297,7 @@ export const lawyers: Lawyer[] = [
   },
   {
     slug: "ahmad-rezaei",
-    image: "/images/lawyers/ahmad-rezaei.jpg",
+    image: "/images/lawyers/ahmad-rezaei-official.jpg",
     name: "احمد رضایی",
     title: "وکیل پایه یک دادگستری",
     specialty: "حقوق کیفری",
@@ -311,7 +311,7 @@ export const lawyers: Lawyer[] = [
   },
   {
     slug: "maryam-kazemi",
-    image: "/images/lawyers/maryam-kazemi.jpg",
+    image: "/images/lawyers/maryam-kazemi-official.jpg",
     name: "مریم کاظمی",
     title: "وکیل پایه یک دادگستری",
     specialty: "حقوق خانواده",
@@ -325,7 +325,7 @@ export const lawyers: Lawyer[] = [
   },
   {
     slug: "hossein-nouri",
-    image: "/images/lawyers/hossein-nouri.jpg",
+    image: "/images/lawyers/hossein-nouri-official.jpg",
     name: "حسین نوری",
     title: "مشاور حقوقی شرکت‌ها",
     specialty: "حقوق شرکت‌ها",
@@ -339,7 +339,7 @@ export const lawyers: Lawyer[] = [
   },
   {
     slug: "elnaz-jafari",
-    image: "/images/lawyers/elnaz-jafari.jpg",
+    image: "/images/lawyers/elnaz-jafari-official.jpg",
     name: "الناز جعفری",
     title: "کارشناس حقوقی",
     specialty: "مالکیت فکری",
@@ -353,7 +353,7 @@ export const lawyers: Lawyer[] = [
   },
   {
     slug: "reza-karimi",
-    image: "/images/lawyers/reza-karimi.jpg",
+    image: "/images/lawyers/reza-karimi-official.jpg",
     name: "رضا کریمی",
     title: "وکیل پایه یک دادگستری",
     specialty: "دعاوی ملکی",
@@ -367,7 +367,7 @@ export const lawyers: Lawyer[] = [
   },
   {
     slug: "neda-amini",
-    image: "/images/lawyers/neda-amini.jpg",
+    image: "/images/lawyers/neda-amini-official.jpg",
     name: "ندا امینی",
     title: "وکیل پایه یک دادگستری",
     specialty: "حقوق خانواده",
@@ -381,7 +381,7 @@ export const lawyers: Lawyer[] = [
   },
   {
     slug: "kamran-sadeghi",
-    image: "/images/lawyers/kamran-sadeghi.jpg",
+    image: "/images/lawyers/kamran-sadeghi-official.jpg",
     name: "کامران صادقی",
     title: "وکیل پایه یک دادگستری",
     specialty: "حقوق قراردادها",
@@ -395,7 +395,7 @@ export const lawyers: Lawyer[] = [
   },
   {
     slug: "leila-hashemi",
-    image: "/images/lawyers/leila-hashemi.jpg",
+    image: "/images/lawyers/leila-hashemi-official.jpg",
     name: "لیلا هاشمی",
     title: "مشاور حقوقی شرکت‌ها",
     specialty: "حقوق شرکت‌ها",
