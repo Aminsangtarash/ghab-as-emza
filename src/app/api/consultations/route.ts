@@ -1,10 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { getRequestUser } from "@/lib/auth";
 import { isRateLimited } from "@/lib/rate-limit";
-import { saveConsultation } from "@/lib/store";
+import { listUserConsultations, saveConsultation, toClientConsultation } from "@/lib/store";
 import { consultationSchema } from "@/lib/validations";
 
+export async function GET(request: NextRequest) {
+  const user = await getRequestUser(request);
+  if (!user) {
+    return NextResponse.json(
+      { error: "برای مشاهده درخواست‌ها باید وارد حساب کاربری شوید." },
+      { status: 401 },
+    );
+  }
+
+  const items = await listUserConsultations(user.id);
+  return NextResponse.json({
+    items: items.map(toClientConsultation),
+  });
+}
+
 export async function POST(request: NextRequest) {
+  const user = await getRequestUser(request);
+  if (!user) {
+    return NextResponse.json(
+      { error: "برای ثبت درخواست باید وارد حساب کاربری شوید." },
+      { status: 401 },
+    );
+  }
+
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
@@ -35,9 +59,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const saved = saveConsultation(parsed.data);
+  const saved = await saveConsultation(parsed.data, user.id);
+  if ("error" in saved) {
+    return NextResponse.json({ error: saved.error }, { status: 422 });
+  }
   return NextResponse.json({
     ok: true,
     trackingCode: saved.trackingCode,
+    id: saved.id,
   });
 }

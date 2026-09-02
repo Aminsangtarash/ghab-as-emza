@@ -5,6 +5,8 @@ export type Service = {
   description: string;
   outcomes: string[];
   icon: "file" | "review" | "consult" | "arbitration" | "cases" | "lawyers";
+  /** مبلغ به تومان؛ صفر یعنی رایگان */
+  feeToman: number;
 };
 
 export type Article = {
@@ -48,6 +50,7 @@ export const services: Service[] = [
       "نسخه نهایی آماده امضا، با توضیح بندهای حساس",
     ],
     icon: "file",
+    feeToman: 2_500_000,
   },
   {
     slug: "documents",
@@ -62,6 +65,7 @@ export const services: Service[] = [
       "پیشنهاد اصلاح یا تکمیل مدارک",
     ],
     icon: "review",
+    feeToman: 1_200_000,
   },
   {
     slug: "consultation",
@@ -76,6 +80,7 @@ export const services: Service[] = [
       "امکان ارجاع به وکیل متخصص در صورت نیاز",
     ],
     icon: "consult",
+    feeToman: 450_000,
   },
   {
     slug: "case-opinions",
@@ -90,6 +95,7 @@ export const services: Service[] = [
       "گزارش جمع‌بندی برای موکل و وکیل",
     ],
     icon: "arbitration",
+    feeToman: 1_800_000,
   },
   {
     slug: "cases",
@@ -104,6 +110,7 @@ export const services: Service[] = [
       "هماهنگی با وکیل مسئول پرونده",
     ],
     icon: "cases",
+    feeToman: 3_000_000,
   },
   {
     slug: "lawyers",
@@ -118,6 +125,7 @@ export const services: Service[] = [
       "هماهنگی جلسه معرفی پیش از شروع همکاری",
     ],
     icon: "lawyers",
+    feeToman: 0,
   },
 ];
 
@@ -421,8 +429,85 @@ export function getLawyer(slug: string) {
   return lawyers.find((item) => item.slug === slug);
 }
 
+export function serviceSlugForSpecialty(specialty: string) {
+  const map: Record<string, string> = {
+    "حقوق قراردادها": "contracts",
+    "حقوق کیفری": "cases",
+    "حقوق خانواده": "consultation",
+    "حقوق شرکت‌ها": "contracts",
+    "مالکیت فکری": "documents",
+    "دعاوی ملکی": "cases",
+  };
+  return map[specialty] ?? "consultation";
+}
+
+export type LawyerReview = {
+  name: string;
+  rating: number;
+  date: string;
+  text: string;
+};
+
+export type LawyerResumeItem = {
+  period: string;
+  title: string;
+  detail: string;
+};
+
+/** Placeholder profile extras until the backend supplies per-lawyer data. */
+export const sharedLawyerProfile = {
+  resume: [
+    {
+      period: "سال‌های اخیر",
+      title: "مشاوره و پیگیری تخصصی",
+      detail:
+        "تمرکز بر مشاوره پیش از امضا، بررسی اسناد و تعیین مسیر حقوقی با پاسخ مستند در ساعات کاری.",
+    },
+    {
+      period: "میانه مسیر",
+      title: "پرونده‌های تخصصی",
+      detail:
+        "همراهی موکل در اختلاف‌های قراردادی، خانوادگی و تجاری؛ با اولویت کاهش ریسک قبل از طرح دعوا.",
+    },
+    {
+      period: "شروع فعالیت",
+      title: "ورود به حرفه وکالت",
+      detail: "کارآموزی وکالت و سپس فعالیت مستقل در حوزه تخصصی اعلام‌شده.",
+    },
+  ] satisfies LawyerResumeItem[],
+  extras: ["مشاوره پیش از امضا", "بررسی اسناد", "تنظیم توافق اولیه"],
+  reviews: [
+    {
+      name: "ر. احمدی",
+      rating: 5,
+      date: "۱۴۰۵/۰۴/۱۸",
+      text: "موضوع را شفاف توضیح دادند و مسیر بعدی بدون وعده نتیجه قطعی مشخص شد.",
+    },
+    {
+      name: "ن. کریمی",
+      rating: 4.5,
+      date: "۱۴۰۵/۰۳/۰۲",
+      text: "پاسخ در ساعات کاری رسید و کد پیگیری برای ادامه کار مفید بود.",
+    },
+    {
+      name: "م. رضایی",
+      rating: 5,
+      date: "۱۴۰۵/۰۱/۲۶",
+      text: "قبل از امضای قرارداد، بندهای پرریسک را جدا کردند و اصلاح‌ها قابل فهم بود.",
+    },
+  ] satisfies LawyerReview[],
+};
+
 export function featuredArticles() {
   return articles.slice(0, 3);
+}
+
+export function relatedLawyerArticles() {
+  return featuredArticles();
+}
+
+export function lawyerSpecialties(lawyer: Lawyer) {
+  return Array.from(new Set([...lawyer.focus, ...sharedLawyerProfile.extras]));
 }
 
 export function popularArticles(limit = 4) {

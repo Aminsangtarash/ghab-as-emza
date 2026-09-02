@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MenuIcon, XIcon } from "lucide-react";
 
+import { useAuth } from "@/components/auth/auth-provider";
 import { Logo } from "@/components/logo";
 import { buttonVariants } from "@/components/ui/button";
 import { navItems } from "@/lib/site";
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const { user, status, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -48,15 +50,39 @@ export function SiteHeader() {
           })}
         </nav>
         <div className="ms-auto flex items-center gap-2">
-          <Link
-            href="/login"
-            className={cn(
-              buttonVariants({ size: "lg" }),
-              "hidden h-10 bg-navy px-4 text-white hover:bg-navy-mid sm:inline-flex",
-            )}
-          >
-            ورود / ثبت نام
-          </Link>
+          {status === "user" && user ? (
+            <>
+              <Link
+                href="/account"
+                className={cn(
+                  buttonVariants({ size: "lg" }),
+                  "hidden h-10 bg-navy px-4 text-white hover:bg-navy-mid sm:inline-flex",
+                )}
+              >
+                پنل کاربری
+              </Link>
+              <button
+                type="button"
+                onClick={() => void logout()}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "lg" }),
+                  "hidden h-10 border-navy/20 px-4 sm:inline-flex",
+                )}
+              >
+                خروج
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "hidden h-10 bg-navy px-4 text-white hover:bg-navy-mid sm:inline-flex",
+              )}
+            >
+              ورود / ثبت نام
+            </Link>
+          )}
           <button
             type="button"
             className={cn(
@@ -84,16 +110,44 @@ export function SiteHeader() {
                 {item.label}
               </Link>
             ))}
-            <Link
-              href="/login"
-              onClick={() => setMenuOpen(false)}
-              className={cn(
-                buttonVariants(),
-                "mt-2 h-10 bg-navy text-white hover:bg-navy-mid",
-              )}
-            >
-              ورود / ثبت نام
-            </Link>
+            {status === "user" && user ? (
+              <>
+                <Link
+                  href="/account"
+                  onClick={() => setMenuOpen(false)}
+                  className={cn(
+                    buttonVariants(),
+                    "mt-2 h-10 bg-navy text-white hover:bg-navy-mid",
+                  )}
+                >
+                  پنل کاربری
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void logout();
+                  }}
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "h-10 border-navy/20",
+                  )}
+                >
+                  خروج
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMenuOpen(false)}
+                className={cn(
+                  buttonVariants(),
+                  "mt-2 h-10 bg-navy text-white hover:bg-navy-mid",
+                )}
+              >
+                ورود / ثبت نام
+              </Link>
+            )}
           </nav>
         </div>
       )}

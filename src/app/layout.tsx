@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
 
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
+import { AuthProvider } from "@/components/auth/auth-provider";
+import { AppFrame } from "@/components/layout/app-frame";
 import { DirectionProvider } from "@/components/ui/direction";
 import { site } from "@/lib/site";
 
@@ -31,11 +31,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full bg-paper font-sans text-navy">
         <DirectionProvider direction="rtl">
-          <div className="flex min-h-full flex-col">
-            <SiteHeader />
-            <main className="flex-1">{children}</main>
-            <SiteFooter />
-          </div>
+          <AuthProvider>
+            <AppFrame>{children}</AppFrame>
+          </AuthProvider>
         </DirectionProvider>
       </body>
     </html>

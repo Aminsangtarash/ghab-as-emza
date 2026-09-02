@@ -57,7 +57,7 @@ export function LawyersExplorer() {
   }, [city, query, sort, specialty]);
 
   return (
-    <section className="relative z-10 bg-paper py-10 sm:py-12">
+    <section className="relative z-10 bg-paper py-12 sm:py-14">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
         <div className="mb-8 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-navy/8 sm:p-5">
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,11rem))]">

@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String          @id @default(uuid())
+  fullName      String
+  phone         String          @unique
+  passwordHash  String
+  createdAt     DateTime        @default(now())
+  sessions      Session[]
+  consultations Consultation[]
+  draft         ConsultDraft?
+}
+
+model Session {
+  token     String   @id
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Consultation {
+  id               String   @id @default(uuid())
+  userId           String
+  trackingCode     String   @unique
+  createdAt        DateTime @default(now())
+  channel          String
+  service          String
+  lawyerMode       String
+  lawyerSlug       String?
+  lawyerVisible    Boolean
+  subject          String
+  message          String   @db.Text
+  urgency          String
+  caseStage        String
+  city             String?
+  hasDocuments     String
+  preferredSlot    String?
+  fullName         String
+  phone            String
+  email            String?
+  consent          Boolean
+  discountCode     String?
+  feeToman         Int
+  originalFeeToman Int
+  discountPercent  Int
+  paymentStatus    String
+  status           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ConsultDraft {
+  userId    String   @id
+  payload   Json
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

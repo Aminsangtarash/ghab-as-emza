@@ -2,13 +2,29 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
+import { useAuth } from "@/components/auth/auth-provider";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+type AuthMode = "login" | "register";
+
+export function AuthForm({
+  mode,
+  variant = "page",
+  nextHref,
+  onModeChange,
+}: {
+  mode: AuthMode;
+  variant?: "page" | "dialog";
+  nextHref?: string;
+  onModeChange?: (mode: AuthMode) => void;
+}) {
+  const router = useRouter();
+  const { refresh } = useAuth();
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -17,32 +33,65 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     event.stopPropagation();
     setPending(true);
     setMessage(null);
+
     const form = new FormData(event.currentTarget);
-    const phone = String(form.get("phone") ?? "").replace(/[\s-]/g, "");
-    if (!/^09\d{9}$/.test(phone)) {
-      setMessage("شماره موبایل را به‌صورت 09121234567 وارد کنید.");
+    const body =
+      mode === "register"
+        ? {
+            fullName: String(form.get("fullName") ?? ""),
+            phone: String(form.get("phone") ?? ""),
+            password: String(form.get("password") ?? ""),
+          }
+        : {
+            phone: String(form.get("phone") ?? ""),
+            password: String(form.get("password") ?? ""),
+          };
+
+    try {
+      const response = await fetch(mode === "login" ? "/api/auth/login" : "/api/auth/register", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setMessage(payload.error ?? "ورود یا ثبت نام انجام نشد.");
+        return;
+      }
+      await refresh();
+      if (variant === "page") {
+        router.push(nextHref || "/account");
+        router.refresh();
+      }
+    } catch {
+      setMessage("ارتباط با سرور برقرار نشد.");
+    } finally {
       setPending(false);
-      return;
     }
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    setPending(false);
-    setMessage(
-      "حساب کاربری در مرحله بعد به MySQL و احراز هویت امن متصل می‌شود. برای دریافت مشاوره، از فرم مشاوره آنلاین استفاده کنید.",
-    );
   }
+
+  const switchHref =
+    mode === "login"
+      ? nextHref
+        ? `/register?next=${encodeURIComponent(nextHref)}`
+        : "/register"
+      : nextHref
+        ? `/login?next=${encodeURIComponent(nextHref)}`
+        : "/login";
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" method="post">
       {mode === "register" && (
         <div className="space-y-1.5">
-          <Label htmlFor="fullName">نام و نام خانوادگی</Label>
-          <Input id="fullName" name="fullName" className="h-10" required />
+          <Label htmlFor="auth-fullName">نام و نام خانوادگی</Label>
+          <Input id="auth-fullName" name="fullName" className="h-10" autoComplete="name" required />
         </div>
       )}
       <div className="space-y-1.5">
-        <Label htmlFor="phone">شماره موبایل</Label>
+        <Label htmlFor="auth-phone">شماره موبایل</Label>
         <Input
-          id="phone"
+          id="auth-phone"
           name="phone"
           className="h-10"
           dir="ltr"
@@ -53,15 +102,20 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="password">رمز عبور</Label>
-        <Input id="password" name="password" type="password" className="h-10" autoComplete="current-password" required minLength={8} />
+        <Label htmlFor="auth-password">رمز عبور</Label>
+        <Input
+          id="auth-password"
+          name="password"
+          type="password"
+          className="h-10"
+          autoComplete={mode === "login" ? "current-password" : "new-password"}
+          required
+          minLength={8}
+        />
       </div>
       {message && (
-        <p className="rounded-lg bg-navy/5 px-3 py-2 text-sm leading-7 text-navy" role="status">
-          {message}{" "}
-          <Link href="/consult" className="font-medium text-gold-deep hover:underline">
-            درخواست مشاوره
-          </Link>
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm leading-7 text-red-800" role="alert">
+          {message}
         </p>
       )}
       <button
@@ -78,25 +132,39 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         {mode === "login" ? (
           <>
             حساب ندارید؟{" "}
-            <Link href="/register" className="font-medium text-navy hover:text-gold-deep">
-              ثبت نام
-            </Link>
+            {variant === "dialog" ? (
+              <button
+                type="button"
+                className="font-medium text-navy hover:text-gold-deep"
+                onClick={() => onModeChange?.("register")}
+              >
+                ثبت نام
+              </button>
+            ) : (
+              <Link href={switchHref} className="font-medium text-navy hover:text-gold-deep">
+                ثبت نام
+              </Link>
+            )}
           </>
         ) : (
           <>
             قبلاً ثبت‌نام کرده‌اید؟{" "}
-            <Link href="/login" className="font-medium text-navy hover:text-gold-deep">
-              ورود
-            </Link>
+            {variant === "dialog" ? (
+              <button
+                type="button"
+                className="font-medium text-navy hover:text-gold-deep"
+                onClick={() => onModeChange?.("login")}
+              >
+                ورود
+              </button>
+            ) : (
+              <Link href={switchHref} className="font-medium text-navy hover:text-gold-deep">
+                ورود
+              </Link>
+            )}
           </>
         )}
       </p>
-      <Link
-        href="/consult"
-        className={cn(buttonVariants({ variant: "outline" }), "h-10 w-full border-navy/20")}
-      >
-        ادامه بدون حساب؛ درخواست مشاوره
-      </Link>
     </form>
   );
 }

@@ -1,5 +1,14 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+import {
+  MailIcon,
+  PencilIcon,
+  PhoneIcon,
+  SendIcon,
+  TagIcon,
+  UserIcon,
+} from "lucide-react";
 import { useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -25,6 +34,7 @@ export function ContactForm() {
     const raw = {
       fullName: String(form.get("fullName") ?? ""),
       phone: String(form.get("phone") ?? ""),
+      email: String(form.get("email") ?? ""),
       subject: String(form.get("subject") ?? ""),
       message: String(form.get("message") ?? ""),
     };
@@ -61,7 +71,7 @@ export function ContactForm() {
 
   if (done) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+      <div className="rounded-2xl bg-paper p-6 ring-1 ring-navy/8">
         <p className="font-heading text-lg font-semibold text-navy">پیام شما دریافت شد</p>
         <p className="mt-2 text-sm leading-7 text-navy/75">
           در ساعات کاری با شما تماس می‌گیریم. برای موضوع حقوقی فوری از مشاوره آنلاین استفاده کنید.
@@ -79,25 +89,59 @@ export function ContactForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate method="post">
-      <div className="space-y-1.5">
-        <Label htmlFor="fullName">نام</Label>
-        <Input id="fullName" name="fullName" className="h-10" required />
-        {fieldErrors.fullName && <p className="text-xs text-destructive">{fieldErrors.fullName}</p>}
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="phone">موبایل</Label>
-        <Input id="phone" name="phone" className="h-10" dir="ltr" inputMode="numeric" required />
-        {fieldErrors.phone && <p className="text-xs text-destructive">{fieldErrors.phone}</p>}
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="subject">موضوع</Label>
-        <Input id="subject" name="subject" className="h-10" required />
-        {fieldErrors.subject && <p className="text-xs text-destructive">{fieldErrors.subject}</p>}
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="message">پیام</Label>
-        <Textarea id="message" name="message" className="min-h-28" required />
-        {fieldErrors.message && <p className="text-xs text-destructive">{fieldErrors.message}</p>}
+      <IconField
+        id="fullName"
+        name="fullName"
+        label="نام و نام خانوادگی"
+        icon={UserIcon}
+        error={fieldErrors.fullName}
+        required
+      />
+      <IconField
+        id="phone"
+        name="phone"
+        label="شماره موبایل"
+        icon={PhoneIcon}
+        error={fieldErrors.phone}
+        ltr
+        inputMode="numeric"
+        required
+      />
+      <IconField
+        id="email"
+        name="email"
+        label="ایمیل (اختیاری)"
+        icon={MailIcon}
+        error={fieldErrors.email}
+        type="email"
+        ltr
+      />
+      <IconField
+        id="subject"
+        name="subject"
+        label="موضوع"
+        icon={TagIcon}
+        error={fieldErrors.subject}
+        required
+      />
+      <div>
+        <Label htmlFor="message" className="sr-only">
+          پیام
+        </Label>
+        <div className="relative">
+          <PencilIcon className="pointer-events-none absolute top-4 right-3.5 size-4 text-navy/35" />
+          <Textarea
+            id="message"
+            name="message"
+            placeholder="پیام"
+            required
+            aria-invalid={Boolean(fieldErrors.message)}
+            className="min-h-32 rounded-xl py-3.5 pr-11"
+          />
+        </div>
+        {fieldErrors.message && (
+          <p className="mt-1.5 text-xs text-destructive">{fieldErrors.message}</p>
+        )}
       </div>
       {error && (
         <p className="text-sm text-destructive" role="alert">
@@ -108,12 +152,58 @@ export function ContactForm() {
         type="submit"
         disabled={pending}
         className={cn(
-          buttonVariants(),
-          "h-11 bg-gold text-navy-deep hover:bg-gold-bright disabled:opacity-50",
+          buttonVariants({ size: "lg" }),
+          "h-12 gap-2 bg-navy px-6 text-white hover:bg-navy-mid disabled:opacity-50",
         )}
       >
+        <SendIcon className="size-4 text-gold" />
         {pending ? "در حال ارسال…" : "ارسال پیام"}
       </button>
     </form>
+  );
+}
+
+function IconField({
+  id,
+  name,
+  label,
+  icon: Icon,
+  error,
+  type = "text",
+  ltr,
+  inputMode,
+  required,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  icon: LucideIcon;
+  error?: string;
+  type?: string;
+  ltr?: boolean;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  required?: boolean;
+}) {
+  return (
+    <div>
+      <Label htmlFor={id} className="sr-only">
+        {label}
+      </Label>
+      <div className="relative">
+        <Icon className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-navy/35" />
+        <Input
+          id={id}
+          name={name}
+          type={type}
+          dir={ltr ? "ltr" : undefined}
+          inputMode={inputMode}
+          placeholder={label}
+          required={required}
+          aria-invalid={Boolean(error)}
+          className={cn("h-12 rounded-xl pr-11", ltr && "text-right")}
+        />
+      </div>
+      {error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}
+    </div>
   );
 }

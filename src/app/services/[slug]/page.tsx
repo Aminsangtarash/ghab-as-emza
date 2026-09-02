@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronLeftIcon } from "lucide-react";
 
-import { ConsultationForm } from "@/components/consult/consultation-form";
 import { ServiceIcon } from "@/components/services/service-icon";
 import { PageHero } from "@/components/page-hero";
 import { buttonVariants } from "@/components/ui/button";
@@ -32,7 +32,7 @@ export default async function ServiceDetailPage({
   return (
     <>
       <PageHero title={service.title} description={service.short} />
-      <section className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 pt-10 sm:px-6 sm:pt-12 lg:grid-cols-[1.15fr_0.85fr]">
         <div>
           <span className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-navy text-gold">
             <ServiceIcon name={service.icon} className="size-6" />
@@ -44,23 +44,25 @@ export default async function ServiceDetailPage({
               <li key={item}>{item}</li>
             ))}
           </ul>
+        </div>
+        <aside className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-navy/10 sm:p-8">
+          <span className="mb-3 block h-1 w-10 rounded-full bg-gold" />
+          <h2 className="font-heading text-xl font-semibold text-navy">ثبت درخواست</h2>
+          <p className="mt-3 text-sm leading-7 text-navy/70">
+            نوع خدمت از قبل انتخاب شده است. نحوه مشاوره، وکیل و شرح موضوع را در چند مرحله کوتاه تکمیل
+            کنید.
+          </p>
           <Link
-            href="/consult"
+            href={`/consult?service=${service.slug}`}
             className={cn(
-              buttonVariants(),
-              "mt-8 h-11 bg-gold px-6 text-navy-deep hover:bg-gold-bright",
+              buttonVariants({ size: "lg" }),
+              "mt-6 inline-flex h-11 gap-1 bg-gold px-6 text-navy-deep hover:bg-gold-bright",
             )}
           >
-            درخواست این خدمت
+            ادامه ثبت درخواست
+            <ChevronLeftIcon className="size-4" />
           </Link>
-        </div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-navy/10">
-          <h2 className="font-heading text-lg font-semibold text-navy">درخواست سریع</h2>
-          <p className="mt-1 mb-5 text-sm text-navy/70">
-            فرم را پر کنید؛ کد پیگیری بلافاصله صادر می‌شود.
-          </p>
-          <ConsultationForm defaultService={service.slug} />
-        </div>
+        </aside>
       </section>
     </>
   );

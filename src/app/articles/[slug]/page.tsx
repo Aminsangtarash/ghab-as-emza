@@ -28,7 +28,7 @@ export default async function ArticlePage({ params }: PageProps<"/articles/[slug
   return (
     <article className="relative z-10 bg-paper pb-16">
       <section className="bg-navy-deep text-white">
-        <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-14">
+        <div className="mx-auto w-full max-w-3xl px-4 pt-16 pb-12 sm:px-6 sm:pt-20 sm:pb-14">
           <Link href="/articles" className="text-sm text-gold hover:text-gold-bright">
             بازگشت به مقالات
           </Link>
@@ -45,8 +45,8 @@ export default async function ArticlePage({ params }: PageProps<"/articles/[slug
           </p>
         </div>
       </section>
-      <div className="mx-auto w-full max-w-3xl px-4 sm:px-6">
-        <div className="relative -mt-6 mb-8 h-64 overflow-hidden rounded-2xl shadow-lg sm:h-80">
+      <div className="mx-auto w-full max-w-3xl px-4 pt-10 sm:px-6 sm:pt-12">
+        <div className="relative mb-8 h-64 overflow-hidden rounded-2xl shadow-lg sm:h-80">
           <Image src={article.image} alt="" fill className="object-cover" sizes="768px" />
         </div>
         <div className="space-y-5 text-sm leading-8 text-navy/85 sm:text-base">

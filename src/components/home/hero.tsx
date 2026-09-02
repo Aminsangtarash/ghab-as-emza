@@ -68,7 +68,7 @@ export function Hero() {
       </div>
 
       <section ref={heroRef} className="relative z-10 bg-navy-deep md:bg-transparent">
-        <div className="relative mx-auto flex min-h-[30rem] w-full max-w-6xl items-center px-4 py-14 sm:min-h-[34rem] sm:px-6 sm:py-16">
+        <div className="relative mx-auto flex min-h-[30rem] w-full max-w-6xl items-center px-4 pt-16 pb-14 sm:min-h-[34rem] sm:px-6 sm:pt-20 sm:pb-16">
           <div className="w-full max-w-2xl">
             <p
               className="hero-animate mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-gold/45 bg-white/8 px-4 py-1.5 text-xs font-medium text-gold backdrop-blur-sm"

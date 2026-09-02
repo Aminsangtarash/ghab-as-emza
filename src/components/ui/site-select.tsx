@@ -37,40 +37,34 @@ export function SiteSelect({
   required?: boolean;
   className?: string;
 }) {
-  const [uncontrolled, setUncontrolled] = useState(defaultValue ?? "");
-  const selected = value ?? uncontrolled;
+  const isControlled = value !== undefined;
+  const [internal, setInternal] = useState<string | null>(defaultValue ?? null);
+  const selected = isControlled ? value : internal;
+  const labels = Object.fromEntries(options.map((option) => [option.value, option.label]));
 
   return (
-    <>
-      {name ? (
-        <input type="hidden" name={name} value={selected ?? ""} required={required} />
-      ) : null}
-      <Select
-        value={value}
-        defaultValue={defaultValue}
-        items={Object.fromEntries(options.map((option) => [option.value, option.label]))}
-        onValueChange={(next) => {
-          if (next == null) return;
-          const nextValue = String(next);
-          if (value == null) setUncontrolled(nextValue);
-          onValueChange?.(nextValue);
-        }}
-      >
-        <SelectTrigger id={id} className={cn("w-full min-w-44", className)}>
-          <SelectValue placeholder={placeholder}>
-            {(selectedValue: string | null) =>
-              options.find((option) => option.value === selectedValue)?.label ?? placeholder
-            }
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent align="end" alignItemWithTrigger={false} sideOffset={6}>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </>
+    <Select
+      value={selected}
+      name={name}
+      required={required}
+      items={labels}
+      onValueChange={(next) => {
+        if (next == null) return;
+        const nextValue = String(next);
+        if (!isControlled) setInternal(nextValue);
+        onValueChange?.(nextValue);
+      }}
+    >
+      <SelectTrigger id={id} className={cn("w-full min-w-44", className)}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent align="end" alignItemWithTrigger={false} sideOffset={6}>
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

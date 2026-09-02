@@ -1,7 +1,7 @@
 export function ServicesHero() {
   return (
     <section className="border-b border-navy/8 bg-white">
-      <div className="mx-auto w-full max-w-6xl px-4 py-14 text-center sm:px-6 sm:py-16">
+      <div className="mx-auto w-full max-w-6xl px-4 pt-16 pb-12 text-center sm:px-6 sm:pt-20 sm:pb-16">
         <h1 className="font-heading text-3xl font-bold text-navy sm:text-4xl">
           خدمات حقوقی
         </h1>

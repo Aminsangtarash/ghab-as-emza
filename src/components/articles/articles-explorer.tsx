@@ -58,7 +58,7 @@ export function ArticlesExplorer() {
   return (
     <>
       <ArticlesHero query={query} onQuery={changeQuery} />
-      <section className="relative z-10 bg-paper py-10 sm:py-12">
+      <section className="relative z-10 bg-paper py-12 sm:py-14">
         <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-[18.5rem_minmax(0,1fr)]">
           <div className="lg:col-start-2">
             <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

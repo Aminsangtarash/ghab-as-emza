@@ -1,22 +1,31 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { AuthForm } from "@/components/auth/auth-form";
 import { PageHero } from "@/components/page-hero";
+import { getServerUser } from "@/lib/auth";
+import { safeInternalPath } from "@/lib/paths";
 
 export const metadata: Metadata = {
   title: "ثبت نام",
 };
 
-export default function RegisterPage() {
+export default async function RegisterPage({ searchParams }: PageProps<"/register">) {
+  const params = await searchParams;
+  const nextHref = safeInternalPath(typeof params.next === "string" ? params.next : undefined);
+  if (await getServerUser()) {
+    redirect(nextHref || "/account");
+  }
+
   return (
     <>
       <PageHero
         title="ثبت نام"
-        description="ثبت‌نام کامل در مرحله بعد به MySQL متصل می‌شود. برای شروع از مشاوره آنلاین استفاده کنید."
+        description="حساب بسازید تا بتوانید درخواست مشاوره ثبت کنید و بعداً وضعیت آن را ببینید."
       />
-      <section className="mx-auto w-full max-w-md px-4 py-12 sm:px-6">
+      <section className="mx-auto w-full max-w-md px-4 pb-12 pt-10 sm:px-6 sm:pt-12">
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-navy/10">
-          <AuthForm mode="register" />
+          <AuthForm mode="register" nextHref={nextHref} />
         </div>
       </section>
     </>
