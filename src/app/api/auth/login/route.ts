@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { loginAccount, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
+import { ensureLawyerAccounts } from "@/lib/lawyer-accounts";
 import { isRateLimited } from "@/lib/rate-limit";
+import { ensureStaffAccounts } from "@/lib/staff-accounts";
 import { loginSchema } from "@/lib/validations";
 
 function clientIp(request: NextRequest) {
@@ -39,6 +41,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await ensureStaffAccounts();
+    await ensureLawyerAccounts();
     const result = await loginAccount(parsed.data.phone, parsed.data.password);
     if ("error" in result) {
       return NextResponse.json({ error: result.error }, { status: 401 });

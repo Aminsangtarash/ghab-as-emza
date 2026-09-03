@@ -35,19 +35,23 @@ export function useParallax(enabled: boolean) {
       targetY = ratioY * 18;
     };
 
+    const canvas = document.querySelector("[data-site-canvas]");
+
     const onScroll = () => {
-      scrollY = window.scrollY;
+      scrollY = canvas instanceof HTMLElement ? canvas.scrollTop : window.scrollY;
     };
 
     frame = requestAnimationFrame(animate);
     window.addEventListener("mousemove", onMove, { passive: true });
     window.addEventListener("scroll", onScroll, { passive: true });
+    canvas?.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
 
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("scroll", onScroll);
+      canvas?.removeEventListener("scroll", onScroll);
     };
   }, [enabled]);
 

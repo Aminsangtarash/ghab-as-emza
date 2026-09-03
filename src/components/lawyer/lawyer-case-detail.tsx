@@ -1,0 +1,601 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { CalendarClockIcon, LockIcon, PlusIcon, Trash2Icon } from "lucide-react";
+
+import {
+  EmptyRow,
+  ErrorNote,
+  FieldLabel,
+  LawyerHeading,
+  OkNote,
+  SectionCard,
+  Tone,
+  inputClass,
+  panelCard,
+  panelFetch,
+  textareaClass,
+} from "@/components/lawyer/lawyer-ui";
+import { buttonVariants } from "@/components/ui/button";
+import { appointmentKindMeta, appointmentKinds } from "@/lib/appointment-model";
+import {
+  caseEventKindMeta,
+  caseEventKinds,
+  caseStageMeta,
+  caseStages,
+  caseStatusMeta,
+  caseStatuses,
+  type CaseEventKind,
+  type CaseStage,
+  type CaseStatus,
+  type ClientCase,
+} from "@/lib/case-model";
+import { formatFaDateTime, formatTomanAmount, toFaDigits } from "@/lib/format";
+import type { LawyerNoteItem } from "@/lib/lawyer-desk";
+import { cn } from "@/lib/utils";
+
+function toLocalInput(iso?: string) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function LawyerCaseDetail({ caseId }: { caseId: string }) {
+  const [item, setItem] = useState<ClientCase | null>(null);
+  const [notes, setNotes] = useState<LawyerNoteItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [okMessage, setOkMessage] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  const [form, setForm] = useState({
+    status: "active" as CaseStatus,
+    stage: "review" as CaseStage,
+    authority: "",
+    courtBranch: "",
+    fileNumber: "",
+    feeToman: "0",
+    paidToman: "0",
+    nextActionAt: "",
+    nextActionNote: "",
+    closeNote: "",
+  });
+
+  const [event, setEvent] = useState({
+    kind: "note" as CaseEventKind,
+    title: "",
+    body: "",
+    happensAt: "",
+    visibleToClient: true,
+  });
+
+  const [noteText, setNoteText] = useState("");
+  const [appointment, setAppointment] = useState({
+    kind: "in-person" as (typeof appointmentKinds)[number],
+    scheduledAt: "",
+    minutes: "45",
+    note: "",
+  });
+
+  const load = useCallback(async () => {
+    const result = await panelFetch<{ item: ClientCase; notes: LawyerNoteItem[] }>(
+      `/api/lawyer/cases/${caseId}`,
+    );
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    const next = result.data.item;
+    setItem(next);
+    setNotes(result.data.notes ?? []);
+    setForm({
+      status: next.status,
+      stage: next.stage,
+      authority: next.authority ?? "",
+      courtBranch: next.courtBranch ?? "",
+      fileNumber: next.fileNumber ?? "",
+      feeToman: String(next.feeToman),
+      paidToman: String(next.paidToman),
+      nextActionAt: toLocalInput(next.nextActionAt),
+      nextActionNote: next.nextActionNote ?? "",
+      closeNote: next.closeNote ?? "",
+    });
+  }, [caseId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function run(fn: () => Promise<{ ok: boolean; error?: string }>, message: string) {
+    setPending(true);
+    setError(null);
+    setOkMessage(null);
+    const result = await fn();
+    setPending(false);
+    if (!result.ok) {
+      setError(result.error ?? "انجام نشد.");
+      return false;
+    }
+    setOkMessage(message);
+    await load();
+    return true;
+  }
+
+  async function saveCase() {
+    await run(
+      () =>
+        panelFetch(`/api/lawyer/cases/${caseId}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            status: form.status,
+            stage: form.stage,
+            authority: form.authority,
+            courtBranch: form.courtBranch,
+            fileNumber: form.fileNumber,
+            feeToman: Number(form.feeToman) || 0,
+            paidToman: Number(form.paidToman) || 0,
+            nextActionAt: form.nextActionAt ? new Date(form.nextActionAt).toISOString() : null,
+            nextActionNote: form.nextActionNote,
+            closeNote: form.closeNote,
+          }),
+        }),
+      "پرونده به‌روزرسانی شد.",
+    );
+  }
+
+  async function addEvent() {
+    if (!event.title.trim()) {
+      setError("عنوان رویداد را بنویسید.");
+      return;
+    }
+    const done = await run(
+      () =>
+        panelFetch(`/api/lawyer/cases/${caseId}/events`, {
+          method: "POST",
+          body: JSON.stringify({
+            kind: event.kind,
+            title: event.title,
+            body: event.body,
+            happensAt: event.happensAt ? new Date(event.happensAt).toISOString() : undefined,
+            visibleToClient: event.visibleToClient,
+          }),
+        }),
+      "رویداد در تایم‌لاین ثبت شد.",
+    );
+    if (done) setEvent((current) => ({ ...current, title: "", body: "", happensAt: "" }));
+  }
+
+  async function addNote() {
+    if (!noteText.trim()) return;
+    const done = await run(
+      () =>
+        panelFetch("/api/lawyer/notes", {
+          method: "POST",
+          body: JSON.stringify({ body: noteText, caseId }),
+        }),
+      "یادداشت خصوصی ثبت شد.",
+    );
+    if (done) setNoteText("");
+  }
+
+  async function removeNote(id: string) {
+    await run(
+      () => panelFetch(`/api/lawyer/notes?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+      "یادداشت حذف شد.",
+    );
+  }
+
+  async function scheduleAppointment() {
+    if (!appointment.scheduledAt) {
+      setError("زمان جلسه را انتخاب کنید.");
+      return;
+    }
+    const done = await run(
+      () =>
+        panelFetch("/api/lawyer/appointments", {
+          method: "POST",
+          body: JSON.stringify({
+            caseId,
+            kind: appointment.kind,
+            scheduledAt: new Date(appointment.scheduledAt).toISOString(),
+            minutes: Number(appointment.minutes) || 45,
+            note: appointment.note,
+          }),
+        }),
+      "جلسه ثبت شد.",
+    );
+    if (done) setAppointment((current) => ({ ...current, scheduledAt: "", note: "" }));
+  }
+
+  if (!item) {
+    return <div className={cn(panelCard, "px-6 py-10 text-sm text-navy/50")}>{error ?? "در حال بارگذاری پرونده…"}</div>;
+  }
+
+  const locked = item.status === "proposed";
+
+  return (
+    <div className="min-w-0 space-y-4 md:space-y-5">
+      <LawyerHeading
+        kicker={`پرونده ${toFaDigits(item.caseNumber)}`}
+        title={item.title}
+        description={`${item.clientName}${item.clientPhone ? ` — ${toFaDigits(item.clientPhone)}` : ""} · ${caseStageMeta[item.stage]}`}
+        actions={
+          <>
+            <Tone tone={caseStatusMeta[item.status].tone}>{caseStatusMeta[item.status].title}</Tone>
+            <Link
+              href="/lawyer/cases"
+              className={cn(buttonVariants({ variant: "outline" }), "h-11 border-navy/15 px-4")}
+            >
+              فهرست پرونده‌ها
+            </Link>
+          </>
+        }
+      />
+
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="min-w-0 space-y-4">
+          <SectionCard title="شرح و برنامه کار">
+            <p className="whitespace-pre-line text-sm leading-7 text-navy/75">{item.summary}</p>
+            <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+              <Meta label="مرجع رسیدگی" value={item.authority ?? "ثبت نشده"} />
+              <Meta label="شعبه" value={item.courtBranch ?? "ثبت نشده"} />
+              <Meta label="شماره پرونده قضایی" value={item.fileNumber ? toFaDigits(item.fileNumber) : "ثبت نشده"} />
+              <Meta label="حق‌الوکاله" value={formatTomanAmount(item.feeToman)} />
+              <Meta label="دریافتی" value={formatTomanAmount(item.paidToman)} />
+              <Meta
+                label="اقدام بعدی"
+                value={item.nextActionAt ? `${item.nextActionNote ?? "—"} · ${formatFaDateTime(item.nextActionAt)}` : "ثبت نشده"}
+              />
+            </dl>
+            {item.trackingCode ? (
+              <p className="mt-3 text-xs text-navy/45">
+                برگرفته از درخواست {toFaDigits(item.trackingCode)}
+              </p>
+            ) : null}
+            {item.clientNote ? (
+              <p className="mt-3 rounded-2xl bg-paper/60 p-3 text-sm leading-7 text-navy/70">
+                پاسخ موکل: {item.clientNote}
+              </p>
+            ) : null}
+          </SectionCard>
+
+          <SectionCard
+            title="تایم‌لاین پرونده"
+            hint="رویدادهای نامرئی برای موکل با برچسب «فقط شما» مشخص شده‌اند."
+          >
+            {item.events.length === 0 ? (
+              <EmptyRow>رویدادی ثبت نشده است.</EmptyRow>
+            ) : (
+              <ol className="space-y-3">
+                {item.events.map((row) => (
+                  <li key={row.id} className="rounded-2xl border border-navy/8 bg-paper/50 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-navy">{row.title}</p>
+                      <div className="flex items-center gap-2">
+                        {row.visibleToClient ? null : <Tone tone="bg-navy/5 text-navy/55">فقط شما</Tone>}
+                        <Tone tone={caseEventKindMeta[row.kind].tone}>{caseEventKindMeta[row.kind].title}</Tone>
+                      </div>
+                    </div>
+                    {row.body ? (
+                      <p className="mt-2 whitespace-pre-line text-sm leading-7 text-navy/70">{row.body}</p>
+                    ) : null}
+                    <p className="mt-2 text-[11px] text-navy/40">
+                      {row.happensAt ? `زمان رویداد: ${formatFaDateTime(row.happensAt)} · ` : ""}
+                      ثبت: {formatFaDateTime(row.createdAt)}
+                      {row.authorRole === "client" ? " · توسط موکل" : ""}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </SectionCard>
+
+          <SectionCard title="ثبت رویداد جدید">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <FieldLabel>نوع</FieldLabel>
+                <select
+                  value={event.kind}
+                  onChange={(e) => setEvent((c) => ({ ...c, kind: e.target.value as CaseEventKind }))}
+                  className={inputClass}
+                >
+                  {caseEventKinds.map((kind) => (
+                    <option key={kind} value={kind}>
+                      {caseEventKindMeta[kind].title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <FieldLabel>زمان رویداد (اختیاری)</FieldLabel>
+                <input
+                  type="datetime-local"
+                  value={event.happensAt}
+                  onChange={(e) => setEvent((c) => ({ ...c, happensAt: e.target.value }))}
+                  className={inputClass}
+                />
+              </label>
+            </div>
+            <label className="mt-3 block">
+              <FieldLabel>عنوان</FieldLabel>
+              <input
+                value={event.title}
+                onChange={(e) => setEvent((c) => ({ ...c, title: e.target.value }))}
+                className={inputClass}
+                maxLength={160}
+                placeholder="مثلاً: جلسه رسیدگی شعبه ۱۰۲"
+              />
+            </label>
+            <label className="mt-3 block">
+              <FieldLabel>توضیح (اختیاری)</FieldLabel>
+              <textarea
+                value={event.body}
+                onChange={(e) => setEvent((c) => ({ ...c, body: e.target.value }))}
+                className={textareaClass}
+                maxLength={4000}
+              />
+            </label>
+            <label className="mt-3 flex items-center gap-2 text-sm text-navy/70">
+              <input
+                type="checkbox"
+                checked={event.visibleToClient}
+                onChange={(e) => setEvent((c) => ({ ...c, visibleToClient: e.target.checked }))}
+                className="size-4 accent-[#c9a227]"
+              />
+              برای موکل هم نمایش داده شود
+            </label>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void addEvent()}
+              className={cn(buttonVariants(), "mt-3 h-10 bg-navy px-5 text-white hover:bg-navy-mid")}
+            >
+              <PlusIcon className="size-4" />
+              ثبت رویداد
+            </button>
+          </SectionCard>
+        </div>
+
+        <div className="min-w-0 space-y-4">
+          <SectionCard
+            title="وضعیت و اطلاعات پرونده"
+            hint={locked ? "تا تأیید موکل، فقط اطلاعات پرونده قابل ویرایش است." : undefined}
+          >
+            <div className="grid gap-3">
+              <label className="block">
+                <FieldLabel>وضعیت</FieldLabel>
+                <select
+                  value={form.status}
+                  disabled={locked}
+                  onChange={(e) => setForm((c) => ({ ...c, status: e.target.value as CaseStatus }))}
+                  className={cn(inputClass, locked && "opacity-60")}
+                >
+                  {caseStatuses
+                    .filter((status) => status !== "proposed" || locked)
+                    .map((status) => (
+                      <option key={status} value={status}>
+                        {caseStatusMeta[status].title}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label className="block">
+                <FieldLabel>مرحله</FieldLabel>
+                <select
+                  value={form.stage}
+                  onChange={(e) => setForm((c) => ({ ...c, stage: e.target.value as CaseStage }))}
+                  className={inputClass}
+                >
+                  {caseStages.map((stage) => (
+                    <option key={stage} value={stage}>
+                      {caseStageMeta[stage]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <FieldLabel>مرجع رسیدگی</FieldLabel>
+                  <input
+                    value={form.authority}
+                    onChange={(e) => setForm((c) => ({ ...c, authority: e.target.value }))}
+                    className={inputClass}
+                    maxLength={120}
+                  />
+                </label>
+                <label className="block">
+                  <FieldLabel>شعبه</FieldLabel>
+                  <input
+                    value={form.courtBranch}
+                    onChange={(e) => setForm((c) => ({ ...c, courtBranch: e.target.value }))}
+                    className={inputClass}
+                    maxLength={120}
+                  />
+                </label>
+                <label className="block">
+                  <FieldLabel>شماره پرونده قضایی</FieldLabel>
+                  <input
+                    value={form.fileNumber}
+                    onChange={(e) => setForm((c) => ({ ...c, fileNumber: e.target.value }))}
+                    className={inputClass}
+                    maxLength={60}
+                  />
+                </label>
+                <label className="block">
+                  <FieldLabel>حق‌الوکاله (تومان)</FieldLabel>
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.feeToman}
+                    onChange={(e) => setForm((c) => ({ ...c, feeToman: e.target.value }))}
+                    className={inputClass}
+                  />
+                </label>
+                <label className="block">
+                  <FieldLabel>دریافتی (تومان)</FieldLabel>
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.paidToman}
+                    onChange={(e) => setForm((c) => ({ ...c, paidToman: e.target.value }))}
+                    className={inputClass}
+                  />
+                </label>
+                <label className="block">
+                  <FieldLabel>زمان اقدام بعدی</FieldLabel>
+                  <input
+                    type="datetime-local"
+                    value={form.nextActionAt}
+                    onChange={(e) => setForm((c) => ({ ...c, nextActionAt: e.target.value }))}
+                    className={inputClass}
+                  />
+                </label>
+              </div>
+              <label className="block">
+                <FieldLabel>عنوان اقدام بعدی</FieldLabel>
+                <input
+                  value={form.nextActionNote}
+                  onChange={(e) => setForm((c) => ({ ...c, nextActionNote: e.target.value }))}
+                  className={inputClass}
+                  maxLength={300}
+                />
+              </label>
+              {form.status === "closed" ? (
+                <label className="block">
+                  <FieldLabel>جمع‌بندی نهایی پرونده</FieldLabel>
+                  <textarea
+                    value={form.closeNote}
+                    onChange={(e) => setForm((c) => ({ ...c, closeNote: e.target.value }))}
+                    className={textareaClass}
+                    maxLength={4000}
+                  />
+                </label>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void saveCase()}
+              className={cn(buttonVariants(), "mt-3 h-10 bg-gold px-5 text-navy-deep hover:bg-gold-bright")}
+            >
+              ذخیره تغییرات
+            </button>
+          </SectionCard>
+
+          <SectionCard title="ثبت جلسه" hint="جلسه در تایم‌لاین پرونده و نوبت‌های شما ثبت می‌شود.">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <FieldLabel>نوع</FieldLabel>
+                <select
+                  value={appointment.kind}
+                  onChange={(e) =>
+                    setAppointment((c) => ({ ...c, kind: e.target.value as (typeof appointmentKinds)[number] }))
+                  }
+                  className={inputClass}
+                >
+                  {appointmentKinds.map((kind) => (
+                    <option key={kind} value={kind}>
+                      {appointmentKindMeta[kind]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <FieldLabel>زمان</FieldLabel>
+                <input
+                  type="datetime-local"
+                  value={appointment.scheduledAt}
+                  onChange={(e) => setAppointment((c) => ({ ...c, scheduledAt: e.target.value }))}
+                  className={inputClass}
+                />
+              </label>
+              <label className="block">
+                <FieldLabel>مدت (دقیقه)</FieldLabel>
+                <input
+                  type="number"
+                  min={5}
+                  max={480}
+                  value={appointment.minutes}
+                  onChange={(e) => setAppointment((c) => ({ ...c, minutes: e.target.value }))}
+                  className={inputClass}
+                />
+              </label>
+              <label className="block">
+                <FieldLabel>توضیح</FieldLabel>
+                <input
+                  value={appointment.note}
+                  onChange={(e) => setAppointment((c) => ({ ...c, note: e.target.value }))}
+                  className={inputClass}
+                  maxLength={300}
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void scheduleAppointment()}
+              className={cn(buttonVariants({ variant: "outline" }), "mt-3 h-10 border-navy/15 px-4")}
+            >
+              <CalendarClockIcon className="size-4" />
+              ثبت جلسه
+            </button>
+          </SectionCard>
+
+          <SectionCard title="یادداشت خصوصی" action={<Tone tone="bg-navy/5 text-navy/55">فقط شما</Tone>}>
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              className={textareaClass}
+              maxLength={4000}
+              placeholder="نکات دفاع، ادله و پیگیری‌ها…"
+            />
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void addNote()}
+              className={cn(buttonVariants({ variant: "outline" }), "mt-3 h-10 border-navy/15 px-4")}
+            >
+              <LockIcon className="size-4" />
+              ثبت یادداشت
+            </button>
+            <div className="mt-4 space-y-2">
+              {notes.length === 0 ? (
+                <EmptyRow>یادداشتی ثبت نشده است.</EmptyRow>
+              ) : (
+                notes.map((note) => (
+                  <div key={note.id} className="rounded-2xl border border-navy/8 bg-paper/50 p-3">
+                    <p className="whitespace-pre-line text-sm leading-7 text-navy/75">{note.body}</p>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <span className="text-[11px] text-navy/40">{formatFaDateTime(note.createdAt)}</span>
+                      <button
+                        type="button"
+                        onClick={() => void removeNote(note.id)}
+                        className="flex items-center gap-1 text-[11px] text-red-700 hover:underline"
+                      >
+                        <Trash2Icon className="size-3" />
+                        حذف
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </SectionCard>
+        </div>
+      </div>
+
+      <ErrorNote>{error}</ErrorNote>
+      <OkNote>{okMessage}</OkNote>
+    </div>
+  );
+}
+
+function Meta({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-navy/8 bg-white px-3 py-2.5">
+      <dt className="text-[11px] text-navy/45">{label}</dt>
+      <dd className="mt-1 text-sm text-navy/80">{value}</dd>
+    </div>
+  );
+}

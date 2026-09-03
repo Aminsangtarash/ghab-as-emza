@@ -59,13 +59,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const saved = await saveConsultation(parsed.data, user.id);
-  if ("error" in saved) {
-    return NextResponse.json({ error: saved.error }, { status: 422 });
+  const documentIds = Array.isArray((body as { documentIds?: unknown }).documentIds)
+    ? ((body as { documentIds: unknown[] }).documentIds.filter(
+        (item): item is string => typeof item === "string" && /^[0-9a-f-]{36}$/i.test(item),
+      ) as string[])
+    : [];
+
+  try {
+    const saved = await saveConsultation(parsed.data, user.id, documentIds);
+    if ("error" in saved) {
+      return NextResponse.json({ error: saved.error }, { status: 422 });
+    }
+    return NextResponse.json({
+      ok: true,
+      trackingCode: saved.trackingCode,
+      id: saved.id,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "ثبت درخواست با خطا روبه‌رو شد. کمی بعد دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
-  return NextResponse.json({
-    ok: true,
-    trackingCode: saved.trackingCode,
-    id: saved.id,
-  });
 }

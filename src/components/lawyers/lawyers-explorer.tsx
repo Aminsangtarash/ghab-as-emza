@@ -7,6 +7,7 @@ import { LawyerCard } from "@/components/lawyers/lawyer-card";
 import { Input } from "@/components/ui/input";
 import { SiteSelect } from "@/components/ui/site-select";
 import { lawyers } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
 const specialtyOptions = [
   { value: "all", label: "همه تخصص‌ها" },
@@ -30,8 +31,16 @@ const sortOptions = [
   { value: "name", label: "نام" },
 ];
 
-export function LawyersExplorer() {
-  const [query, setQuery] = useState("");
+export function LawyersExplorer({
+  embedded = false,
+  panelPrefix,
+  initialQuery = "",
+}: {
+  embedded?: boolean;
+  panelPrefix?: "/account" | "/lawyer" | "/admin";
+  initialQuery?: string;
+}) {
+  const [query, setQuery] = useState(initialQuery);
   const [specialty, setSpecialty] = useState("all");
   const [city, setCity] = useState("all");
   const [sort, setSort] = useState("rating");
@@ -57,8 +66,8 @@ export function LawyersExplorer() {
   }, [city, query, sort, specialty]);
 
   return (
-    <section className="relative z-10 bg-paper py-12 sm:py-14">
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+    <section className={cn("relative z-10", embedded ? "mt-8" : "bg-paper py-12 sm:py-14")}>
+      <div className={cn(embedded ? "w-full" : "mx-auto w-full max-w-6xl px-4 sm:px-6")}>
         <div className="mb-8 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-navy/8 sm:p-5">
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,11rem))]">
             <label className="relative">
@@ -100,7 +109,20 @@ export function LawyersExplorer() {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((lawyer) => (
-              <LawyerCard key={lawyer.slug} lawyer={lawyer} />
+              <LawyerCard
+                key={lawyer.slug}
+                lawyer={lawyer}
+                profileHref={
+                  panelPrefix ? `${panelPrefix}/lawyers/${lawyer.slug}` : undefined
+                }
+                consultHref={
+                  panelPrefix === "/account"
+                    ? `/account/consult?lawyer=${lawyer.slug}`
+                    : panelPrefix
+                      ? `/consult?lawyer=${lawyer.slug}`
+                      : undefined
+                }
+              />
             ))}
           </div>
         )}

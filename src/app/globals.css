@@ -42,8 +42,9 @@
   --color-navy-deep: #081628;
   --color-navy-mid: #163a5f;
   --color-gold: #c9a227;
-  --color-gold-bright: #d4b03a;
+  --color-gold-bright: #c9a227;
   --color-gold-deep: #9a7a16;
+  --color-gold-wash: #f4ead0;
   --color-paper: #f6f4ef;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -107,8 +108,14 @@
   scrollbar-width: none;
 }
 
-.no-scrollbar::-webkit-scrollbar {
+.no-scrollbar::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar-button,
+.no-scrollbar::-webkit-scrollbar-thumb,
+.no-scrollbar::-webkit-scrollbar-track,
+.no-scrollbar::-webkit-scrollbar-corner {
   display: none;
+  width: 0;
+  height: 0;
 }
 
 @keyframes hero-fade-up {
@@ -149,10 +156,10 @@
 @keyframes hero-cta-glow {
   0%,
   100% {
-    box-shadow: 0 10px 30px -12px rgb(201 162 39 / 0.45);
+    box-shadow: none;
   }
   50% {
-    box-shadow: 0 14px 36px -10px rgb(201 162 39 / 0.7);
+    box-shadow: none;
   }
 }
 
@@ -196,7 +203,7 @@
 }
 
 .hero-glow {
-  background: radial-gradient(circle at 50% 120%, rgb(201 162 39 / 0.12), transparent 55%);
+  background: transparent;
 }
 
 .hero-grid {

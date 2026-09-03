@@ -9,14 +9,29 @@ datasource db {
 }
 
 model User {
-  id            String          @id @default(uuid())
-  fullName      String
-  phone         String          @unique
-  passwordHash  String
-  createdAt     DateTime        @default(now())
-  sessions      Session[]
-  consultations Consultation[]
-  draft         ConsultDraft?
+  id             String          @id @default(uuid())
+  fullName       String
+  phone          String          @unique
+  passwordHash   String
+  role           String          @default("client")
+  lawyerSlug     String?         @unique
+  walletBalance  Int             @default(0)
+  email          String?
+  address        String?         @db.VarChar(160)
+  avatarName     String?
+  lastLoginAt    DateTime?
+  createdAt      DateTime        @default(now())
+  sessions       Session[]
+  consultations  Consultation[]
+  draft          ConsultDraft?
+  conversations  Conversation[]
+  walletEntries  WalletEntry[]
+  messages       Message[]
+  ratings        Rating[]
+  documents      ConsultationDocument[]
+  cases          Case[]
+  appointments   Appointment[]
+  lawyerNotes    LawyerNote[]
 }
 
 model Session {
@@ -30,17 +45,17 @@ model Session {
 }
 
 model Consultation {
-  id               String   @id @default(uuid())
+  id               String         @id @default(uuid())
   userId           String
-  trackingCode     String   @unique
-  createdAt        DateTime @default(now())
+  trackingCode     String         @unique
+  createdAt        DateTime       @default(now())
   channel          String
   service          String
   lawyerMode       String
   lawyerSlug       String?
   lawyerVisible    Boolean
   subject          String
-  message          String   @db.Text
+  message          String         @db.Text
   urgency          String
   caseStage        String
   city             String?
@@ -56,9 +71,31 @@ model Consultation {
   discountPercent  Int
   paymentStatus    String
   status           String
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cancelledAt      DateTime?
+  cancelReason     String?
+  refundedToman    Int            @default(0)
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation     Conversation?
+  documents        ConsultationDocument[]
+  case             Case?
 
   @@index([userId])
+  @@index([lawyerSlug, status])
+}
+
+model ConsultationDocument {
+  id             String        @id @default(uuid())
+  userId         String
+  consultationId String?
+  storedName     String
+  originalName   String
+  mimeType       String
+  size           Int
+  createdAt      DateTime      @default(now())
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consultation   Consultation? @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, consultationId])
 }
 
 model ConsultDraft {
@@ -66,4 +103,156 @@ model ConsultDraft {
   payload   Json
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id               String       @id @default(uuid())
+  consultationId   String       @unique
+  userId           String
+  lawyerSlug       String
+  createdAt        DateTime     @default(now())
+  closedAt         DateTime?
+  phoneCallDoneAt  DateTime?
+  videoStartedAt   DateTime?
+  videoEndedAt     DateTime?
+  closeSummary     String?      @db.Text
+  consultation     Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages         Message[]
+  rating           Rating?
+  appointments     Appointment[]
+  notes            LawyerNote[]
+
+  @@index([userId])
+  @@index([lawyerSlug])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  authorRole     String
+  body           String       @db.Text
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+}
+
+model Rating {
+  id             String       @id @default(uuid())
+  conversationId String       @unique
+  userId         String
+  score          Int
+  comment        String?      @db.Text
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Case {
+  id             String        @id @default(uuid())
+  caseNumber     String        @unique
+  consultationId String?       @unique
+  userId         String
+  lawyerSlug     String
+  title          String
+  summary        String        @db.Text
+  authority      String?
+  courtBranch    String?
+  fileNumber     String?
+  stage          String
+  status         String
+  feeToman       Int           @default(0)
+  paidToman      Int           @default(0)
+  nextActionAt   DateTime?
+  nextActionNote String?       @db.VarChar(300)
+  clientNote     String?       @db.Text
+  closeNote      String?       @db.Text
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  acceptedAt     DateTime?
+  declinedAt     DateTime?
+  closedAt       DateTime?
+  consultation   Consultation? @relation(fields: [consultationId], references: [id], onDelete: SetNull)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events         CaseEvent[]
+
+  @@index([lawyerSlug, status])
+  @@index([userId, status])
+}
+
+model CaseEvent {
+  id              String   @id @default(uuid())
+  caseId          String
+  kind            String
+  title           String
+  body            String?  @db.Text
+  happensAt       DateTime?
+  authorRole      String
+  visibleToClient Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  case            Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, createdAt])
+}
+
+model Appointment {
+  id             String        @id @default(uuid())
+  userId         String
+  lawyerSlug     String
+  conversationId String?
+  caseId         String?
+  kind           String
+  scheduledAt    DateTime
+  minutes        Int           @default(30)
+  status         String        @default("scheduled")
+  note           String?       @db.VarChar(300)
+  createdAt      DateTime      @default(now())
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([lawyerSlug, scheduledAt])
+  @@index([userId, scheduledAt])
+}
+
+model LawyerNote {
+  id             String        @id @default(uuid())
+  lawyerSlug     String
+  userId         String?
+  conversationId String?
+  caseId         String?
+  body           String        @db.Text
+  createdAt      DateTime      @default(now())
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([lawyerSlug, createdAt])
+  @@index([conversationId])
+}
+
+model LawyerProfile {
+  slug         String   @id
+  headline     String?  @db.VarChar(160)
+  bio          String?  @db.Text
+  officeHours  String?  @db.VarChar(160)
+  officePhone  String?  @db.VarChar(40)
+  city         String?  @db.VarChar(60)
+  acceptingNew Boolean  @default(true)
+  autoAccept   Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+}
+
+model WalletEntry {
+  id             String   @id @default(uuid())
+  userId         String
+  amount         Int
+  reason         String
+  consultationId String?
+  note           String?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

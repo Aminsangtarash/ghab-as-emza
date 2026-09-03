@@ -7,7 +7,7 @@ export function AboutHero() {
         className="pointer-events-none absolute inset-y-10 left-6 hidden w-28 opacity-25 lg:block"
         style={{
           backgroundImage:
-            "radial-gradient(circle, rgb(201 162 39 / 0.7) 1.4px, transparent 1.5px)",
+            "radial-gradient(circle, rgb(255 255 255 / 0.35) 1.4px, transparent 1.5px)",
           backgroundSize: "13px 13px",
         }}
         aria-hidden="true"

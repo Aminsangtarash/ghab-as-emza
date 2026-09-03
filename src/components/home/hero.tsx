@@ -101,7 +101,7 @@ export function Hero() {
                 href="/consult"
                 className={cn(
                   buttonVariants({ size: "lg" }),
-                  "hero-cta h-11 bg-gold px-6 text-sm text-navy-deep shadow-lg shadow-gold/20 hover:bg-gold-bright sm:h-12 sm:px-7 sm:text-base",
+                  "h-11 bg-gold px-6 text-sm text-navy-deep hover:bg-gold sm:h-12 sm:px-7 sm:text-base",
                 )}
               >
                 مشاوره آنلاین

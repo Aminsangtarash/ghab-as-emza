@@ -23,6 +23,7 @@ export default async function AccountConsultPage({
   return (
     <div>
       <p className="mb-1 text-sm font-medium text-gold-deep">مشاوره</p>
+      <span className="mb-4 mt-3 block h-1 w-12 rounded-full bg-gold" />
       <h1 className="font-heading text-2xl font-bold text-navy">ثبت درخواست</h1>
       <p className="mt-2 mb-6 max-w-2xl text-sm leading-7 text-navy/65">
         همان مراحل سایت؛ پس از پرداخت آزمایشی، درخواست در فهرست پنل شما ثبت می‌شود.

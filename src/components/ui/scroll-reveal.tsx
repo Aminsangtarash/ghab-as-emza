@@ -33,7 +33,11 @@ export function ScrollReveal({
           observer.disconnect();
         }
       },
-      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
+      {
+        root: node.closest("[data-site-canvas]"),
+        threshold: 0.12,
+        rootMargin: "0px 0px -8% 0px",
+      },
     );
 
     observer.observe(node);

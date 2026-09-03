@@ -27,9 +27,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="fa"
       dir="rtl"
-      className={`${vazirmatn.variable} ${vazirmatn.className} h-full antialiased`}
+      className={`${vazirmatn.variable} ${vazirmatn.className} h-full overflow-hidden antialiased`}
     >
-      <body className="min-h-full bg-paper font-sans text-navy">
+      <body className="h-full overflow-hidden bg-white font-sans text-navy">
         <DirectionProvider direction="rtl">
           <AuthProvider>
             <AppFrame>{children}</AppFrame>

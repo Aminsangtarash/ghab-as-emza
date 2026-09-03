@@ -45,10 +45,28 @@ export const consultChannelMeta: Record<
 };
 
 export const urgencyMeta: Record<Urgency, { title: string; hint: string }> = {
-  normal: { title: "عادی", hint: "پاسخ در ساعات کاری، بدون فوریت خاص" },
-  soon: { title: "زودتر", hint: "ترجیح می‌دهید در اولین نوبت خالی بررسی شود" },
-  urgent: { title: "فوری", hint: "مهلت قانونی یا امضای نزدیک دارید" },
+  normal: { title: "عادی", hint: "پاسخ در ساعات کاری؛ تعرفه پایه خدمت" },
+  soon: { title: "زودتر", hint: "اولین نوبت خالی؛ ۲۵٪ به مبلغ خدمت اضافه می‌شود" },
+  urgent: { title: "فوری", hint: "مهلت نزدیک؛ ۵۰٪ به مبلغ خدمت اضافه می‌شود" },
 };
+
+/** درصد افزایش روی تعرفه خدمت، قبل از کد تخفیف */
+export const urgencyFeePercent: Record<Urgency, number> = {
+  normal: 0,
+  soon: 25,
+  urgent: 50,
+};
+
+export function applyUrgencyToFee(baseToman: number, urgency: Urgency) {
+  if (baseToman <= 0) return 0;
+  const percent = urgencyFeePercent[urgency];
+  if (!percent) return baseToman;
+  return Math.round((baseToman * (100 + percent)) / 100);
+}
+
+export function consultBaseFeeToman(serviceSlug: string, urgency: Urgency) {
+  return applyUrgencyToFee(serviceFeeToman(serviceSlug), urgency);
+}
 
 export const caseStageMeta: Record<CaseStage, string> = {
   "before-sign": "قبل از امضا یا اقدام",
@@ -91,6 +109,7 @@ export const consultationStatuses = [
   "awaiting-lawyer",
   "in-progress",
   "closed",
+  "cancelled",
 ] as const;
 export type ConsultationStatus = (typeof consultationStatuses)[number];
 
@@ -104,15 +123,19 @@ export const consultationStatusMeta: Record<
   },
   "awaiting-lawyer": {
     title: "در انتظار تأیید وکیل",
-    hint: "وکیل انتخابی باید پذیرش درخواست را تأیید کند.",
+    hint: "وکیل انتخابی باید پذیرش درخواست را تأیید کند. در صورت رد، مبلغ به کیف پول برمی‌گردد.",
   },
   "in-progress": {
-    title: "در حال پیگیری",
-    hint: "درخواست به مرحله مشاوره یا هماهنگی رسیده است.",
+    title: "گفتگو فعال",
+    hint: "وکیل درخواست را پذیرفته است. گفتگو، تماس تصویری یا هماهنگی تماس تلفنی از بخش گفتگوها انجام می‌شود.",
   },
   closed: {
     title: "بسته شده",
-    hint: "این درخواست به پایان رسیده است.",
+    hint: "وکیل این مورد را بسته است. می‌توانید به جلسه امتیاز بدهید.",
+  },
+  cancelled: {
+    title: "لغو شده",
+    hint: "درخواست لغو شد. اگر پرداختی انجام شده بود، به کیف پول شما برگشت.",
   },
 };
 
@@ -120,7 +143,10 @@ export function initialConsultationStatus(lawyerMode: LawyerMode): ConsultationS
   return lawyerMode === "assign" ? "awaiting-operator" : "awaiting-lawyer";
 }
 
-export const paymentStatusMeta: Record<"free" | "stub-paid", string> = {
+export type PaymentStatus = "free" | "stub-paid" | "refunded-wallet";
+
+export const paymentStatusMeta: Record<PaymentStatus, string> = {
   free: "رایگان",
   "stub-paid": "پرداخت‌شده (آزمایشی)",
+  "refunded-wallet": "برگشت به کیف پول",
 };

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
 import { PageHero } from "@/components/page-hero";
 import { getServerUser } from "@/lib/auth";
+import { panelHome } from "@/lib/account";
 import { safeInternalPath } from "@/lib/paths";
 
 export const metadata: Metadata = {
@@ -13,8 +14,9 @@ export const metadata: Metadata = {
 export default async function RegisterPage({ searchParams }: PageProps<"/register">) {
   const params = await searchParams;
   const nextHref = safeInternalPath(typeof params.next === "string" ? params.next : undefined);
-  if (await getServerUser()) {
-    redirect(nextHref || "/account");
+  const user = await getServerUser();
+  if (user) {
+    redirect(nextHref || panelHome(user.role));
   }
 
   return (

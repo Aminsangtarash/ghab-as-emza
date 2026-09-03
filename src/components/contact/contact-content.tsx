@@ -63,17 +63,23 @@ const features = [
   },
 ];
 
-export function ContactContent() {
+export function ContactContent({
+  embedded = false,
+  consultHref = "/consult",
+}: {
+  embedded?: boolean;
+  consultHref?: string;
+}) {
   return (
-    <section className="relative z-10 bg-paper pb-16 pt-10 sm:pt-12">
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+    <section className={embedded ? "relative z-10" : "relative z-10 bg-paper pb-16 pt-10 sm:pt-12"}>
+      <div className={embedded ? "w-full" : "mx-auto w-full max-w-6xl px-4 sm:px-6"}>
         <div className="grid gap-10 rounded-3xl bg-white p-6 shadow-lg ring-1 ring-navy/8 sm:p-10 lg:grid-cols-2 lg:gap-14">
           <div>
             <span className="mb-3 block h-1 w-10 rounded-full bg-gold" />
             <h2 className="font-heading text-2xl font-bold text-navy">فرم تماس</h2>
             <p className="mt-2 mb-6 text-sm leading-7 text-navy/65">
               برای هماهنگی اداری این فرم را پر کنید. موضوع حقوقی را از{" "}
-              <Link href="/consult" className="font-medium text-navy underline decoration-gold/70 underline-offset-4">
+              <Link href={consultHref} className="font-medium text-navy underline decoration-gold/70 underline-offset-4">
                 مشاوره آنلاین
               </Link>{" "}
               ارسال کنید.
@@ -129,7 +135,7 @@ export function ContactContent() {
           </div>
         </div>
 
-        <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={embedded ? "mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4" : "mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4"}>
           {features.map((item) => (
             <div key={item.title} className="flex gap-4">
               <span className="flex size-12 shrink-0 items-center justify-center rounded-full border border-navy/20 text-navy">

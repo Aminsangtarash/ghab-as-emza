@@ -9,7 +9,18 @@ import type { Lawyer } from "@/lib/data";
 import { toFaDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export function LawyerCard({ lawyer }: { lawyer: Lawyer }) {
+export function LawyerCard({
+  lawyer,
+  profileHref,
+  consultHref,
+}: {
+  lawyer: Lawyer;
+  profileHref?: string;
+  consultHref?: string;
+}) {
+  const profile = profileHref ?? `/lawyers/${lawyer.slug}`;
+  const consult = consultHref ?? `/consult?lawyer=${lawyer.slug}`;
+
   return (
     <Card className="h-full gap-0 py-0 ring-navy/8 transition duration-300 hover:-translate-y-1 hover:shadow-lg">
       <CardContent className="flex h-full flex-col p-6">
@@ -34,7 +45,7 @@ export function LawyerCard({ lawyer }: { lawyer: Lawyer }) {
 
         <div className="mt-6 flex gap-2">
           <Link
-            href={`/consult?lawyer=${lawyer.slug}`}
+            href={consult}
             className={cn(
               buttonVariants(),
               "h-10 flex-1 gap-1.5 bg-gold text-navy-deep hover:bg-gold-bright",
@@ -44,7 +55,7 @@ export function LawyerCard({ lawyer }: { lawyer: Lawyer }) {
             رزرو مشاوره
           </Link>
           <Link
-            href={`/lawyers/${lawyer.slug}`}
+            href={profile}
             className={cn(
               buttonVariants({ variant: "outline" }),
               "h-10 flex-1 border-navy/15 text-navy hover:bg-navy/5",

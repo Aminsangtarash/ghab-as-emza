@@ -9,6 +9,7 @@ export function ChoiceCard({
   badge,
   icon,
   onSelect,
+  invalid = false,
   className,
 }: {
   selected: boolean;
@@ -17,6 +18,7 @@ export function ChoiceCard({
   badge?: string;
   icon?: ReactNode;
   onSelect: () => void;
+  invalid?: boolean;
   className?: string;
 }) {
   return (
@@ -28,7 +30,9 @@ export function ChoiceCard({
         "flex h-full w-full flex-col rounded-2xl border p-5 text-start transition duration-200",
         selected
           ? "border-gold bg-gold/8 shadow-sm ring-1 ring-gold/25"
-          : "border-navy/10 bg-white hover:border-navy/25 hover:bg-paper/60",
+          : invalid
+            ? "border-red-500 bg-red-50 hover:border-red-600"
+            : "border-navy/10 bg-white hover:border-navy/25 hover:bg-paper/60",
         className,
       )}
     >

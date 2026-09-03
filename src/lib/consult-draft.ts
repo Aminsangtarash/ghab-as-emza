@@ -28,6 +28,7 @@ export type ConsultWizardDraft = {
   email: string;
   consent: boolean;
   discountCode: string;
+  documentIds: string[];
 };
 
 export type ConsultDraftState = {
@@ -57,6 +58,7 @@ export function emptyConsultDraft(seed?: { lawyerSlug?: string; service?: string
     email: "",
     consent: false,
     discountCode: "",
+    documentIds: [],
   };
 }
 
@@ -69,6 +71,13 @@ function asEnum<T extends string>(value: unknown, allowed: readonly T[], fallbac
 function asString(value: unknown, max = 3000) {
   if (typeof value !== "string") return "";
   return value.slice(0, max);
+}
+
+function asDocumentIds(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === "string" && /^[0-9a-f-]{36}$/i.test(item))
+    .slice(0, 5);
 }
 
 export function parseConsultDraftState(input: unknown, lastStep = LAST_STEP): ConsultDraftState | null {
@@ -103,6 +112,7 @@ export function parseConsultDraftState(input: unknown, lastStep = LAST_STEP): Co
       email: asString(draftRaw.email, 120),
       consent: draftRaw.consent === true,
       discountCode: asString(draftRaw.discountCode, 24),
+      documentIds: asDocumentIds(draftRaw.documentIds),
     },
   };
 }

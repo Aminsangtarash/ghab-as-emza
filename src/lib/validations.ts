@@ -112,3 +112,28 @@ export const registerSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+export const profileUpdateSchema = z.object({
+  fullName: z.string().trim().min(3, "نام باید حداقل سه نویسه باشد.").max(80, "نام بیش از حد طولانی است."),
+  email: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .transform((value) => (value ? value : undefined))
+    .refine((value) => !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), "ایمیل معتبر نیست."),
+  address: z
+    .string()
+    .trim()
+    .max(160, "آدرس بیش از حد طولانی است.")
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+});
+
+export const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(8, "رمز فعلی باید حداقل ۸ نویسه باشد."),
+  newPassword: z.string().min(8, "رمز جدید باید حداقل ۸ نویسه باشد."),
+});
+
+export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
+export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;

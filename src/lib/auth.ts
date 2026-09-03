@@ -5,8 +5,11 @@ import {
   createUser,
   findUserByPhone,
   getUserBySession,
-  type PublicUser,
+  markUserLogin,
+  toPublicUser,
 } from "@/lib/store";
+
+export { toPublicUser };
 
 export const SESSION_COOKIE = "gae_session";
 
@@ -16,10 +19,6 @@ export function hashPassword(password: string) {
 
 export function newSessionToken() {
   return randomBytes(24).toString("hex");
-}
-
-export function toPublicUser(user: { id: string; fullName: string; phone: string }): PublicUser {
-  return { id: user.id, fullName: user.fullName, phone: user.phone };
 }
 
 export async function getRequestUser(request: {
@@ -49,7 +48,8 @@ export async function registerAccount(fullName: string, phone: string, password:
     });
     const token = newSessionToken();
     await createSession(token, user.id);
-    return { user: toPublicUser(user), token };
+    const { passwordHash: _passwordHash, ...publicUser } = user;
+    return { user: publicUser, token };
   } catch (error) {
     if (
       error &&
@@ -70,7 +70,7 @@ export async function loginAccount(phone: string, password: string) {
   }
   const token = newSessionToken();
   await createSession(token, user.id);
-  return { user: toPublicUser(user), token };
+  return { user: await markUserLogin(user.id), token };
 }
 
 export function sessionCookieOptions() {

@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { panelHome } from "@/lib/account";
 import { cn } from "@/lib/utils";
 
 type AuthMode = "login" | "register";
@@ -54,14 +55,14 @@ export function AuthForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json()) as { error?: string; user?: { role?: string } };
       if (!response.ok) {
         setMessage(payload.error ?? "ورود یا ثبت نام انجام نشد.");
         return;
       }
       await refresh();
       if (variant === "page") {
-        router.push(nextHref || "/account");
+        router.push(nextHref || panelHome(payload.user?.role));
         router.refresh();
       }
     } catch {

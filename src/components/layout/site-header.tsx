@@ -8,6 +8,7 @@ import { MenuIcon, XIcon } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { Logo } from "@/components/logo";
 import { buttonVariants } from "@/components/ui/button";
+import { panelHome, panelLabel } from "@/lib/account";
 import { navItems } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -17,14 +18,17 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
+    const canvas = document.querySelector<HTMLElement>("[data-site-canvas]");
+    if (canvas) {
+      canvas.style.overflowY = menuOpen ? "hidden" : "";
+    }
     return () => {
-      document.body.style.overflow = "";
+      if (canvas) canvas.style.overflowY = "";
     };
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-navy/10 bg-white/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-navy/10 bg-gold-wash/90 backdrop-blur-md">
       <div className="mx-auto flex h-[4.5rem] w-full max-w-6xl items-center gap-4 px-4 sm:px-6">
         <Logo />
         <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex" aria-label="منوی اصلی">
@@ -53,13 +57,13 @@ export function SiteHeader() {
           {status === "user" && user ? (
             <>
               <Link
-                href="/account"
+                href={panelHome(user.role)}
                 className={cn(
                   buttonVariants({ size: "lg" }),
                   "hidden h-10 bg-navy px-4 text-white hover:bg-navy-mid sm:inline-flex",
                 )}
               >
-                پنل کاربری
+                {panelLabel(user.role)}
               </Link>
               <button
                 type="button"
@@ -98,7 +102,7 @@ export function SiteHeader() {
         </div>
       </div>
       {menuOpen && (
-        <div className="border-t border-navy/10 bg-white lg:hidden">
+        <div className="border-t border-navy/10 bg-gold-wash lg:hidden">
           <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-4 sm:px-6" aria-label="منوی موبایل">
             {navItems.map((item) => (
               <Link
@@ -113,14 +117,14 @@ export function SiteHeader() {
             {status === "user" && user ? (
               <>
                 <Link
-                  href="/account"
+                  href={panelHome(user.role)}
                   onClick={() => setMenuOpen(false)}
                   className={cn(
                     buttonVariants(),
                     "mt-2 h-10 bg-navy text-white hover:bg-navy-mid",
                   )}
                 >
-                  پنل کاربری
+                  {panelLabel(user.role)}
                 </Link>
                 <button
                   type="button"
