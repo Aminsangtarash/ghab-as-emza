@@ -18,17 +18,14 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const canvas = document.querySelector<HTMLElement>("[data-site-canvas]");
-    if (canvas) {
-      canvas.style.overflowY = menuOpen ? "hidden" : "";
-    }
+    document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
-      if (canvas) canvas.style.overflowY = "";
+      document.body.style.overflow = "";
     };
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-navy/10 bg-gold-wash/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-navy/10 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex h-[4.5rem] w-full max-w-6xl items-center gap-4 px-4 sm:px-6">
         <Logo />
         <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex" aria-label="منوی اصلی">
@@ -102,7 +99,7 @@ export function SiteHeader() {
         </div>
       </div>
       {menuOpen && (
-        <div className="border-t border-navy/10 bg-gold-wash lg:hidden">
+        <div className="border-t border-navy/10 bg-white lg:hidden">
           <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-4 sm:px-6" aria-label="منوی موبایل">
             {navItems.map((item) => (
               <Link

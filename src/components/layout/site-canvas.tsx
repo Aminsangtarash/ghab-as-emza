@@ -121,7 +121,7 @@ export function GoldCanvas({
 
   return (
     <div
-      className={cn("relative overflow-hidden rounded-[1.6rem] bg-gold-wash", fill ? "h-full" : "min-h-0 flex-1")}
+      className={cn("relative overflow-hidden rounded-[1.6rem] bg-gold/8", fill ? "h-full" : "min-h-0 flex-1")}
       onMouseEnter={() => {
         hoveringRef.current = true;
         reveal();

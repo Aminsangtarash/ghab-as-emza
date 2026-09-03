@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 
-import { GoldCanvas, SiteViewport } from "@/components/layout/site-canvas";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { isPanelPath } from "@/lib/account";
@@ -14,12 +13,10 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SiteViewport>
-      <GoldCanvas fill className="flex flex-col">
-        <SiteHeader />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
-      </GoldCanvas>
-    </SiteViewport>
+    <div className="flex min-h-dvh flex-col bg-white">
+      <SiteHeader />
+      <main className="flex-1">{children}</main>
+      <SiteFooter />
+    </div>
   );
 }
