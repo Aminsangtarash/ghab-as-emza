@@ -1,4 +1,4 @@
-import type { Consultation, User } from "@/generated/prisma";
+import type { Consultation } from "@/generated/prisma";
 import { Prisma } from "@/generated/prisma";
 
 import {
@@ -18,83 +18,28 @@ import { attachPendingDocuments, removeStoredFiles } from "@/lib/consult-documen
 import { prisma } from "@/lib/db";
 import { quotePayment } from "@/lib/promos";
 import type { ConsultationInput } from "@/lib/validations";
+import type { ClientConsultation, StoredConsultation } from "@/lib/store-types";
 
-export type UserRole = "client" | "lawyer" | "admin" | "manager";
+export type {
+  ClientConsultation,
+  PublicUser,
+  StoredConsultation,
+  StoredUser,
+  UserRole,
+} from "@/lib/store-types";
+export { parseUserRole } from "@/lib/store-types";
 
-export function parseUserRole(role?: string | null): UserRole {
-  if (role === "lawyer" || role === "admin" || role === "manager") return role;
-  return "client";
-}
-
-export type PublicUser = {
-  id: string;
-  fullName: string;
-  phone: string;
-  role: UserRole;
-  lawyerSlug?: string;
-  walletBalance: number;
-  email?: string;
-  address?: string;
-  avatarName?: string;
-  createdAt: string;
-  lastLoginAt?: string;
-};
-
-export type StoredUser = PublicUser & {
-  passwordHash: string;
-};
-
-export type StoredConsultation = ConsultationInput & {
-  id: string;
-  userId: string;
-  trackingCode: string;
-  createdAt: string;
-  lawyerVisible: boolean;
-  feeToman: number;
-  originalFeeToman: number;
-  discountCode?: string;
-  discountPercent: number;
-  paymentStatus: PaymentStatus;
-  status: ConsultationStatus;
-  conversationId?: string;
-  refundedToman: number;
-  cancelReason?: string;
-  documents: { id: string; originalName: string; size: number }[];
-};
-
-export type ClientConsultation = {
-  id: string;
-  trackingCode: string;
-  createdAt: string;
-  channel: StoredConsultation["channel"];
-  service: string;
-  serviceTitle: string;
-  lawyerMode: StoredConsultation["lawyerMode"];
-  lawyerName?: string;
-  lawyerSlug?: string;
-  lawyerPending: boolean;
-  lawyerAccepted: boolean;
-  subject: string;
-  message: string;
-  urgency: StoredConsultation["urgency"];
-  caseStage: StoredConsultation["caseStage"];
-  city?: string;
-  hasDocuments: StoredConsultation["hasDocuments"];
-  preferredSlot?: string;
-  fullName: string;
-  phone: string;
-  email?: string;
-  feeToman: number;
-  originalFeeToman: number;
-  discountCode?: string;
-  discountPercent: number;
-  paymentStatus: PaymentStatus;
-  status: ConsultationStatus;
-  conversationId?: string;
-  refundedToman: number;
-  cancelReason?: string;
-  documents: { id: string; originalName: string; size: number }[];
-};
+export {
+  createSession,
+  createUser,
+  deleteSession,
+  findUserByPhone,
+  getUserBySession,
+  markUserLogin,
+  toPublicUser,
+  updateUserPassword,
+  updateUserProfile,
+} from "@/lib/store-users";
 
 export function toClientConsultation(item: StoredConsultation): ClientConsultation {
   return {
@@ -129,29 +74,6 @@ export function toClientConsultation(item: StoredConsultation): ClientConsultati
     refundedToman: item.refundedToman,
     cancelReason: item.cancelReason,
     documents: item.documents ?? [],
-  };
-}
-
-export function toPublicUser(user: User): PublicUser {
-  return {
-    id: user.id,
-    fullName: user.fullName,
-    phone: user.phone,
-    role: parseUserRole(user.role),
-    lawyerSlug: user.lawyerSlug ?? undefined,
-    walletBalance: user.walletBalance,
-    email: user.email ?? undefined,
-    address: user.address ?? undefined,
-    avatarName: user.avatarName ?? undefined,
-    createdAt: user.createdAt.toISOString(),
-    lastLoginAt: user.lastLoginAt?.toISOString(),
-  };
-}
-
-function toStoredUser(user: User): StoredUser {
-  return {
-    ...toPublicUser(user),
-    passwordHash: user.passwordHash,
   };
 }
 
@@ -193,85 +115,6 @@ function toStoredConsultation(
     cancelReason: row.cancelReason ?? undefined,
     documents: row.documents ?? [],
   };
-}
-
-export async function createUser(input: { fullName: string; phone: string; passwordHash: string }) {
-  const user = await prisma.user.create({
-    data: {
-      fullName: input.fullName,
-      phone: input.phone,
-      passwordHash: input.passwordHash,
-      lastLoginAt: new Date(),
-    },
-  });
-  return toStoredUser(user);
-}
-
-export async function markUserLogin(userId: string) {
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: { lastLoginAt: new Date() },
-  });
-  return toPublicUser(user);
-}
-
-export async function updateUserProfile(
-  userId: string,
-  input: { fullName: string; email?: string; address?: string },
-) {
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      fullName: input.fullName,
-      email: input.email ?? null,
-      address: input.address ?? null,
-    },
-  });
-  return toPublicUser(user);
-}
-
-export async function updateUserPassword(userId: string, currentHash: string, nextHash: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user || user.passwordHash !== currentHash) {
-    return { error: "رمز فعلی نادرست است." as const };
-  }
-  await prisma.user.update({
-    where: { id: userId },
-    data: { passwordHash: nextHash },
-  });
-  return { ok: true as const };
-}
-
-export async function findUserByPhone(phone: string) {
-  const user = await prisma.user.findUnique({ where: { phone } });
-  return user ? toStoredUser(user) : undefined;
-}
-
-export async function createSession(token: string, userId: string) {
-  await prisma.session.create({
-    data: {
-      token,
-      userId,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    },
-  });
-}
-
-export async function deleteSession(token: string) {
-  await prisma.session.deleteMany({ where: { token } });
-}
-
-export async function getUserBySession(token: string) {
-  const session = await prisma.session.findUnique({
-    where: { token },
-    include: { user: true },
-  });
-  if (!session) return null;
-  if (session.expiresAt.getTime() < Date.now()) {
-    await prisma.session.deleteMany({ where: { token } });
-    return null;
-  }
-  return toPublicUser(session.user);
 }
 
 function isUniqueConstraintError(error: unknown) {
@@ -322,7 +165,7 @@ export async function saveConsultation(entry: ConsultationInput, userId: string,
     feeToman: quoted.feeToman,
     discountPercent: quoted.discountPercent,
     paymentStatus: quoted.feeToman <= 0 ? "free" : "stub-paid",
-    status: initialConsultationStatus(entry.lawyerMode),
+    status: initialConsultationStatus(entry.lawyerMode, entry.service),
   };
 
   let row: Consultation | null = null;

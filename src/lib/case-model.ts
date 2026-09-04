@@ -96,6 +96,18 @@ export type ClientCase = {
   clientName: string;
   clientPhone?: string;
   trackingCode?: string;
+  conversationId?: string;
+  documents: { id: string; originalName: string; size: number; mimeType?: string }[];
+  documentRequestItems: {
+    id: string;
+    title: string;
+    status: "pending" | "uploaded" | "approved" | "rejected";
+    documentId?: string;
+    documentName?: string;
+    documentMimeType?: string;
+    documentSize?: number;
+    rejectReason?: string;
+  }[];
   createdAt: string;
   acceptedAt?: string;
   declinedAt?: string;

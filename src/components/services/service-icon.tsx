@@ -1,19 +1,19 @@
 import {
-  FilePenLineIcon,
+  CalendarDaysIcon,
   FileSearchIcon,
   HeadsetIcon,
-  ScaleIcon,
   ShieldIcon,
   UserRoundIcon,
+  ZapIcon,
 } from "lucide-react";
 
 import type { Service } from "@/lib/data";
 
 const icons = {
-  file: FilePenLineIcon,
+  urgent: ZapIcon,
   review: FileSearchIcon,
   consult: HeadsetIcon,
-  arbitration: ScaleIcon,
+  inperson: CalendarDaysIcon,
   cases: ShieldIcon,
   lawyers: UserRoundIcon,
 } as const;

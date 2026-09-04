@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { LockIcon, Trash2Icon } from "lucide-react";
 
 import {
@@ -16,6 +15,7 @@ import {
   textareaClass,
 } from "@/components/lawyer/lawyer-ui";
 import { buttonVariants } from "@/components/ui/button";
+import { SiteDataTable, SiteTableLink } from "@/components/ui/site-data-table";
 import { formatFaDateTime } from "@/lib/format";
 import type { LawyerNoteItem } from "@/lib/lawyer-desk";
 import { cn } from "@/lib/utils";
@@ -101,43 +101,75 @@ export function LawyerNotes() {
 
       {items === null ? (
         <div className={cn(panelCard, "px-6 py-10 text-sm text-navy/50")}>در حال بارگذاری…</div>
-      ) : items.length === 0 ? (
-        <div className={cn(panelCard, "px-6 py-10")}>
-          <EmptyRow>یادداشتی ثبت نشده است.</EmptyRow>
-        </div>
       ) : (
-        <ul className="space-y-3">
-          {items.map((item) => (
-            <li key={item.id} className={cn(panelCard, "px-5 py-4")}>
-              <p className="whitespace-pre-line text-sm leading-7 text-navy/75">{item.body}</p>
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-navy/40">
-                <span className="flex flex-wrap items-center gap-3">
-                  <span>{formatFaDateTime(item.createdAt)}</span>
-                  {item.clientName ? <span>موکل: {item.clientName}</span> : null}
-                  {item.conversationId ? (
-                    <Link href={`/lawyer/chats/${item.conversationId}`} className="text-navy/60 hover:text-navy">
-                      گفتگو
-                    </Link>
-                  ) : null}
-                  {item.caseId ? (
-                    <Link href={`/lawyer/cases/${item.caseId}`} className="text-navy/60 hover:text-navy">
-                      پرونده
-                    </Link>
-                  ) : null}
-                </span>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => void remove(item.id)}
-                  className="flex items-center gap-1 text-red-700 hover:underline"
-                >
-                  <Trash2Icon className="size-3" />
-                  حذف
-                </button>
+        <div className={cn(panelCard, "overflow-hidden p-0")}>
+          <SiteDataTable
+            rows={items}
+            rowKey={(item) => item.id}
+            pageSize={10}
+            minWidthClassName="min-w-[40rem]"
+            empty={
+              <div className="p-6">
+                <EmptyRow>یادداشتی ثبت نشده است.</EmptyRow>
               </div>
-            </li>
-          ))}
-        </ul>
+            }
+            columns={[
+              {
+                id: "body",
+                header: "متن",
+                headerClassName: "text-right",
+                className: "max-w-[20rem] text-right",
+                cell: (item) => <p className="line-clamp-2 whitespace-pre-line text-navy/75">{item.body}</p>,
+              },
+              {
+                id: "client",
+                header: "موکل",
+                hideOnMobile: true,
+                className: "whitespace-nowrap text-navy/60",
+                cell: (item) => item.clientName ?? "—",
+              },
+              {
+                id: "date",
+                header: "تاریخ",
+                className: "whitespace-nowrap text-center text-navy/50",
+                cell: (item) => formatFaDateTime(item.createdAt),
+              },
+              {
+                id: "links",
+                header: "پیوند",
+                hideOnMobile: true,
+                className: "text-center",
+                cell: (item) => (
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
+                    {item.conversationId ? (
+                      <SiteTableLink href={`/lawyer/chats/${item.conversationId}`}>گفتگو</SiteTableLink>
+                    ) : null}
+                    {item.caseId ? (
+                      <SiteTableLink href={`/lawyer/cases/${item.caseId}`}>پرونده</SiteTableLink>
+                    ) : null}
+                    {!item.conversationId && !item.caseId ? <span className="text-navy/35">—</span> : null}
+                  </div>
+                ),
+              },
+              {
+                id: "actions",
+                header: "اقدام",
+                className: "text-center",
+                cell: (item) => (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => void remove(item.id)}
+                    className="inline-flex items-center gap-1 text-xs text-red-700 hover:underline"
+                  >
+                    <Trash2Icon className="size-3" />
+                    حذف
+                  </button>
+                ),
+              },
+            ]}
+          />
+        </div>
       )}
     </div>
   );

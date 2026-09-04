@@ -4,8 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PhoneIcon, VideoIcon } from "lucide-react";
 
 import { ConsultDocumentList } from "@/components/consult/document-list";
+import { DocumentRequestCard } from "@/components/account/document-request-card";
 import { buttonVariants } from "@/components/ui/button";
 import type { ClientConversation, ClientMessage } from "@/lib/conversations";
+import type { ClientDocumentRequest } from "@/lib/document-request-types";
 import { consultChannelMeta } from "@/lib/consult";
 import { formatFaDateTime, toFaDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -19,19 +21,32 @@ export function ConversationThread({
 }) {
   const [summary, setSummary] = useState<ClientConversation | null>(null);
   const [messages, setMessages] = useState<ClientMessage[]>([]);
+  const [docRequests, setDocRequests] = useState<ClientDocumentRequest[]>([]);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [score, setScore] = useState(5);
   const [comment, setComment] = useState("");
   const [cameraOn, setCameraOn] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
+    const requestsPromise = fetch(`/api/conversations/${conversationId}/document-requests`, {
+      credentials: "include",
+    }).then(async (response) => {
+      if (!response.ok) return [] as ClientDocumentRequest[];
+      const payload = (await response.json()) as { items?: ClientDocumentRequest[] };
+      return payload.items ?? [];
+    });
+
     if (viewer === "user") {
-      const response = await fetch(`/api/conversations/${conversationId}`, { credentials: "include" });
+      const [response, requests] = await Promise.all([
+        fetch(`/api/conversations/${conversationId}`, { credentials: "include" }),
+        requestsPromise,
+      ]);
       const payload = (await response.json()) as {
         summary?: ClientConversation;
         messages?: ClientMessage[];
@@ -43,14 +58,18 @@ export function ConversationThread({
       }
       setSummary(payload.summary);
       setMessages(payload.messages ?? []);
+      setDocRequests(requests);
       return;
     }
-    const response = await fetch("/api/desk", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "get", conversationId }),
-    });
+    const [response, requests] = await Promise.all([
+      fetch("/api/desk", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "get", conversationId }),
+      }),
+      requestsPromise,
+    ]);
     const payload = (await response.json()) as {
       summary?: ClientConversation;
       messages?: ClientMessage[];
@@ -62,6 +81,7 @@ export function ConversationThread({
     }
     setSummary(payload.summary);
     setMessages(payload.messages ?? []);
+    setDocRequests(requests);
   }, [conversationId, viewer]);
 
   useEffect(() => {
@@ -80,14 +100,73 @@ export function ConversationThread({
     };
   }, []);
 
-  async function startCamera() {
+  async function requestMediaStream() {
+    if (!window.isSecureContext) {
+      throw Object.assign(new Error("insecure"), { name: "SecurityError" });
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw Object.assign(new Error("unsupported"), { name: "NotSupportedError" });
+    }
+
+    // بدون قید facingMode؛ روی دسکتاپ پایدارتر است و دیالوگ اجازه را باز می‌کند
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      return await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    } catch (firstError) {
+      const name = firstError instanceof DOMException ? firstError.name : "";
+      if (name === "NotFoundError" || name === "NotReadableError" || name === "OverconstrainedError") {
+        return await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+      // اگر فقط میکروفن رد شده، فقط دوربین را بخواه
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        return await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+      throw firstError;
+    }
+  }
+
+  function mediaErrorMessage(error: unknown) {
+    const name = error instanceof DOMException || (error && typeof error === "object" && "name" in error)
+      ? String((error as { name: string }).name)
+      : "";
+    if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+      return "درخواست دسترسی رد شد. دوباره روی دکمه بزنید تا درخواست دوربین و میکروفن باز شود.";
+    }
+    if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+      return "دوربینی روی این دستگاه پیدا نشد.";
+    }
+    if (name === "NotReadableError" || name === "TrackStartError") {
+      return "دوربین در برنامه دیگری در حال استفاده است. آن را ببندید و دوباره تلاش کنید.";
+    }
+    if (name === "SecurityError") {
+      return "برای دسترسی به دوربین باید صفحه روی localhost یا HTTPS باشد.";
+    }
+    if (name === "NotSupportedError") {
+      return "این مرورگر از دسترسی به دوربین پشتیبانی نمی‌کند.";
+    }
+    return "اتصال به دوربین برقرار نشد. دوباره تلاش کنید.";
+  }
+
+  async function startCamera() {
+    setVideoError(null);
+    try {
+      const stream = await requestMediaStream();
+      streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
+      const node = videoRef.current;
+      if (node) {
+        node.srcObject = stream;
+        node.muted = true;
+        try {
+          await node.play();
+        } catch {
+          // autoplay may be blocked briefly; srcObject is still attached
+        }
+      }
       setCameraOn(true);
-    } catch {
-      setError("دسترسی به دوربین یا میکروفن داده نشد.");
+      return true;
+    } catch (error) {
+      setVideoError(mediaErrorMessage(error));
+      return false;
     }
   }
 
@@ -96,6 +175,59 @@ export function ConversationThread({
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     setCameraOn(false);
+  }
+
+  async function joinVideo() {
+    setPending(true);
+    setError(null);
+    setVideoError(null);
+
+    // اول مستقیم درخواست دسترسی دوربین/میکروفن مرورگر را باز کن
+    const ok = await startCamera();
+    if (!ok) {
+      setPending(false);
+      return;
+    }
+
+    // بعد وضعیت جلسه را در سرور ثبت کن
+    if (!summary?.videoLive) {
+      const response = await fetch(`/api/conversations/${conversationId}/video`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "start" }),
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        stopCamera();
+        setPending(false);
+        setVideoError(payload.error ?? "شروع جلسه تصویری انجام نشد.");
+        return;
+      }
+    }
+
+    setPending(false);
+    await load();
+  }
+
+  async function endVideo() {
+    setPending(true);
+    setError(null);
+    setVideoError(null);
+    const response = await fetch(`/api/conversations/${conversationId}/video`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "end" }),
+    });
+    const payload = (await response.json()) as { error?: string };
+    setPending(false);
+    if (!response.ok) {
+      setVideoError(payload.error ?? "پایان جلسه تصویری انجام نشد.");
+      return;
+    }
+    stopCamera();
+    await load();
   }
 
   async function send() {
@@ -120,25 +252,6 @@ export function ConversationThread({
       return;
     }
     setText("");
-    await load();
-  }
-
-  async function video(action: "start" | "end") {
-    setPending(true);
-    const response = await fetch(`/api/conversations/${conversationId}/video`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-    const payload = (await response.json()) as { error?: string };
-    setPending(false);
-    if (!response.ok) {
-      setError(payload.error ?? "جلسه تصویری انجام نشد.");
-      return;
-    }
-    if (action === "start") await startCamera();
-    else stopCamera();
     await load();
   }
 
@@ -229,35 +342,43 @@ export function ConversationThread({
           <div className="relative mt-3 aspect-video overflow-hidden rounded-xl bg-black/40">
             <video ref={videoRef} className="size-full object-cover" autoPlay muted playsInline />
             {!cameraOn && (
-              <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-white/50">
-                {summary.videoLive ? "جلسه در جریان است — برای دیدن تصویر خود وارد شوید." : "هنوز جلسه‌ای شروع نشده."}
+              <p className="pointer-events-none absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-white/55">
+                {summary.videoLive
+                  ? "جلسه شروع شده است. برای پیش‌نمایش تصویر خود، دوربین را روشن کنید."
+                  : "هنوز جلسه‌ای شروع نشده."}
               </p>
             )}
           </div>
           {!closed && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {!summary.videoLive ? (
+              {!cameraOn ? (
                 <button
                   type="button"
                   disabled={pending}
-                  onClick={() => void video("start")}
+                  onClick={() => void joinVideo()}
                   className={cn(buttonVariants(), "h-10 bg-gold text-navy-deep hover:bg-gold-bright")}
                 >
-                  ورود به تماس تصویری
+                  {summary.videoLive ? "درخواست دسترسی و روشن کردن دوربین" : "شروع تماس و درخواست دوربین"}
                 </button>
-              ) : (
+              ) : null}
+              {summary.videoLive || cameraOn ? (
                 <button
                   type="button"
                   disabled={pending}
-                  onClick={() => void video("end")}
+                  onClick={() => void endVideo()}
                   className={cn(buttonVariants(), "h-10 bg-white/10 text-white hover:bg-white/20")}
                 >
                   پایان جلسه تصویری
                 </button>
-              )}
+              ) : null}
             </div>
           )}
-          {summary.videoEnded && (
+          {videoError && (
+            <p className="mt-3 rounded-xl bg-red-500/15 px-3 py-2 text-sm text-red-100" role="alert">
+              {videoError}
+            </p>
+          )}
+          {summary.videoEnded && !summary.videoLive && (
             <p className="mt-3 text-sm text-white/70">جلسه تصویری تمام شد. ادامه ابهام‌ها با گفتگوی متنی است.</p>
           )}
         </div>
@@ -267,22 +388,41 @@ export function ConversationThread({
         ref={scroller}
         className="mt-4 min-h-64 flex-1 space-y-3 overflow-y-auto rounded-2xl bg-white/70 p-4 ring-1 ring-navy/8"
       >
-        {messages.map((item) => (
-          <div
-            key={item.id}
-            className={cn(
-              "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-7",
-              item.authorRole === "system" && "mx-auto max-w-xl bg-gold/12 text-center text-navy/80",
-              item.authorRole === "user" && "ms-auto bg-navy text-white",
-              item.authorRole === "lawyer" && "bg-paper text-navy ring-1 ring-navy/8",
-            )}
-          >
-            {item.body}
-            <p className={cn("mt-1 text-[10px]", item.authorRole === "user" ? "text-white/50" : "text-navy/40")}>
-              {formatFaDateTime(item.createdAt)}
-            </p>
-          </div>
-        ))}
+        {messages.map((item) => {
+          const linkedRequest = docRequests.find((request) => request.messageId === item.id);
+          if (linkedRequest) {
+            return (
+              <div key={item.id} className="mx-auto w-full max-w-xl">
+                <DocumentRequestCard
+                  request={linkedRequest}
+                  viewer={viewer}
+                  onUpdated={(next) =>
+                    setDocRequests((current) =>
+                      current.map((request) => (request.id === next.id ? next : request)),
+                    )
+                  }
+                />
+                <p className="mt-1 text-center text-[10px] text-navy/40">{formatFaDateTime(item.createdAt)}</p>
+              </div>
+            );
+          }
+          return (
+            <div
+              key={item.id}
+              className={cn(
+                "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-7",
+                item.authorRole === "system" && "mx-auto max-w-xl bg-gold/12 text-center text-navy/80",
+                item.authorRole === "user" && "ms-auto bg-navy text-white",
+                item.authorRole === "lawyer" && "bg-paper text-navy ring-1 ring-navy/8",
+              )}
+            >
+              <span className="whitespace-pre-line">{item.body}</span>
+              <p className={cn("mt-1 text-[10px]", item.authorRole === "user" ? "text-white/50" : "text-navy/40")}>
+                {formatFaDateTime(item.createdAt)}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       {error && (

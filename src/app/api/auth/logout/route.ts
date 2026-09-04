@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
-import { deleteSession } from "@/lib/store";
+import { deleteSession } from "@/lib/store-users";
 
 export async function POST(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;

@@ -7,7 +7,9 @@ import {
   getUserBySession,
   markUserLogin,
   toPublicUser,
-} from "@/lib/store";
+  type StoredUser,
+} from "@/lib/store-users";
+import type { PublicUser } from "@/lib/store-types";
 
 export { toPublicUser };
 
@@ -19,6 +21,11 @@ export function hashPassword(password: string) {
 
 export function newSessionToken() {
   return randomBytes(24).toString("hex");
+}
+
+function publicFromStored(user: StoredUser): PublicUser {
+  const { passwordHash: _passwordHash, ...publicUser } = user;
+  return publicUser;
 }
 
 export async function getRequestUser(request: {
@@ -37,48 +44,40 @@ export async function getServerUser() {
 }
 
 export async function registerAccount(fullName: string, phone: string, password: string) {
-  if (await findUserByPhone(phone)) {
-    return { error: "این شماره قبلاً ثبت شده است. وارد شوید." as const };
+  const existing = await findUserByPhone(phone);
+  if (existing) {
+    return { error: "این شماره قبلاً ثبت شده است." as const };
   }
-  try {
-    const user = await createUser({
-      fullName,
-      phone,
-      passwordHash: hashPassword(password),
-    });
-    const token = newSessionToken();
-    await createSession(token, user.id);
-    const { passwordHash: _passwordHash, ...publicUser } = user;
-    return { user: publicUser, token };
-  } catch (error) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      (error as { code: string }).code === "P2002"
-    ) {
-      return { error: "این شماره قبلاً ثبت شده است. وارد شوید." as const };
-    }
-    throw error;
-  }
+  const user = await createUser({
+    fullName,
+    phone,
+    passwordHash: hashPassword(password),
+  });
+  const token = newSessionToken();
+  await createSession(token, user.id);
+  return { user: publicFromStored(user), token };
 }
 
 export async function loginAccount(phone: string, password: string) {
   const user = await findUserByPhone(phone);
   if (!user || user.passwordHash !== hashPassword(password)) {
-    return { error: "شماره موبایل یا رمز عبور نادرست است." as const };
+    return { error: "شماره یا رمز عبور نادرست است." as const };
   }
+  if (user.active === false) {
+    return { error: "حساب شما غیرفعال شده است." as const };
+  }
+  await markUserLogin(user.id);
   const token = newSessionToken();
   await createSession(token, user.id);
-  return { user: await markUserLogin(user.id), token };
+  return { user: publicFromStored(user), token };
 }
 
-export function sessionCookieOptions() {
+export function sessionCookieOptions(maxAgeSeconds = 7 * 24 * 60 * 60) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
     secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: maxAgeSeconds,
   };
 }

@@ -3,6 +3,9 @@
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { useAuth } from "@/components/auth/auth-provider";
 import { ConsultationWizard } from "@/components/consult/consultation-wizard";
+import { InPersonConsultStub } from "@/components/consult/in-person-consult-stub";
+import { UrgentConsultWizard } from "@/components/consult/urgent-consult-wizard";
+import { isInPersonService, isUrgentConsultService } from "@/lib/consult";
 import type { Lawyer } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +18,8 @@ export function ConsultAuthGate({
 }) {
   const { user, status } = useAuth();
   const locked = status !== "user";
+  const urgent = initialService ? isUrgentConsultService(initialService) : false;
+  const inPerson = initialService ? isInPersonService(initialService) : false;
 
   return (
     <>
@@ -28,11 +33,17 @@ export function ConsultAuthGate({
           aria-hidden={locked}
           className={cn(locked && "pointer-events-none select-none opacity-40")}
         >
-          <ConsultationWizard
-            initialLawyer={initialLawyer}
-            initialService={initialService}
-            user={user}
-          />
+          {urgent ? (
+            <UrgentConsultWizard user={user} />
+          ) : inPerson ? (
+            <InPersonConsultStub />
+          ) : (
+            <ConsultationWizard
+              initialLawyer={initialLawyer}
+              initialService={initialService}
+              user={user}
+            />
+          )}
         </div>
       )}
     </>

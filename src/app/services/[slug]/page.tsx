@@ -6,7 +6,9 @@ import { ChevronLeftIcon } from "lucide-react";
 import { ServiceIcon } from "@/components/services/service-icon";
 import { PageHero } from "@/components/page-hero";
 import { buttonVariants } from "@/components/ui/button";
+import { isInPersonService, isUrgentConsultService } from "@/lib/consult";
 import { getService, services } from "@/lib/data";
+import { formatToman } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export function generateStaticParams() {
@@ -29,6 +31,9 @@ export default async function ServiceDetailPage({
   const service = getService(slug);
   if (!service) notFound();
 
+  const urgent = isUrgentConsultService(service.slug);
+  const inPerson = isInPersonService(service.slug);
+
   return (
     <>
       <PageHero title={service.title} description={service.short} />
@@ -47,11 +52,19 @@ export default async function ServiceDetailPage({
         </div>
         <aside className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-navy/10 sm:p-8">
           <span className="mb-3 block h-1 w-10 rounded-full bg-gold" />
-          <h2 className="font-heading text-xl font-semibold text-navy">ثبت درخواست</h2>
+          <h2 className="font-heading text-xl font-semibold text-navy">
+            {urgent ? "شروع فوری" : inPerson ? "رزرو نوبت" : "ثبت درخواست"}
+          </h2>
           <p className="mt-3 text-sm leading-7 text-navy/70">
-            نوع خدمت از قبل انتخاب شده است. نحوه مشاوره، وکیل و شرح موضوع را در چند مرحله کوتاه تکمیل
-            کنید.
+            {urgent
+              ? "پس از ورود، موضوع را کوتاه بنویسید، در صورت نیاز قرارداد را آپلود کنید و پرداخت کنید تا یافتن وکیل شروع شود."
+              : inPerson
+                ? "رزرو تقویمی دفتر به‌زودی کامل می‌شود؛ از این مسیر وضعیت فعلی و گزینه‌های جایگزین را ببینید."
+                : "نوع خدمت از قبل انتخاب شده است. نحوه مشاوره، وکیل و شرح موضوع را در چند مرحله کوتاه تکمیل کنید."}
           </p>
+          {service.feeToman > 0 ? (
+            <p className="mt-4 text-sm font-medium text-navy">تعرفه: {formatToman(service.feeToman)}</p>
+          ) : null}
           <Link
             href={`/consult?service=${service.slug}`}
             className={cn(
@@ -59,7 +72,7 @@ export default async function ServiceDetailPage({
               "mt-6 inline-flex h-11 gap-1 bg-gold px-6 text-navy-deep hover:bg-gold-bright",
             )}
           >
-            ادامه ثبت درخواست
+            {urgent ? "درخواست مشاوره فوری" : inPerson ? "ادامه رزرو نوبت" : "ادامه ثبت درخواست"}
             <ChevronLeftIcon className="size-4" />
           </Link>
         </aside>

@@ -12,6 +12,7 @@ import {
   panelFetch,
 } from "@/components/lawyer/lawyer-ui";
 import { buttonVariants } from "@/components/ui/button";
+import { SiteDataTable, SiteTableLink } from "@/components/ui/site-data-table";
 import { caseStageMeta, caseStatusMeta, type ClientCase } from "@/lib/case-model";
 import { formatFaDate, formatFaDateTime, formatTomanAmount, toFaDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -83,43 +84,88 @@ export function LawyerCases() {
 
       {items === null ? (
         <div className={cn(panelCard, "px-6 py-10 text-sm text-navy/50")}>در حال بارگذاری…</div>
-      ) : items.length === 0 ? (
-        <div className={cn(panelCard, "px-6 py-10")}>
-          <EmptyRow>پرونده‌ای در این دسته نیست.</EmptyRow>
-        </div>
       ) : (
-        <ul className="space-y-3">
-          {items.map((item) => (
-            <li key={item.id}>
-              <Link
-                href={`/lawyer/cases/${item.id}`}
-                className={cn(panelCard, "block px-5 py-4 transition hover:border-gold/40 hover:shadow-md")}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className={cn(panelCard, "overflow-hidden p-0")}>
+          <SiteDataTable
+            rows={items}
+            rowKey={(item) => item.id}
+            pageSize={10}
+            minWidthClassName="min-w-[52rem]"
+            empty={
+              <div className="p-6">
+                <EmptyRow>پرونده‌ای در این دسته نیست.</EmptyRow>
+              </div>
+            }
+            columns={[
+              {
+                id: "index",
+                header: "ردیف",
+                hideOnMobile: true,
+                headerClassName: "px-3 md:px-3",
+                className: "px-3 text-center text-navy/40 md:px-3",
+                cell: (_row, index) => toFaDigits(index + 1),
+              },
+              {
+                id: "title",
+                header: "عنوان",
+                headerClassName: "text-right",
+                className: "max-w-[14rem] text-right",
+                cell: (item) => (
                   <div className="min-w-0">
-                    <p className="font-heading font-semibold text-navy">{item.title}</p>
-                    <p className="mt-1 text-sm text-navy/55">
-                      {caseStageMeta[item.stage]} · {item.clientName}
-                    </p>
+                    <SiteTableLink href={`/lawyer/cases/${item.id}`} className="block truncate">
+                      {item.title}
+                    </SiteTableLink>
+                    {item.nextActionAt ? (
+                      <span className="mt-1 block truncate text-[11px] text-gold-deep">
+                        {item.nextActionNote ?? "اقدام بعدی"} · {formatFaDateTime(item.nextActionAt)}
+                      </span>
+                    ) : null}
                   </div>
-                  <Tone tone={caseStatusMeta[item.status].tone}>{caseStatusMeta[item.status].title}</Tone>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-navy/45">
-                  <span>{toFaDigits(item.caseNumber)}</span>
-                  <span>تشکیل: {formatFaDate(item.createdAt)}</span>
-                  <span>حق‌الوکاله: {formatTomanAmount(item.feeToman)}</span>
-                  {item.paidToman > 0 ? <span>دریافتی: {formatTomanAmount(item.paidToman)}</span> : null}
-                  <span>{toFaDigits(item.eventCount)} رویداد</span>
-                </div>
-                {item.nextActionAt ? (
-                  <p className="mt-2 rounded-xl bg-gold/10 px-3 py-2 text-xs text-gold-deep">
-                    اقدام بعدی: {item.nextActionNote ?? "—"} · {formatFaDateTime(item.nextActionAt)}
-                  </p>
-                ) : null}
-              </Link>
-            </li>
-          ))}
-        </ul>
+                ),
+              },
+              {
+                id: "number",
+                header: "شماره",
+                hideOnMobile: true,
+                className: "whitespace-nowrap text-navy/60",
+                cell: (item) => toFaDigits(item.caseNumber),
+              },
+              {
+                id: "client",
+                header: "موکل",
+                hideOnMobile: true,
+                className: "whitespace-nowrap text-navy/60",
+                cell: (item) => item.clientName,
+              },
+              {
+                id: "stage",
+                header: "مرحله",
+                hideOnMobile: true,
+                className: "whitespace-nowrap text-navy/60",
+                cell: (item) => caseStageMeta[item.stage],
+              },
+              {
+                id: "fee",
+                header: "حق‌الوکاله",
+                hideOnMobile: true,
+                className: "whitespace-nowrap text-navy/60",
+                cell: (item) => formatTomanAmount(item.feeToman),
+              },
+              {
+                id: "date",
+                header: "تاریخ",
+                className: "whitespace-nowrap text-center text-navy/50",
+                cell: (item) => formatFaDate(item.createdAt),
+              },
+              {
+                id: "status",
+                header: "وضعیت",
+                className: "text-center",
+                cell: (item) => <Tone tone={caseStatusMeta[item.status].tone}>{caseStatusMeta[item.status].title}</Tone>,
+              },
+            ]}
+          />
+        </div>
       )}
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import type { PublicUser } from "@/lib/store";
+import type { PublicUser } from "@/lib/store-types";
 
 type AuthStatus = "loading" | "guest" | "user";
 

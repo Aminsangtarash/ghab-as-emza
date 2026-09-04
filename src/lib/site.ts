@@ -22,5 +22,6 @@ export const navItems = [
   { href: "/articles", label: "مقالات" },
   { href: "/lawyers", label: "وکلا و متخصصان" },
   { href: "/about", label: "درباره ما" },
+  { href: "/cooperate", label: "همکاری" },
   { href: "/contact", label: "تماس با ما" },
 ] as const;

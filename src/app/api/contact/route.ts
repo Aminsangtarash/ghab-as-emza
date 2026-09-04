@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isRateLimited } from "@/lib/rate-limit";
+import { createSupportTicket } from "@/lib/support-tickets";
 import { contactSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
@@ -27,6 +28,20 @@ export async function POST(request: NextRequest) {
       { error: "داده‌های ارسالی ناقص است.", fields: parsed.error.flatten().fieldErrors },
       { status: 422 },
     );
+  }
+
+  const data = parsed.data;
+  try {
+    await createSupportTicket({
+      fullName: data.fullName,
+      phone: data.phone,
+      email: data.email,
+      subject: data.subject,
+      body: data.message,
+      source: "contact",
+    });
+  } catch {
+    return NextResponse.json({ error: "ثبت پیام ممکن نشد. کمی بعد دوباره تلاش کنید." }, { status: 503 });
   }
 
   return NextResponse.json({ ok: true });

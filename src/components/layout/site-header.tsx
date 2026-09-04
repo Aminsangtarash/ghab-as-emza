@@ -28,7 +28,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-navy/10 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex h-[4.5rem] w-full max-w-6xl items-center gap-4 px-4 sm:px-6">
         <Logo />
-        <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex" aria-label="منوی اصلی">
+        <nav className="hidden flex-1 items-center gap-1 lg:flex" aria-label="منوی اصلی">
           {navItems.map((item) => {
             const active =
               item.href === "/"

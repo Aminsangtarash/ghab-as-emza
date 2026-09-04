@@ -2,19 +2,23 @@ import {
   CalendarClockIcon,
   ClipboardListIcon,
   FolderOpenIcon,
+  HandshakeIcon,
   HeadsetIcon,
   LayoutDashboardIcon,
   MessageCircleIcon,
   NotebookPenIcon,
+  PercentIcon,
   PlusIcon,
   ScaleIcon,
+  ShieldIcon,
   StarIcon,
   UserRoundIcon,
   UsersIcon,
   WalletIcon,
 } from "lucide-react";
 
-import type { UserRole } from "@/lib/store";
+import { canStaff } from "@/lib/admin-permissions";
+import type { UserRole } from "@/lib/store-types";
 
 export const accountNav = [
   { href: "/account", label: "داشبورد", exact: true, icon: LayoutDashboardIcon },
@@ -43,12 +47,20 @@ export const lawyerNav = [
 ] as const;
 
 export const adminNav = [
-  { href: "/admin", label: "نمای کلی", exact: true, icon: LayoutDashboardIcon },
-  { href: "/admin/requests", label: "درخواست‌ها", exact: false, icon: ClipboardListIcon },
-  { href: "/admin/users", label: "کاربران", exact: false, icon: UsersIcon },
-  { href: "/admin/lawyers", label: "وکلا و متخصصان", exact: false, icon: ScaleIcon },
-  { href: "/admin/support", label: "پشتیبانی", exact: false, icon: HeadsetIcon },
+  { href: "/admin", label: "نمای کلی", exact: true, icon: LayoutDashboardIcon, capability: "viewDashboard" as const },
+  { href: "/admin/queue", label: "صف عملیات", exact: false, icon: ClipboardListIcon, capability: "manageQueue" as const },
+  { href: "/admin/requests", label: "درخواست‌ها", exact: false, icon: FolderOpenIcon, capability: "manageRequests" as const },
+  { href: "/admin/users", label: "کاربران", exact: false, icon: UsersIcon, capability: "manageUsers" as const },
+  { href: "/admin/lawyers", label: "وکلا", exact: false, icon: ScaleIcon, capability: "manageLawyers" as const },
+  { href: "/admin/cooperate", label: "همکاری", exact: false, icon: HandshakeIcon, capability: "createLawyer" as const },
+  { href: "/admin/staff", label: "کارکنان", exact: false, icon: ShieldIcon, capability: "manageStaff" as const },
+  { href: "/admin/pricing", label: "تعرفه و تخفیف", exact: false, icon: PercentIcon, capability: "managePromos" as const },
+  { href: "/admin/support", label: "پشتیبانی", exact: false, icon: HeadsetIcon, capability: "viewSupport" as const },
 ] as const;
+
+export function adminNavForRole(role: UserRole | string | undefined) {
+  return adminNav.filter((item) => canStaff(role, item.capability));
+}
 
 export function isStaffRole(role: UserRole | string | undefined) {
   return role === "admin" || role === "manager";

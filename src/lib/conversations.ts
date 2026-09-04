@@ -1,7 +1,18 @@
 import type { Conversation, Message, Rating } from "@/generated/prisma";
 
-import { lawyerLabel, serviceTitle, type ConsultChannel, type ConsultationStatus } from "@/lib/consult";
+import {
+  citiesMatch,
+  isUrgentCityPriorityActive,
+  isUrgentConsultService,
+  lawyerLabel,
+  serviceTitle,
+  URGENT_CITY_PRIORITY_MS,
+  URGENT_MATCH_SLA_MS,
+  type ConsultChannel,
+  type ConsultationStatus,
+} from "@/lib/consult";
 import { prisma } from "@/lib/db";
+import { getLawyer } from "@/lib/data";
 
 export type MessageAuthor = "user" | "lawyer" | "system";
 
@@ -73,6 +84,14 @@ async function addSystemMessage(conversationId: string, body: string) {
   });
 }
 
+async function resolveLawyerCity(lawyerSlug: string) {
+  const [profile, base] = await Promise.all([
+    prisma.lawyerProfile.findUnique({ where: { slug: lawyerSlug }, select: { city: true } }),
+    Promise.resolve(getLawyer(lawyerSlug)),
+  ]);
+  return profile?.city?.trim() || base?.city || "";
+}
+
 export async function acceptConsultation(
   lawyerSlug: string,
   trackingCode: string,
@@ -91,22 +110,53 @@ export async function acceptConsultation(
     return { error: "این درخواست برای وکیل دیگری ثبت شده است." as const };
   }
 
-  const updated = await prisma.consultation.update({
-    where: { id: row.id },
+  // اولویت هم‌شهر در دقایق اول درخواست فوری
+  if (
+    isUrgentConsultService(row.service) &&
+    row.city &&
+    isUrgentCityPriorityActive(row.createdAt) &&
+    row.status === "awaiting-lawyer"
+  ) {
+    const lawyerCity = await resolveLawyerCity(lawyerSlug);
+    if (!citiesMatch(row.city, lawyerCity)) {
+      return {
+        error:
+          "فعلاً اولویت با وکلای هم‌شهر موکل است. چند دقیقه دیگر می‌توانید این درخواست را بپذیرید.",
+      } as const;
+    }
+  }
+
+  // قفل اتمیک: فقط یک وکیل می‌تواند درخواست باز (بدون وکیل قفل‌شده) را بردارد
+  const locked = await prisma.consultation.updateMany({
+    where: {
+      id: row.id,
+      status: { in: ["awaiting-lawyer", "awaiting-operator"] },
+      OR: [{ lawyerSlug: null }, { lawyerSlug }],
+    },
     data: {
       status: "in-progress",
       lawyerSlug,
       lawyerVisible: true,
     },
   });
+  if (locked.count === 0) {
+    return { error: "وکیل دیگری زودتر این درخواست را پذیرفت." as const };
+  }
 
-  const conversation = await prisma.conversation.create({
-    data: {
-      consultationId: updated.id,
-      userId: updated.userId,
-      lawyerSlug,
-    },
-  });
+  const updated = await prisma.consultation.findUniqueOrThrow({ where: { id: row.id } });
+
+  let conversation;
+  try {
+    conversation = await prisma.conversation.create({
+      data: {
+        consultationId: updated.id,
+        userId: updated.userId,
+        lawyerSlug,
+      },
+    });
+  } catch {
+    return { error: "گفتگوی این درخواست قبلاً باز شده است." as const };
+  }
 
   const channelNote =
     updated.channel === "phone"
@@ -238,6 +288,7 @@ export type LawyerQueueItem = {
   message: string;
   channel: ConsultChannel;
   status: ConsultationStatus;
+  service: string;
   serviceTitle: string;
   urgency: string;
   caseStage: string;
@@ -246,6 +297,10 @@ export type LawyerQueueItem = {
   feeToman: number;
   paymentStatus: string;
   assignedToMe: boolean;
+  isUrgent: boolean;
+  sameCity: boolean;
+  /** در پنجرهٔ اولویت هم‌شهر، وکیل غیرهم‌شهر هنوز نمی‌تواند بپذیرد */
+  acceptBlockedByCity: boolean;
   clientName: string;
   clientPhone: string;
   createdAt: string;
@@ -253,26 +308,122 @@ export type LawyerQueueItem = {
 };
 
 export async function listLawyerQueueItems(lawyerSlug: string): Promise<LawyerQueueItem[]> {
-  const rows = await listLawyerQueue(lawyerSlug);
-  return rows.map((row) => ({
+  await escalateExpiredUrgentMatches();
+  const [rows, lawyerCity] = await Promise.all([
+    listLawyerQueue(lawyerSlug),
+    resolveLawyerCity(lawyerSlug),
+  ]);
+  const now = new Date();
+  const items = rows.map((row) => {
+    const sameCity = citiesMatch(row.city, lawyerCity);
+    const cityPriority =
+      isUrgentConsultService(row.service) &&
+      Boolean(row.city) &&
+      isUrgentCityPriorityActive(row.createdAt, now) &&
+      row.status === "awaiting-lawyer";
+    return {
+      trackingCode: row.trackingCode,
+      subject: row.subject,
+      message: row.message,
+      channel: row.channel as ConsultChannel,
+      status: row.status as ConsultationStatus,
+      service: row.service,
+      serviceTitle: serviceTitle(row.service),
+      urgency: row.urgency,
+      caseStage: row.caseStage,
+      city: row.city ?? undefined,
+      preferredSlot: row.preferredSlot ?? undefined,
+      feeToman: row.feeToman,
+      paymentStatus: row.paymentStatus,
+      assignedToMe: row.lawyerSlug === lawyerSlug,
+      isUrgent: isUrgentConsultService(row.service) || row.urgency === "urgent",
+      sameCity,
+      acceptBlockedByCity: cityPriority && !sameCity,
+      clientName: row.user.fullName,
+      clientPhone: row.user.phone,
+      createdAt: row.createdAt.toISOString(),
+      documents: row.documents,
+    };
+  });
+  return items.sort((a, b) => {
+    if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
+    if (a.sameCity !== b.sameCity) return a.sameCity ? -1 : 1;
+    if (a.acceptBlockedByCity !== b.acceptBlockedByCity) return a.acceptBlockedByCity ? 1 : -1;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
+}
+
+/** درخواست‌های فوری بدون پذیرش بعد از SLA به صف اپراتور می‌روند. */
+export async function escalateExpiredUrgentMatches(now = new Date()) {
+  const cutoff = new Date(now.getTime() - URGENT_MATCH_SLA_MS);
+  await prisma.consultation.updateMany({
+    where: {
+      service: "urgent-consult",
+      status: "awaiting-lawyer",
+      lawyerSlug: null,
+      createdAt: { lt: cutoff },
+    },
+    data: { status: "awaiting-operator" },
+  });
+}
+
+export type UrgentMatchStatus = {
+  trackingCode: string;
+  status: ConsultationStatus;
+  phase: "searching" | "operator" | "connected" | "cancelled" | "closed";
+  createdAt: string;
+  slaEndsAt: string;
+  cityPriorityEndsAt?: string;
+  cityPriorityActive: boolean;
+  city?: string;
+  conversationId?: string;
+  lawyerName?: string;
+  channel: ConsultChannel;
+  subject: string;
+  feeToman: number;
+};
+
+export async function getUrgentMatchStatus(
+  userId: string,
+  trackingCode: string,
+): Promise<UrgentMatchStatus | { error: string }> {
+  await escalateExpiredUrgentMatches();
+  const row = await prisma.consultation.findFirst({
+    where: { trackingCode, userId },
+    include: {
+      conversation: { select: { id: true } },
+    },
+  });
+  if (!row) return { error: "درخواست پیدا نشد." };
+  if (!isUrgentConsultService(row.service)) {
+    return { error: "این درخواست مشاوره فوری نیست." };
+  }
+
+  const status = row.status as ConsultationStatus;
+  let phase: UrgentMatchStatus["phase"] = "searching";
+  if (status === "cancelled") phase = "cancelled";
+  else if (status === "closed") phase = "closed";
+  else if (status === "in-progress" && row.conversation) phase = "connected";
+  else if (status === "awaiting-operator") phase = "operator";
+  else phase = "searching";
+
+  return {
     trackingCode: row.trackingCode,
-    subject: row.subject,
-    message: row.message,
-    channel: row.channel as ConsultChannel,
-    status: row.status as ConsultationStatus,
-    serviceTitle: serviceTitle(row.service),
-    urgency: row.urgency,
-    caseStage: row.caseStage,
-    city: row.city ?? undefined,
-    preferredSlot: row.preferredSlot ?? undefined,
-    feeToman: row.feeToman,
-    paymentStatus: row.paymentStatus,
-    assignedToMe: row.lawyerSlug === lawyerSlug,
-    clientName: row.user.fullName,
-    clientPhone: row.user.phone,
+    status,
+    phase,
     createdAt: row.createdAt.toISOString(),
-    documents: row.documents,
-  }));
+    slaEndsAt: new Date(row.createdAt.getTime() + URGENT_MATCH_SLA_MS).toISOString(),
+    cityPriorityEndsAt: row.city
+      ? new Date(row.createdAt.getTime() + URGENT_CITY_PRIORITY_MS).toISOString()
+      : undefined,
+    cityPriorityActive: Boolean(row.city) && isUrgentCityPriorityActive(row.createdAt) && phase === "searching",
+    city: row.city ?? undefined,
+    conversationId: row.conversation?.id,
+    lawyerName: row.lawyerVisible ? lawyerLabel(row.lawyerSlug ?? undefined) : undefined,
+    channel: row.channel as ConsultChannel,
+    subject: row.subject,
+    feeToman: row.feeToman,
+  };
 }
 
 export async function getConversationForUser(userId: string, conversationId: string) {

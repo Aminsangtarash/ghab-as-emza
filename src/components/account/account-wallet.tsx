@@ -1,6 +1,9 @@
+"use client";
+
 import { ArrowDownLeftIcon, PlusIcon, ReceiptIcon, WalletIcon } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { SiteDataTable } from "@/components/ui/site-data-table";
 import { formatFaDateTime, formatTomanAmount, toFaDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -81,40 +84,53 @@ export function AccountWallet({
         {entries.length === 0 ? (
           <p className="px-5 pb-6 text-sm leading-7 text-navy/55">هنوز تراکنشی ثبت نشده است.</p>
         ) : (
-          <ul>
-            <li className="hidden border-y border-navy/10 px-5 py-2.5 text-[11px] text-navy/40 md:grid md:grid-cols-[9.5rem_minmax(0,1fr)_8.5rem_5.5rem] md:gap-4">
-              <span>تاریخ</span>
-              <span>شرح</span>
-              <span>مبلغ</span>
-              <span>وضعیت</span>
-            </li>
-            {entries.map((item) => (
-              <li
-                key={item.id}
-                className="border-b border-navy/8 px-5 py-3.5 last:border-b-0 md:grid md:grid-cols-[9.5rem_minmax(0,1fr)_8.5rem_5.5rem] md:items-center md:gap-4"
-              >
-                <p className="text-xs text-navy/45 md:text-sm md:text-navy/55">
-                  {formatFaDateTime(item.createdAt.toISOString())}
-                </p>
-                <div className="mt-1.5 min-w-0 md:mt-0">
-                  <p className="truncate text-sm font-medium text-navy">{walletTitle(item)}</p>
-                  <p className="mt-0.5 text-xs text-navy/45">{walletKind(item)}</p>
-                </div>
-                <p
-                  className={cn(
-                    "mt-2 text-sm font-medium md:mt-0",
-                    item.amount >= 0 ? "text-emerald-700" : "text-red-700",
-                  )}
-                >
-                  {item.amount >= 0 ? "+" : "−"} {formatTomanAmount(item.amount)}
-                </p>
-                <span className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-700 md:mt-0">
-                  <span className="size-1.5 rounded-full bg-emerald-600" />
-                  موفق
-                </span>
-              </li>
-            ))}
-          </ul>
+          <SiteDataTable
+            rows={entries}
+            rowKey={(item) => item.id}
+            pageSize={10}
+            minWidthClassName="min-w-[36rem]"
+            columns={[
+              {
+                id: "date",
+                header: "تاریخ",
+                className: "whitespace-nowrap text-navy/55",
+                cell: (item) => formatFaDateTime(item.createdAt.toISOString()),
+              },
+              {
+                id: "desc",
+                header: "شرح",
+                headerClassName: "text-right",
+                className: "min-w-0 text-right",
+                cell: (item) => (
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-navy">{walletTitle(item)}</p>
+                    <p className="mt-0.5 text-xs text-navy/45">{walletKind(item)}</p>
+                  </div>
+                ),
+              },
+              {
+                id: "amount",
+                header: "مبلغ",
+                className: "whitespace-nowrap",
+                cell: (item) => (
+                  <span className={cn("font-medium", item.amount >= 0 ? "text-emerald-700" : "text-red-700")}>
+                    {item.amount >= 0 ? "+" : "−"} {formatTomanAmount(item.amount)}
+                  </span>
+                ),
+              },
+              {
+                id: "status",
+                header: "وضعیت",
+                className: "whitespace-nowrap",
+                cell: () => (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700">
+                    <span className="size-1.5 rounded-full bg-emerald-600" />
+                    موفق
+                  </span>
+                ),
+              },
+            ]}
+          />
         )}
       </section>
     </div>

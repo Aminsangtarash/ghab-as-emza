@@ -1,6 +1,6 @@
 import { accountAvatarSrc } from "@/lib/account";
 import { initials } from "@/lib/format";
-import type { PublicUser } from "@/lib/store";
+import type { PublicUser } from "@/lib/store-types";
 import { cn } from "@/lib/utils";
 
 const sizes = {

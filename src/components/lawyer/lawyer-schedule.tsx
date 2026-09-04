@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { CalendarClockIcon } from "lucide-react";
 
 import {
@@ -17,6 +16,9 @@ import {
   panelFetch,
 } from "@/components/lawyer/lawyer-ui";
 import { buttonVariants } from "@/components/ui/button";
+import { JalaliDateTimeField } from "@/components/ui/jalali-datetime-field";
+import { SiteDataTable, SiteTableLink } from "@/components/ui/site-data-table";
+import { SiteSelect } from "@/components/ui/site-select";
 import {
   appointmentKindMeta,
   appointmentKinds,
@@ -24,6 +26,7 @@ import {
   type AppointmentStatus,
   type ClientAppointment,
 } from "@/lib/appointment-model";
+import { suggestNextAppointmentLocalValue } from "@/lib/appointment-slot";
 import { formatFaDateTime, toFaDigits } from "@/lib/format";
 import type { LawyerClient } from "@/lib/lawyer-desk";
 import { cn } from "@/lib/utils";
@@ -57,9 +60,10 @@ export function LawyerSchedule() {
         : tab === "all"
           ? ""
           : `?status=${tab}`;
-    const [list, clientList] = await Promise.all([
+    const [list, clientList, allAppointments] = await Promise.all([
       panelFetch<{ items: ClientAppointment[] }>(`/api/lawyer/appointments${query}`),
       panelFetch<{ items: LawyerClient[] }>("/api/lawyer/clients"),
+      panelFetch<{ items: ClientAppointment[] }>("/api/lawyer/appointments"),
     ]);
     if (!list.ok) {
       setError(list.error);
@@ -68,6 +72,12 @@ export function LawyerSchedule() {
     setError(null);
     setItems(list.data.items);
     if (clientList.ok) setClients(clientList.data.items);
+    const suggestionSource = allAppointments.ok ? allAppointments.data.items : list.data.items;
+    setForm((current) =>
+      current.scheduledAt
+        ? current
+        : { ...current, scheduledAt: suggestNextAppointmentLocalValue(suggestionSource) },
+    );
   }, [tab]);
 
   useEffect(() => {
@@ -117,7 +127,14 @@ export function LawyerSchedule() {
       return;
     }
     setOkMessage("نوبت ثبت شد.");
-    setForm((current) => ({ ...current, scheduledAt: "", note: "" }));
+    const all = await panelFetch<{ items: ClientAppointment[] }>("/api/lawyer/appointments");
+    setForm((current) => ({
+      ...current,
+      note: "",
+      scheduledAt: suggestNextAppointmentLocalValue(
+        all.ok ? all.data.items : [{ scheduledAt: new Date(form.scheduledAt).toISOString() }],
+      ),
+    }));
     await load();
   }
 
@@ -149,81 +166,99 @@ export function LawyerSchedule() {
       <OkNote>{okMessage}</OkNote>
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="min-w-0 space-y-3">
+        <div className="min-w-0">
           {items === null ? (
             <div className={cn(panelCard, "px-6 py-10 text-sm text-navy/50")}>در حال بارگذاری…</div>
-          ) : items.length === 0 ? (
-            <div className={cn(panelCard, "px-6 py-10")}>
-              <EmptyRow>نوبتی در این دسته نیست.</EmptyRow>
-            </div>
           ) : (
-            items.map((item) => (
-              <article key={item.id} className={cn(panelCard, "px-5 py-4")}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-heading font-semibold text-navy">
-                      {appointmentKindMeta[item.kind]} — {item.clientName}
-                    </p>
-                    <p className="mt-1 text-sm text-navy/60">{formatFaDateTime(item.scheduledAt)}</p>
-                    <p className="mt-1 text-xs text-navy/40">
-                      {toFaDigits(item.minutes)} دقیقه
-                      {item.clientPhone ? ` · ${toFaDigits(item.clientPhone)}` : ""}
-                      {item.trackingCode ? ` · ${toFaDigits(item.trackingCode)}` : ""}
-                    </p>
+            <div className={cn(panelCard, "overflow-hidden p-0")}>
+              <SiteDataTable
+                rows={items}
+                rowKey={(item) => item.id}
+                pageSize={8}
+                minWidthClassName="min-w-[40rem]"
+                empty={
+                  <div className="p-6">
+                    <EmptyRow>نوبتی در این دسته نیست.</EmptyRow>
                   </div>
-                  <Tone tone={appointmentStatusMeta[item.status].tone}>
-                    {appointmentStatusMeta[item.status].title}
-                  </Tone>
-                </div>
-                {item.note ? <p className="mt-2 text-sm leading-7 text-navy/65">{item.note}</p> : null}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {item.status === "scheduled" && (
-                    <>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => void setStatus(item.id, "done")}
-                        className={cn(buttonVariants(), "h-9 bg-navy px-4 text-white hover:bg-navy-mid")}
-                      >
-                        انجام شد
-                      </button>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => void setStatus(item.id, "missed")}
-                        className={cn(buttonVariants({ variant: "outline" }), "h-9 border-navy/15 px-4")}
-                      >
-                        انجام نشد
-                      </button>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => void setStatus(item.id, "cancelled")}
-                        className={cn(buttonVariants({ variant: "ghost" }), "h-9 px-3 text-red-700")}
-                      >
-                        لغو
-                      </button>
-                    </>
-                  )}
-                  {item.conversationId ? (
-                    <Link
-                      href={`/lawyer/chats/${item.conversationId}`}
-                      className={cn(buttonVariants({ variant: "ghost" }), "h-9 px-3 text-navy/60")}
-                    >
-                      گفتگو
-                    </Link>
-                  ) : null}
-                  {item.caseId ? (
-                    <Link
-                      href={`/lawyer/cases/${item.caseId}`}
-                      className={cn(buttonVariants({ variant: "ghost" }), "h-9 px-3 text-navy/60")}
-                    >
-                      پرونده
-                    </Link>
-                  ) : null}
-                </div>
-              </article>
-            ))
+                }
+                columns={[
+                  {
+                    id: "client",
+                    header: "موکل",
+                    headerClassName: "text-right",
+                    className: "max-w-[10rem] text-right",
+                    cell: (item) => (
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-navy">{item.clientName}</p>
+                        <p className="mt-0.5 text-[11px] text-navy/45">{appointmentKindMeta[item.kind]}</p>
+                      </div>
+                    ),
+                  },
+                  {
+                    id: "when",
+                    header: "زمان",
+                    className: "whitespace-nowrap text-navy/60",
+                    cell: (item) => formatFaDateTime(item.scheduledAt),
+                  },
+                  {
+                    id: "minutes",
+                    header: "مدت",
+                    hideOnMobile: true,
+                    className: "whitespace-nowrap text-navy/60",
+                    cell: (item) => `${toFaDigits(item.minutes)} دقیقه`,
+                  },
+                  {
+                    id: "status",
+                    header: "وضعیت",
+                    className: "text-center",
+                    cell: (item) => (
+                      <Tone tone={appointmentStatusMeta[item.status].tone}>
+                        {appointmentStatusMeta[item.status].title}
+                      </Tone>
+                    ),
+                  },
+                  {
+                    id: "actions",
+                    header: "اقدام",
+                    className: "text-center",
+                    cell: (item) => (
+                      <div className="flex flex-wrap items-center justify-center gap-1.5">
+                        {item.status === "scheduled" ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() => void setStatus(item.id, "done")}
+                              className={cn(buttonVariants(), "h-8 bg-navy px-2.5 text-[11px] text-white hover:bg-navy-mid")}
+                            >
+                              انجام شد
+                            </button>
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() => void setStatus(item.id, "cancelled")}
+                              className={cn(buttonVariants({ variant: "ghost" }), "h-8 px-2 text-[11px] text-red-700")}
+                            >
+                              لغو
+                            </button>
+                          </>
+                        ) : null}
+                        {item.conversationId ? (
+                          <SiteTableLink href={`/lawyer/chats/${item.conversationId}`} className="text-[11px]">
+                            گفتگو
+                          </SiteTableLink>
+                        ) : null}
+                        {item.caseId ? (
+                          <SiteTableLink href={`/lawyer/cases/${item.caseId}`} className="text-[11px]">
+                            پرونده
+                          </SiteTableLink>
+                        ) : null}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </div>
           )}
         </div>
 
@@ -231,46 +266,33 @@ export function LawyerSchedule() {
           <div className="grid gap-3">
             <label className="block">
               <FieldLabel>موکل</FieldLabel>
-              <select
-                value={form.userId}
-                onChange={(event) => setForm((current) => ({ ...current, userId: event.target.value }))}
-                className={inputClass}
-              >
-                <option value="">انتخاب کنید…</option>
-                {clients.map((client) => (
-                  <option key={client.userId} value={client.userId}>
-                    {client.fullName} — {toFaDigits(client.phone)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <FieldLabel>نوع جلسه</FieldLabel>
-              <select
-                value={form.kind}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    kind: event.target.value as (typeof appointmentKinds)[number],
-                  }))
-                }
-                className={inputClass}
-              >
-                {appointmentKinds.map((kind) => (
-                  <option key={kind} value={kind}>
-                    {appointmentKindMeta[kind]}
-                  </option>
-                ))}
-              </select>
+              <SiteSelect
+                value={form.userId || null}
+                onValueChange={(userId) => setForm((current) => ({ ...current, userId }))}
+                options={clients.map((client) => ({
+                  value: client.userId,
+                  label: `${client.fullName} — ${toFaDigits(client.phone)}`,
+                }))}
+                placeholder="انتخاب کنید…"
+                className="h-11 w-full min-w-0"
+              />
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block">
-                <FieldLabel>زمان</FieldLabel>
-                <input
-                  type="datetime-local"
-                  value={form.scheduledAt}
-                  onChange={(event) => setForm((current) => ({ ...current, scheduledAt: event.target.value }))}
-                  className={inputClass}
+                <FieldLabel>نوع جلسه</FieldLabel>
+                <SiteSelect
+                  value={form.kind}
+                  onValueChange={(kind) =>
+                    setForm((current) => ({
+                      ...current,
+                      kind: kind as (typeof appointmentKinds)[number],
+                    }))
+                  }
+                  options={appointmentKinds.map((kind) => ({
+                    value: kind,
+                    label: appointmentKindMeta[kind],
+                  }))}
+                  className="h-11 w-full min-w-0"
                 />
               </label>
               <label className="block">
@@ -284,6 +306,13 @@ export function LawyerSchedule() {
                   className={inputClass}
                 />
               </label>
+            </div>
+            <div className="block">
+              <FieldLabel>زمان (شمسی)</FieldLabel>
+              <JalaliDateTimeField
+                value={form.scheduledAt}
+                onValueChange={(scheduledAt) => setForm((current) => ({ ...current, scheduledAt }))}
+              />
             </div>
             <label className="block">
               <FieldLabel>توضیح (اختیاری)</FieldLabel>

@@ -3,7 +3,7 @@ import { mkdir, stat, unlink, writeFile } from "fs/promises";
 import path from "path";
 
 import { prisma } from "@/lib/db";
-import { toPublicUser } from "@/lib/store";
+import { toPublicUser } from "@/lib/store-users";
 
 export const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 

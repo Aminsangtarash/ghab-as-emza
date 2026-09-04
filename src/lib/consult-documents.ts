@@ -1,3 +1,5 @@
+import "server-only";
+
 import { randomBytes } from "crypto";
 import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
@@ -168,6 +170,27 @@ export async function getReadableDocument(input: {
     originalName: row.originalName,
     size: row.size,
   };
+}
+
+export async function deleteConsultationDocumentForLawyer(input: {
+  documentId: string;
+  trackingCode: string;
+  lawyerSlug: string;
+}) {
+  const row = await prisma.consultationDocument.findFirst({
+    where: { id: input.documentId },
+    include: { consultation: true },
+  });
+  if (!row?.consultation || row.consultation.trackingCode !== input.trackingCode) {
+    return { error: "فایل پیدا نشد." as const };
+  }
+  if (row.consultation.lawyerSlug !== input.lawyerSlug) {
+    return { error: "اجازه حذف این فایل را ندارید." as const };
+  }
+
+  await prisma.consultationDocument.delete({ where: { id: row.id } });
+  await unlink(filePath(row.storedName)).catch(() => undefined);
+  return { ok: true as const };
 }
 
 export async function removeStoredFiles(storedNames: string[]) {

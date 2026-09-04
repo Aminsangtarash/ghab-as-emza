@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarClockIcon, LockIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { CalendarClockIcon, CheckIcon, EyeIcon, LockIcon, PlusIcon, Trash2Icon } from "lucide-react";
 
 import {
   EmptyRow,
@@ -17,8 +17,13 @@ import {
   panelFetch,
   textareaClass,
 } from "@/components/lawyer/lawyer-ui";
+import { ConsultDocumentList } from "@/components/consult/document-list";
+import { DocumentPreviewModal } from "@/components/consult/document-preview-modal";
 import { buttonVariants } from "@/components/ui/button";
+import { JalaliDateTimeField } from "@/components/ui/jalali-datetime-field";
+import { SiteSelect } from "@/components/ui/site-select";
 import { appointmentKindMeta, appointmentKinds } from "@/lib/appointment-model";
+import { suggestNextAppointmentLocalValue } from "@/lib/appointment-slot";
 import {
   caseEventKindMeta,
   caseEventKinds,
@@ -31,7 +36,7 @@ import {
   type CaseStatus,
   type ClientCase,
 } from "@/lib/case-model";
-import { formatFaDateTime, formatTomanAmount, toFaDigits } from "@/lib/format";
+import { formatFaDateTime, formatTomanAmount, toEnDigits, toFaDigits } from "@/lib/format";
 import type { LawyerNoteItem } from "@/lib/lawyer-desk";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +76,12 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
   });
 
   const [noteText, setNoteText] = useState("");
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{
+    documentId: string;
+    title: string;
+    mimeType?: string;
+  } | null>(null);
   const [appointment, setAppointment] = useState({
     kind: "in-person" as (typeof appointmentKinds)[number],
     scheduledAt: "",
@@ -79,9 +90,10 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
   });
 
   const load = useCallback(async () => {
-    const result = await panelFetch<{ item: ClientCase; notes: LawyerNoteItem[] }>(
-      `/api/lawyer/cases/${caseId}`,
-    );
+    const [result, appointments] = await Promise.all([
+      panelFetch<{ item: ClientCase; notes: LawyerNoteItem[] }>(`/api/lawyer/cases/${caseId}`),
+      panelFetch<{ items: Array<{ scheduledAt: string }> }>("/api/lawyer/appointments"),
+    ]);
     if (!result.ok) {
       setError(result.error);
       return;
@@ -101,6 +113,16 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
       nextActionNote: next.nextActionNote ?? "",
       closeNote: next.closeNote ?? "",
     });
+    if (appointments.ok) {
+      setAppointment((current) =>
+        current.scheduledAt
+          ? current
+          : {
+              ...current,
+              scheduledAt: suggestNextAppointmentLocalValue(appointments.data.items),
+            },
+      );
+    }
   }, [caseId]);
 
   useEffect(() => {
@@ -133,8 +155,8 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
             authority: form.authority,
             courtBranch: form.courtBranch,
             fileNumber: form.fileNumber,
-            feeToman: Number(form.feeToman) || 0,
-            paidToman: Number(form.paidToman) || 0,
+            feeToman: Number(toEnDigits(form.feeToman)) || 0,
+            paidToman: Number(toEnDigits(form.paidToman)) || 0,
             nextActionAt: form.nextActionAt ? new Date(form.nextActionAt).toISOString() : null,
             nextActionNote: form.nextActionNote,
             closeNote: form.closeNote,
@@ -186,6 +208,38 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
     );
   }
 
+  async function reviewDocItem(itemId: string, action: "approve" | "reject") {
+    const result = await panelFetch(`/api/lawyer/document-requests/${itemId}/review`, {
+      method: "POST",
+      body: JSON.stringify({
+        action,
+        reason: action === "reject" ? "لطفاً فایل واضح‌تر یا مرتبط‌تری بارگذاری کنید." : undefined,
+      }),
+    });
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setOkMessage(action === "approve" ? "مدرک تأیید شد." : "مدرک رد شد.");
+    await load();
+  }
+
+  async function removeDocument(documentId: string) {
+    if (!item?.trackingCode) return;
+    setDeletingDocId(documentId);
+    const result = await panelFetch(
+      `/api/consultations/${encodeURIComponent(item.trackingCode)}/documents/${documentId}`,
+      { method: "DELETE" },
+    );
+    setDeletingDocId(null);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setOkMessage("فایل از مدارک پرونده حذف شد.");
+    await load();
+  }
+
   async function scheduleAppointment() {
     if (!appointment.scheduledAt) {
       setError("زمان جلسه را انتخاب کنید.");
@@ -205,7 +259,16 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
         }),
       "جلسه ثبت شد.",
     );
-    if (done) setAppointment((current) => ({ ...current, scheduledAt: "", note: "" }));
+    if (done) {
+      const list = await panelFetch<{ items: Array<{ scheduledAt: string }> }>("/api/lawyer/appointments");
+      setAppointment((current) => ({
+        ...current,
+        scheduledAt: suggestNextAppointmentLocalValue(
+          list.ok ? list.data.items : [{ scheduledAt: new Date(current.scheduledAt).toISOString() }],
+        ),
+        note: "",
+      }));
+    }
   }
 
   if (!item) {
@@ -261,6 +324,91 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
           </SectionCard>
 
           <SectionCard
+            title="مدارک پرونده"
+            hint="مدارک اولیه درخواست و موارد درخواستی از موکل با وضعیت تأیید."
+          >
+            {item.trackingCode && item.documents.length > 0 ? (
+              <div className="mb-4">
+                <p className="mb-2 text-xs font-medium text-navy/50">پیوست‌های اولیه درخواست</p>
+                <ConsultDocumentList
+                  trackingCode={item.trackingCode}
+                  items={item.documents}
+                  onDelete={(id) => void removeDocument(id)}
+                  deletingId={deletingDocId}
+                />
+              </div>
+            ) : null}
+
+            {item.documentRequestItems.length > 0 ? (
+              <ul className="space-y-2">
+                {item.documentRequestItems.map((docItem) => (
+                  <li key={docItem.id} className="rounded-xl border border-navy/8 bg-paper/50 px-3 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="flex items-center gap-2 text-sm text-navy">
+                        {docItem.status === "approved" ? <CheckIcon className="size-4 text-emerald-600" /> : null}
+                        {docItem.title}
+                      </p>
+                      <span className="text-[11px] text-navy/50">
+                        {docItem.status === "pending"
+                          ? "در انتظار آپلود"
+                          : docItem.status === "uploaded"
+                            ? "آپلود شده"
+                            : docItem.status === "approved"
+                              ? "تأیید شده"
+                              : "رد شده"}
+                      </span>
+                    </div>
+                    {docItem.documentId && item.trackingCode ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreview({
+                              documentId: docItem.documentId!,
+                              title: docItem.title,
+                              mimeType: docItem.documentMimeType,
+                            })
+                          }
+                          className={cn(buttonVariants({ variant: "outline" }), "h-9 border-navy/15 px-3 text-xs")}
+                        >
+                          <EyeIcon className="size-3.5" />
+                          مشاهده
+                        </button>
+                        {docItem.status !== "approved" ? (
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => void reviewDocItem(docItem.id, "approve")}
+                            className={cn(
+                              buttonVariants(),
+                              "h-9 bg-emerald-600 px-3 text-xs text-white hover:bg-emerald-700",
+                            )}
+                          >
+                            تأیید
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : item.documents.length === 0 ? (
+              <EmptyRow>مدرکی برای این پرونده ثبت نشده است.</EmptyRow>
+            ) : null}
+          </SectionCard>
+
+          {preview && item.trackingCode ? (
+            <DocumentPreviewModal
+              open
+              onClose={() => setPreview(null)}
+              trackingCode={item.trackingCode}
+              documentId={preview.documentId}
+              title={preview.title}
+              mimeType={preview.mimeType}
+            />
+          ) : null}
+
+          <SectionCard
             title="تایم‌لاین پرونده"
             hint="رویدادهای نامرئی برای موکل با برچسب «فقط شما» مشخص شده‌اند."
           >
@@ -292,30 +440,26 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
           </SectionCard>
 
           <SectionCard title="ثبت رویداد جدید">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3">
               <label className="block">
                 <FieldLabel>نوع</FieldLabel>
-                <select
+                <SiteSelect
                   value={event.kind}
-                  onChange={(e) => setEvent((c) => ({ ...c, kind: e.target.value as CaseEventKind }))}
-                  className={inputClass}
-                >
-                  {caseEventKinds.map((kind) => (
-                    <option key={kind} value={kind}>
-                      {caseEventKindMeta[kind].title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block">
-                <FieldLabel>زمان رویداد (اختیاری)</FieldLabel>
-                <input
-                  type="datetime-local"
-                  value={event.happensAt}
-                  onChange={(e) => setEvent((c) => ({ ...c, happensAt: e.target.value }))}
-                  className={inputClass}
+                  onValueChange={(kind) => setEvent((c) => ({ ...c, kind: kind as CaseEventKind }))}
+                  options={caseEventKinds.map((kind) => ({
+                    value: kind,
+                    label: caseEventKindMeta[kind].title,
+                  }))}
+                  className="h-11 w-full min-w-0"
                 />
               </label>
+              <div className="block">
+                <FieldLabel>زمان رویداد (شمسی، اختیاری)</FieldLabel>
+                <JalaliDateTimeField
+                  value={event.happensAt}
+                  onValueChange={(happensAt) => setEvent((c) => ({ ...c, happensAt }))}
+                />
+              </div>
             </div>
             <label className="mt-3 block">
               <FieldLabel>عنوان</FieldLabel>
@@ -365,34 +509,29 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
             <div className="grid gap-3">
               <label className="block">
                 <FieldLabel>وضعیت</FieldLabel>
-                <select
+                <SiteSelect
                   value={form.status}
-                  disabled={locked}
-                  onChange={(e) => setForm((c) => ({ ...c, status: e.target.value as CaseStatus }))}
-                  className={cn(inputClass, locked && "opacity-60")}
-                >
-                  {caseStatuses
+                  onValueChange={(status) => setForm((c) => ({ ...c, status: status as CaseStatus }))}
+                  options={caseStatuses
                     .filter((status) => status !== "proposed" || locked)
-                    .map((status) => (
-                      <option key={status} value={status}>
-                        {caseStatusMeta[status].title}
-                      </option>
-                    ))}
-                </select>
+                    .map((status) => ({
+                      value: status,
+                      label: caseStatusMeta[status].title,
+                    }))}
+                  className={cn("h-11 w-full min-w-0", locked && "pointer-events-none opacity-60")}
+                />
               </label>
               <label className="block">
                 <FieldLabel>مرحله</FieldLabel>
-                <select
+                <SiteSelect
                   value={form.stage}
-                  onChange={(e) => setForm((c) => ({ ...c, stage: e.target.value as CaseStage }))}
-                  className={inputClass}
-                >
-                  {caseStages.map((stage) => (
-                    <option key={stage} value={stage}>
-                      {caseStageMeta[stage]}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(stage) => setForm((c) => ({ ...c, stage: stage as CaseStage }))}
+                  options={caseStages.map((stage) => ({
+                    value: stage,
+                    label: caseStageMeta[stage],
+                  }))}
+                  className="h-11 w-full min-w-0"
+                />
               </label>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block">
@@ -442,15 +581,13 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
                     className={inputClass}
                   />
                 </label>
-                <label className="block">
-                  <FieldLabel>زمان اقدام بعدی</FieldLabel>
-                  <input
-                    type="datetime-local"
+                <div className="block sm:col-span-2">
+                  <FieldLabel>زمان اقدام بعدی (شمسی)</FieldLabel>
+                  <JalaliDateTimeField
                     value={form.nextActionAt}
-                    onChange={(e) => setForm((c) => ({ ...c, nextActionAt: e.target.value }))}
-                    className={inputClass}
+                    onValueChange={(nextActionAt) => setForm((c) => ({ ...c, nextActionAt }))}
                   />
-                </label>
+                </div>
               </div>
               <label className="block">
                 <FieldLabel>عنوان اقدام بعدی</FieldLabel>
@@ -484,43 +621,41 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
           </SectionCard>
 
           <SectionCard title="ثبت جلسه" hint="جلسه در تایم‌لاین پرونده و نوبت‌های شما ثبت می‌شود.">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block">
-                <FieldLabel>نوع</FieldLabel>
-                <select
-                  value={appointment.kind}
-                  onChange={(e) =>
-                    setAppointment((c) => ({ ...c, kind: e.target.value as (typeof appointmentKinds)[number] }))
-                  }
-                  className={inputClass}
-                >
-                  {appointmentKinds.map((kind) => (
-                    <option key={kind} value={kind}>
-                      {appointmentKindMeta[kind]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block">
-                <FieldLabel>زمان</FieldLabel>
-                <input
-                  type="datetime-local"
+            <div className="grid gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <FieldLabel>نوع</FieldLabel>
+                  <SiteSelect
+                    value={appointment.kind}
+                    onValueChange={(kind) =>
+                      setAppointment((c) => ({ ...c, kind: kind as (typeof appointmentKinds)[number] }))
+                    }
+                    options={appointmentKinds.map((kind) => ({
+                      value: kind,
+                      label: appointmentKindMeta[kind],
+                    }))}
+                    className="h-11 w-full min-w-0"
+                  />
+                </label>
+                <label className="block">
+                  <FieldLabel>مدت (دقیقه)</FieldLabel>
+                  <input
+                    type="number"
+                    min={5}
+                    max={480}
+                    value={appointment.minutes}
+                    onChange={(e) => setAppointment((c) => ({ ...c, minutes: e.target.value }))}
+                    className={inputClass}
+                  />
+                </label>
+              </div>
+              <div className="block">
+                <FieldLabel>زمان (شمسی)</FieldLabel>
+                <JalaliDateTimeField
                   value={appointment.scheduledAt}
-                  onChange={(e) => setAppointment((c) => ({ ...c, scheduledAt: e.target.value }))}
-                  className={inputClass}
+                  onValueChange={(scheduledAt) => setAppointment((c) => ({ ...c, scheduledAt }))}
                 />
-              </label>
-              <label className="block">
-                <FieldLabel>مدت (دقیقه)</FieldLabel>
-                <input
-                  type="number"
-                  min={5}
-                  max={480}
-                  value={appointment.minutes}
-                  onChange={(e) => setAppointment((c) => ({ ...c, minutes: e.target.value }))}
-                  className={inputClass}
-                />
-              </label>
+              </div>
               <label className="block">
                 <FieldLabel>توضیح</FieldLabel>
                 <input

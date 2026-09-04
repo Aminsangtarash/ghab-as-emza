@@ -1,37 +1,37 @@
 import { hashPassword } from "@/lib/auth";
+import { PRIMARY_MANAGER_PHONE } from "@/lib/admin-permissions";
 import { prisma } from "@/lib/db";
 
-export const ADMIN_DEMO_PASSWORD = "Admin1405";
-export const MANAGER_DEMO_PASSWORD = "Manager1405";
-
-const staff = [
-  { phone: "09120000001", fullName: "مدیر سیستم", role: "admin", password: ADMIN_DEMO_PASSWORD },
-  { phone: "09120000002", fullName: "مدیر دفتر", role: "manager", password: MANAGER_DEMO_PASSWORD },
-] as const;
+/** رمز اولیه مدیر اول = همان شماره موبایل (قابل ویرایش بعداً). */
+export const PRIMARY_MANAGER_PASSWORD = PRIMARY_MANAGER_PHONE;
 
 let seeded = false;
 
 export async function ensureStaffAccounts() {
   if (seeded) return;
-  for (const person of staff) {
-    const existing = await prisma.user.findUnique({ where: { phone: person.phone } });
-    if (existing) {
-      if (existing.role !== person.role) {
-        await prisma.user.update({
-          where: { id: existing.id },
-          data: { role: person.role, fullName: person.fullName, lawyerSlug: null },
-        });
-      }
-      continue;
-    }
+
+  const existing = await prisma.user.findUnique({ where: { phone: PRIMARY_MANAGER_PHONE } });
+  if (!existing) {
     await prisma.user.create({
       data: {
-        fullName: person.fullName,
-        phone: person.phone,
-        passwordHash: hashPassword(person.password),
-        role: person.role,
+        fullName: "مدیر سیستم",
+        phone: PRIMARY_MANAGER_PHONE,
+        passwordHash: hashPassword(PRIMARY_MANAGER_PASSWORD),
+        role: "manager",
       },
     });
+  } else if (existing.role !== "manager") {
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: { role: "manager", lawyerSlug: null },
+    });
   }
+
+  // ستون active ممکن است در کلاینت قفل‌شدهٔ Prisma دیده نشود؛ با SQL خام همگام می‌شود.
+  await prisma.$executeRawUnsafe(
+    `UPDATE User SET active = 1, role = 'manager', lawyerSlug = NULL WHERE phone = ?`,
+    PRIMARY_MANAGER_PHONE,
+  ).catch(() => undefined);
+
   seeded = true;
 }

@@ -13,6 +13,7 @@ import {
   panelCard,
   panelFetch,
 } from "@/components/lawyer/lawyer-ui";
+import { SiteDataTable } from "@/components/ui/site-data-table";
 import { consultationStatusMeta, type ConsultationStatus } from "@/lib/consult";
 import { formatFaDate, formatToman, formatTomanAmount, toFaDigits } from "@/lib/format";
 import type { EarningRow } from "@/lib/lawyer-desk";
@@ -87,43 +88,64 @@ export function LawyerEarnings() {
           </div>
 
           <SectionCard title="ریز مشاوره‌ها" hint="۱۰۰ مورد آخر">
-            {data.items.length === 0 ? (
-              <EmptyRow>موردی ثبت نشده است.</EmptyRow>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[36rem] text-sm">
-                  <thead>
-                    <tr className="text-start text-xs text-navy/45">
-                      <th className="pb-2 text-start font-medium">موضوع</th>
-                      <th className="pb-2 text-start font-medium">موکل</th>
-                      <th className="pb-2 text-start font-medium">خدمت</th>
-                      <th className="pb-2 text-start font-medium">مبلغ</th>
-                      <th className="pb-2 text-start font-medium">وضعیت</th>
-                      <th className="pb-2 text-start font-medium">تاریخ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.items.map((item) => (
-                      <tr key={item.trackingCode} className="border-t border-navy/8">
-                        <td className="py-3 pe-3">
-                          <p className="font-medium text-navy">{item.subject}</p>
-                          <p className="mt-0.5 text-[11px] text-navy/40">{toFaDigits(item.trackingCode)}</p>
-                        </td>
-                        <td className="py-3 pe-3 text-navy/70">{item.clientName}</td>
-                        <td className="py-3 pe-3 text-navy/70">{item.service}</td>
-                        <td className="py-3 pe-3 text-navy/80">{formatToman(item.feeToman)}</td>
-                        <td className="py-3 pe-3">
-                          <Tone tone={item.status === "closed" ? "bg-navy/5 text-navy/55" : "bg-emerald-50 text-emerald-800"}>
-                            {consultationStatusMeta[item.status as ConsultationStatus]?.title ?? item.status}
-                          </Tone>
-                        </td>
-                        <td className="py-3 text-xs text-navy/50">{formatFaDate(item.createdAt)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <SiteDataTable
+              rows={data.items}
+              rowKey={(item) => item.trackingCode}
+              pageSize={10}
+              minWidthClassName="min-w-[36rem]"
+              empty={
+                <div className="p-6">
+                  <EmptyRow>موردی ثبت نشده است.</EmptyRow>
+                </div>
+              }
+              columns={[
+                {
+                  id: "subject",
+                  header: "موضوع",
+                  className: "pe-3",
+                  cell: (item) => (
+                    <div>
+                      <p className="font-medium text-navy">{item.subject}</p>
+                      <p className="mt-0.5 text-[11px] text-navy/40">{toFaDigits(item.trackingCode)}</p>
+                    </div>
+                  ),
+                },
+                {
+                  id: "client",
+                  header: "موکل",
+                  className: "pe-3 text-navy/70",
+                  cell: (item) => item.clientName,
+                },
+                {
+                  id: "service",
+                  header: "خدمت",
+                  className: "pe-3 text-navy/70",
+                  cell: (item) => item.service,
+                },
+                {
+                  id: "fee",
+                  header: "مبلغ",
+                  className: "pe-3 text-navy/80",
+                  cell: (item) => formatToman(item.feeToman),
+                },
+                {
+                  id: "status",
+                  header: "وضعیت",
+                  className: "pe-3",
+                  cell: (item) => (
+                    <Tone tone={item.status === "closed" ? "bg-navy/5 text-navy/55" : "bg-emerald-50 text-emerald-800"}>
+                      {consultationStatusMeta[item.status as ConsultationStatus]?.title ?? item.status}
+                    </Tone>
+                  ),
+                },
+                {
+                  id: "date",
+                  header: "تاریخ",
+                  className: "text-xs text-navy/50",
+                  cell: (item) => formatFaDate(item.createdAt),
+                },
+              ]}
+            />
           </SectionCard>
         </>
       )}

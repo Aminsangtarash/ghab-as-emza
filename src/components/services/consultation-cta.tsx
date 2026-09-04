@@ -26,14 +26,14 @@ export function ConsultationCta() {
           </p>
         </div>
         <Link
-          href="/consult"
+          href="/consult?service=urgent-consult"
           className={cn(
             buttonVariants({ size: "lg" }),
             "h-12 shrink-0 gap-2 bg-gold px-7 text-base text-navy-deep hover:bg-gold-bright",
           )}
         >
           <HeadsetIcon className="size-5" />
-          مشاوره آنلاین
+          مشاوره فوری
         </Link>
       </div>
     </section>

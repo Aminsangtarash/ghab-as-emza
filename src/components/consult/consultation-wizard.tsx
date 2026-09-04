@@ -56,7 +56,7 @@ import {
   writeLocalConsultDraft,
   type ConsultWizardDraft,
 } from "@/lib/consult-draft";
-import type { PublicUser } from "@/lib/store";
+import type { PublicUser } from "@/lib/store-types";
 import { formatFileSize, formatToman, normalizePhone, toFaDigits } from "@/lib/format";
 import { lookupPromo, quotePayment } from "@/lib/promos";
 import { cn } from "@/lib/utils";

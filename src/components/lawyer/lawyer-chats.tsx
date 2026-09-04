@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { MessageCircleIcon, PhoneIcon, VideoIcon } from "lucide-react";
 
 import {
@@ -12,6 +11,7 @@ import {
   panelCard,
   panelFetch,
 } from "@/components/lawyer/lawyer-ui";
+import { SiteDataTable, SiteTableLink } from "@/components/ui/site-data-table";
 import { consultChannelMeta } from "@/lib/consult";
 import type { ClientConversation } from "@/lib/conversations";
 import { formatFaRelative, toFaDigits } from "@/lib/format";
@@ -80,50 +80,98 @@ export function LawyerChats({ initialFilter = "all" }: { initialFilter?: string 
 
       {items === null ? (
         <div className={cn(panelCard, "px-6 py-10 text-sm text-navy/50")}>در حال بارگذاری…</div>
-      ) : items.length === 0 ? (
-        <div className={cn(panelCard, "px-6 py-10")}>
-          <EmptyRow>گفتگویی در این دسته نیست.</EmptyRow>
-        </div>
       ) : (
-        <ul className="space-y-3">
-          {items.map((item) => {
-            const Icon =
-              item.channel === "video" ? VideoIcon : item.channel === "phone" ? PhoneIcon : MessageCircleIcon;
-            return (
-              <li key={item.id}>
-                <Link
-                  href={`/lawyer/chats/${item.id}`}
-                  className={cn(panelCard, "block px-5 py-4 transition hover:border-gold/40 hover:shadow-md")}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className={cn(panelCard, "overflow-hidden p-0")}>
+          <SiteDataTable
+            rows={items}
+            rowKey={(item) => item.id}
+            pageSize={10}
+            minWidthClassName="min-w-[48rem]"
+            empty={
+              <div className="p-6">
+                <EmptyRow>گفتگویی در این دسته نیست.</EmptyRow>
+              </div>
+            }
+            columns={[
+              {
+                id: "index",
+                header: "ردیف",
+                hideOnMobile: true,
+                headerClassName: "px-3 md:px-3",
+                className: "px-3 text-center text-navy/40 md:px-3",
+                cell: (_row, index) => toFaDigits(index + 1),
+              },
+              {
+                id: "subject",
+                header: "موضوع",
+                headerClassName: "text-right",
+                className: "max-w-[14rem] text-right",
+                cell: (item) => {
+                  const Icon =
+                    item.channel === "video"
+                      ? VideoIcon
+                      : item.channel === "phone"
+                        ? PhoneIcon
+                        : MessageCircleIcon;
+                  return (
                     <div className="min-w-0">
-                      <p className="font-heading font-semibold text-navy">{item.subject}</p>
-                      <p className="mt-1 flex items-center gap-2 text-sm text-navy/55">
-                        <Icon className="size-3.5 text-navy/40" />
-                        {consultChannelMeta[item.channel].title}
-                        {item.clientName ? ` · ${item.clientName}` : ""}
-                      </p>
+                      <SiteTableLink href={`/lawyer/chats/${item.id}`} className="block truncate">
+                        {item.subject}
+                      </SiteTableLink>
+                      {item.lastMessage ? (
+                        <span className="mt-1 flex items-center gap-1.5 truncate text-[11px] text-navy/45">
+                          <Icon className="size-3 shrink-0" />
+                          <span className="truncate">{item.lastMessage}</span>
+                        </span>
+                      ) : null}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {item.needsReply ? <Tone tone="bg-amber-50 text-amber-800">منتظر پاسخ</Tone> : null}
-                      {item.caseId ? <Tone tone="bg-sky-50 text-sky-800">پرونده دارد</Tone> : null}
-                      <Tone tone={item.closedAt ? "bg-navy/5 text-navy/55" : "bg-emerald-50 text-emerald-800"}>
-                        {item.closedAt ? "بسته" : "فعال"}
-                      </Tone>
-                    </div>
+                  );
+                },
+              },
+              {
+                id: "client",
+                header: "موکل",
+                hideOnMobile: true,
+                className: "whitespace-nowrap text-navy/60",
+                cell: (item) => item.clientName ?? "—",
+              },
+              {
+                id: "channel",
+                header: "کانال",
+                hideOnMobile: true,
+                className: "whitespace-nowrap text-navy/60",
+                cell: (item) => consultChannelMeta[item.channel].title,
+              },
+              {
+                id: "tracking",
+                header: "کد",
+                hideOnMobile: true,
+                className: "whitespace-nowrap text-navy/60",
+                cell: (item) => toFaDigits(item.trackingCode),
+              },
+              {
+                id: "date",
+                header: "زمان",
+                className: "whitespace-nowrap text-center text-navy/50",
+                cell: (item) => formatFaRelative(item.createdAt),
+              },
+              {
+                id: "flags",
+                header: "وضعیت",
+                className: "text-center",
+                cell: (item) => (
+                  <div className="flex flex-wrap items-center justify-center gap-1.5">
+                    {item.needsReply ? <Tone tone="bg-amber-50 text-amber-800">منتظر پاسخ</Tone> : null}
+                    {item.caseId ? <Tone tone="bg-sky-50 text-sky-800">پرونده</Tone> : null}
+                    <Tone tone={item.closedAt ? "bg-navy/5 text-navy/55" : "bg-emerald-50 text-emerald-800"}>
+                      {item.closedAt ? "بسته" : "فعال"}
+                    </Tone>
                   </div>
-                  {item.lastMessage ? (
-                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-navy/55">{item.lastMessage}</p>
-                  ) : null}
-                  <p className="mt-3 text-xs text-navy/40">
-                    {toFaDigits(item.trackingCode)} · {formatFaRelative(item.createdAt)}
-                    {item.ratingScore ? ` · امتیاز ${toFaDigits(item.ratingScore)} از ۵` : ""}
-                  </p>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                ),
+              },
+            ]}
+          />
+        </div>
       )}
     </div>
   );

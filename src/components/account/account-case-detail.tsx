@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { CheckIcon, EyeIcon } from "lucide-react";
 
+import { ConsultDocumentList } from "@/components/consult/document-list";
+import { DocumentPreviewModal } from "@/components/consult/document-preview-modal";
 import { buttonVariants } from "@/components/ui/button";
 import { caseEventKindMeta, caseStageMeta, caseStatusMeta, type ClientCase } from "@/lib/case-model";
 import { formatFaDateTime, formatTomanAmount, toFaDigits } from "@/lib/format";
@@ -13,6 +16,11 @@ export function AccountCaseDetail({ caseId }: { caseId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [pending, setPending] = useState(false);
+  const [preview, setPreview] = useState<{
+    documentId: string;
+    title: string;
+    mimeType?: string;
+  } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -104,6 +112,65 @@ export function AccountCaseDetail({ caseId }: { caseId: string }) {
           </Link>
         ) : null}
       </div>
+
+      {(item.trackingCode && item.documents.length > 0) || item.documentRequestItems.length > 0 ? (
+        <div className="mt-4 rounded-2xl bg-white/85 p-5 shadow-sm ring-1 ring-navy/8">
+          <h2 className="font-heading text-base font-semibold text-navy">مدارک پرونده</h2>
+          {item.trackingCode && item.documents.length > 0 ? (
+            <ConsultDocumentList trackingCode={item.trackingCode} items={item.documents} />
+          ) : null}
+          {item.documentRequestItems.length > 0 ? (
+            <ul className="mt-3 space-y-2">
+              {item.documentRequestItems.map((docItem) => (
+                <li key={docItem.id} className="rounded-xl bg-paper/70 px-3 py-3 ring-1 ring-navy/8">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="flex items-center gap-2 text-sm text-navy">
+                      {docItem.status === "approved" ? <CheckIcon className="size-4 text-emerald-600" /> : null}
+                      {docItem.title}
+                    </p>
+                    <span className="text-[11px] text-navy/50">
+                      {docItem.status === "pending"
+                        ? "در انتظار آپلود"
+                        : docItem.status === "uploaded"
+                          ? "در انتظار تأیید"
+                          : docItem.status === "approved"
+                            ? "تأیید شده"
+                            : "رد شده"}
+                    </span>
+                  </div>
+                  {docItem.documentId && item.trackingCode ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPreview({
+                          documentId: docItem.documentId!,
+                          title: docItem.title,
+                          mimeType: docItem.documentMimeType,
+                        })
+                      }
+                      className={cn(buttonVariants({ variant: "outline" }), "mt-3 h-9 border-navy/15 px-3 text-xs")}
+                    >
+                      <EyeIcon className="size-3.5" />
+                      مشاهده
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+
+      {preview && item.trackingCode ? (
+        <DocumentPreviewModal
+          open
+          onClose={() => setPreview(null)}
+          trackingCode={item.trackingCode}
+          documentId={preview.documentId}
+          title={preview.title}
+          mimeType={preview.mimeType}
+        />
+      ) : null}
 
       {item.status === "proposed" && (
         <div className="mt-4 rounded-2xl border border-gold/25 bg-gold/10 p-5">

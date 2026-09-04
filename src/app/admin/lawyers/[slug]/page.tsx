@@ -1,35 +1,11 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 
-import { PanelLawyerProfile } from "@/components/panel/panel-lawyer-profile";
-import { panelConsultHref, panelLawyersHref } from "@/lib/account";
-import { getLawyer } from "@/lib/data";
+import { AdminLawyerDetailPanel } from "@/components/admin/admin-lawyer-detail";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const lawyer = getLawyer(slug);
-  if (!lawyer) return { title: "متخصص یافت نشد" };
-  return { title: lawyer.name };
-}
+export const metadata: Metadata = {
+  title: "جزئیات وکیل",
+};
 
-export default async function AdminLawyerPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const lawyer = getLawyer(slug);
-  if (!lawyer) notFound();
-
-  return (
-    <PanelLawyerProfile
-      lawyer={lawyer}
-      backHref={panelLawyersHref("/admin")}
-      consultHref={panelConsultHref("/admin", lawyer.slug)}
-    />
-  );
+export default function AdminLawyerDetailPage() {
+  return <AdminLawyerDetailPanel />;
 }

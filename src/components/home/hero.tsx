@@ -18,7 +18,7 @@ export function Hero() {
 
   const bgTransform = reducedMotion
     ? undefined
-    : `translate3d(${x * 0.45}px, ${y * 0.25 + scrollY * 0.22}px, 0) scale(1.06)`;
+    : `translate3d(${x * 0.45}px, ${y * 0.25 + scrollY * 0.147}px, 0) scale(1.06)`;
 
   useLayoutEffect(() => {
     const node = heroRef.current;
@@ -47,24 +47,26 @@ export function Hero() {
           className="absolute inset-y-0 left-3 h-full origin-top-left lg:left-[max(0.75rem,calc((100%-72rem)/4+0.75rem))]"
           style={{ transform: bgTransform }}
         >
-          <Image
-            src="/images/hero-legal.jpg"
-            alt=""
-            width={2000}
-            height={1333}
-            priority
-            className="h-full w-auto max-w-none"
-            style={{
-              WebkitMaskImage:
-                "linear-gradient(to right, transparent 0%, #000 22%, #000 40%, rgba(0,0,0,0.4) 62%, transparent 96%)",
-              maskImage:
-                "linear-gradient(to right, transparent 0%, #000 22%, #000 40%, rgba(0,0,0,0.4) 62%, transparent 96%)",
-            }}
-          />
+          <div className="relative h-full w-fit">
+            <Image
+              src="/images/hero-legal.jpg"
+              alt=""
+              width={2000}
+              height={1333}
+              priority
+              className="h-full w-auto max-w-none"
+              style={{
+                WebkitMaskImage:
+                  "linear-gradient(to right, transparent 0%, #000 22%, #000 40%, rgba(0,0,0,0.4) 62%, transparent 96%)",
+                maskImage:
+                  "linear-gradient(to right, transparent 0%, #000 22%, #000 40%, rgba(0,0,0,0.4) 62%, transparent 96%)",
+              }}
+            />
+            <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-navy-deep to-transparent" />
+          </div>
         </div>
         <div className="absolute inset-y-0 left-0 w-[15%] bg-gradient-to-r from-navy-deep from-15% to-transparent lg:w-[min(15%,15rem)]" />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent from-[8%] via-navy-deep/40 via-[42%] to-navy-deep to-[72%]" />
-        <div className="absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-navy-deep to-transparent" />
       </div>
 
       <section ref={heroRef} className="relative z-10 bg-navy-deep md:bg-transparent">

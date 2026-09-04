@@ -1,4 +1,5 @@
 import { toEnDigits } from "@/lib/format";
+import { resolvePromos } from "@/lib/catalog-cache";
 
 export type Promo = {
   code: string;
@@ -20,7 +21,7 @@ export function lookupPromo(code?: string | null) {
   if (!code) return null;
   const needle = normalizePromoCode(code);
   if (!needle) return null;
-  return promoCodes.find((item) => item.code === needle) ?? null;
+  return resolvePromos(true).find((item) => item.code === needle) ?? null;
 }
 
 export function quotePayment(originalToman: number, code?: string | null) {

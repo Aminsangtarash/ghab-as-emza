@@ -26,7 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { accountRoleLabel } from "@/lib/account";
 import { formatFaDate, formatFaDateTime, formatToman, toFaDigits } from "@/lib/format";
-import type { PublicUser } from "@/lib/store";
+import type { PublicUser } from "@/lib/store-types";
 import { cn } from "@/lib/utils";
 
 const card = "rounded-[1.25rem] bg-white shadow-sm ring-1 ring-navy/8";

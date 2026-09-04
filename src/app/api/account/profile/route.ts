@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getRequestUser } from "@/lib/auth";
 import { isRateLimited } from "@/lib/rate-limit";
-import { updateUserProfile } from "@/lib/store";
+import { updateUserProfile } from "@/lib/store-users";
 import { profileUpdateSchema } from "@/lib/validations";
 
 export async function PATCH(request: NextRequest) {

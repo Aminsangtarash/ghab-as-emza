@@ -4,7 +4,7 @@ import { RequestActions } from "@/components/account/request-actions";
 import { StatusBadge } from "@/components/account/status-badge";
 import { consultChannelMeta } from "@/lib/consult";
 import { formatFaDateTime, toFaDigits } from "@/lib/format";
-import type { ClientConsultation } from "@/lib/store";
+import type { ClientConsultation } from "@/lib/store-types";
 
 export function RequestCard({ item }: { item: ClientConsultation }) {
   const cancelled = item.status === "cancelled";

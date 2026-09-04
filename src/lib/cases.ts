@@ -14,14 +14,49 @@ import { prisma } from "@/lib/db";
 
 type CaseRow = Case & {
   user?: Pick<User, "fullName" | "phone"> | null;
-  consultation?: { trackingCode: string } | null;
+  consultation?: {
+    trackingCode: string;
+    conversation?: { id: string } | null;
+    documents?: { id: string; originalName: string; size: number; mimeType: string }[];
+    documentRequests?: Array<{
+      items: Array<{
+        id: string;
+        title: string;
+        status: string;
+        documentId: string | null;
+        rejectReason: string | null;
+        document?: { id: string; originalName: string; mimeType: string; size: number } | null;
+      }>;
+    }>;
+  } | null;
   events?: CaseEvent[];
   _count?: { events: number };
 };
 
 const caseInclude = {
   user: { select: { fullName: true, phone: true } },
-  consultation: { select: { trackingCode: true } },
+  consultation: {
+    select: {
+      trackingCode: true,
+      conversation: { select: { id: true } },
+      documents: {
+        select: { id: true, originalName: true, size: true, mimeType: true },
+        orderBy: { createdAt: "asc" as const },
+      },
+      documentRequests: {
+        orderBy: { createdAt: "desc" as const },
+        take: 1,
+        include: {
+          items: {
+            orderBy: { sortOrder: "asc" as const },
+            include: {
+              document: { select: { id: true, originalName: true, mimeType: true, size: true } },
+            },
+          },
+        },
+      },
+    },
+  },
   _count: { select: { events: true } },
 } as const;
 
@@ -55,6 +90,9 @@ export async function createCase(input: {
   if (summary.length < 20) return { error: "شرح پرونده باید حداقل ۲۰ نویسه باشد." as const };
   if (input.feeToman < 0 || input.feeToman > 5_000_000_000) {
     return { error: "مبلغ حق‌الوکاله معتبر نیست." as const };
+  }
+  if (input.feeToman <= 0) {
+    return { error: "مبلغ پیشنهادی حق‌الوکاله را وارد کنید." as const };
   }
 
   let userId = input.userId;
@@ -95,7 +133,7 @@ export async function createCase(input: {
         create: {
           kind: "status",
           title: "پیشنهاد تشکیل پرونده ثبت شد",
-          body: `مرحله: ${caseStageMeta[input.stage]}`,
+          body: `مرحله: ${caseStageMeta[input.stage]} · حق‌الوکاله پیشنهادی: ${input.feeToman.toLocaleString("en-US")} تومان`,
           authorRole: "lawyer",
           visibleToClient: true,
         },
@@ -108,7 +146,7 @@ export async function createCase(input: {
       data: {
         conversationId: input.conversationId,
         authorRole: "system",
-        body: `وکیل تشکیل پرونده «${title}» را پیشنهاد داد. جزئیات و تأیید آن در بخش پرونده‌ها است.`,
+        body: `وکیل تشکیل پرونده «${title}» را با حق‌الوکاله پیشنهادی ${input.feeToman.toLocaleString("en-US")} تومان پیشنهاد داد. جزئیات و تأیید آن در بخش پرونده‌ها است.`,
       },
     });
   }
@@ -171,7 +209,7 @@ export async function updateCase(
   if (patch.status === "proposed" && row.status !== "proposed") {
     return { error: "بازگشت به مرحله پیشنهاد ممکن نیست." as const };
   }
-  if (row.status === "proposed" && patch.status && patch.status !== "declined") {
+  if (row.status === "proposed" && patch.status && patch.status !== row.status && patch.status !== "declined") {
     return { error: "تا تأیید موکل، وضعیت پرونده تغییر نمی‌کند." as const };
   }
 
@@ -371,6 +409,23 @@ export function toClientCase(row: CaseRow, audience: "lawyer" | "client"): Clien
     clientName: row.user?.fullName ?? "موکل",
     clientPhone: audience === "lawyer" ? row.user?.phone : undefined,
     trackingCode: row.consultation?.trackingCode,
+    conversationId: row.consultation?.conversation?.id,
+    documents: (row.consultation?.documents ?? []).map((doc) => ({
+      id: doc.id,
+      originalName: doc.originalName,
+      size: doc.size,
+      mimeType: doc.mimeType,
+    })),
+    documentRequestItems: (row.consultation?.documentRequests?.[0]?.items ?? []).map((item) => ({
+      id: item.id,
+      title: item.title,
+      status: item.status as ClientCase["documentRequestItems"][number]["status"],
+      documentId: item.documentId ?? undefined,
+      documentName: item.document?.originalName,
+      documentMimeType: item.document?.mimeType,
+      documentSize: item.document?.size,
+      rejectReason: item.rejectReason ?? undefined,
+    })),
     createdAt: row.createdAt.toISOString(),
     acceptedAt: row.acceptedAt?.toISOString(),
     declinedAt: row.declinedAt?.toISOString(),

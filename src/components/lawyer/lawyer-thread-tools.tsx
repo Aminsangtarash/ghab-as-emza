@@ -23,13 +23,19 @@ import {
   panelFetch,
   textareaClass,
 } from "@/components/lawyer/lawyer-ui";
+import { ConsultDocumentList } from "@/components/consult/document-list";
+import { DocumentRequestEditor } from "@/components/lawyer/document-request-editor";
 import { buttonVariants } from "@/components/ui/button";
+import { JalaliDateTimeField } from "@/components/ui/jalali-datetime-field";
+import { SiteSelect } from "@/components/ui/site-select";
 import { appointmentKinds, appointmentKindMeta } from "@/lib/appointment-model";
+import { suggestNextAppointmentLocalValue } from "@/lib/appointment-slot";
 import { caseStageMeta, caseStages } from "@/lib/case-model";
 import { caseStageMeta as consultStageMeta, timeSlotMeta, urgencyMeta } from "@/lib/consult";
 import type { ClientConversation } from "@/lib/conversations";
+import type { ClientDocumentRequest } from "@/lib/document-request-types";
 import type { LawyerNoteItem } from "@/lib/lawyer-desk";
-import { formatFaDateTime, formatToman, toFaDigits } from "@/lib/format";
+import { formatFaDateTime, formatToman, toEnDigits, toFaDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type DeskDetail = {
@@ -55,6 +61,8 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
 
   const [noteText, setNoteText] = useState("");
   const [closeText, setCloseText] = useState("");
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [docRequest, setDocRequest] = useState<ClientDocumentRequest | null>(null);
 
   const [appointment, setAppointment] = useState({
     kind: "phone" as (typeof appointmentKinds)[number],
@@ -76,12 +84,14 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
   });
 
   const load = useCallback(async () => {
-    const [conversation, noteList] = await Promise.all([
+    const [conversation, noteList, requests, appointments] = await Promise.all([
       panelFetch<{ summary: ClientConversation; detail: DeskDetail }>("/api/desk", {
         method: "POST",
         body: JSON.stringify({ action: "get", conversationId }),
       }),
       panelFetch<{ items: LawyerNoteItem[] }>(`/api/lawyer/notes?conversationId=${conversationId}`),
+      panelFetch<{ items: ClientDocumentRequest[] }>(`/api/conversations/${conversationId}/document-requests`),
+      panelFetch<{ items: Array<{ scheduledAt: string }> }>("/api/lawyer/appointments"),
     ]);
     if (!conversation.ok) {
       setError(conversation.error);
@@ -90,6 +100,17 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
     setSummary(conversation.data.summary);
     setDetail(conversation.data.detail);
     if (noteList.ok) setNotes(noteList.data.items);
+    if (requests.ok) setDocRequest(requests.data.items[0] ?? null);
+    if (appointments.ok) {
+      setAppointment((current) =>
+        current.scheduledAt
+          ? current
+          : {
+              ...current,
+              scheduledAt: suggestNextAppointmentLocalValue(appointments.data.items),
+            },
+      );
+    }
   }, [conversationId]);
 
   useEffect(() => {
@@ -151,10 +172,30 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
         }),
       "نوبت ثبت شد و به موکل اطلاع داده شد.",
     );
-    if (done) setAppointment((current) => ({ ...current, scheduledAt: "", note: "" }));
+    if (done) {
+      const list = await panelFetch<{ items: Array<{ scheduledAt: string }> }>("/api/lawyer/appointments");
+      setAppointment((current) => ({
+        ...current,
+        scheduledAt: suggestNextAppointmentLocalValue(
+          list.ok ? list.data.items : [{ scheduledAt: new Date(current.scheduledAt).toISOString() }],
+        ),
+        note: "",
+      }));
+    }
   }
 
   async function createCase() {
+    const feeToman = Number(toEnDigits(caseForm.feeToman)) || 0;
+    if (feeToman <= 0) {
+      setError("مبلغ پیشنهادی حق‌الوکاله را وارد کنید.");
+      return;
+    }
+    if (docRequest && (docRequest.pendingCount > 0 || docRequest.uploadedCount > 0)) {
+      const proceed = window.confirm(
+        "هنوز برخی مدارک درخواستی آپلود یا تأیید نشده‌اند. با این حال پیشنهاد پرونده ثبت شود؟",
+      );
+      if (!proceed) return;
+    }
     const done = await run(
       () =>
         panelFetch<{ caseId?: string }>("/api/lawyer/cases", {
@@ -167,7 +208,7 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
             authority: caseForm.authority,
             courtBranch: caseForm.courtBranch,
             fileNumber: caseForm.fileNumber,
-            feeToman: Number(caseForm.feeToman) || 0,
+            feeToman,
             nextActionAt: caseForm.nextActionAt
               ? new Date(caseForm.nextActionAt).toISOString()
               : undefined,
@@ -177,8 +218,24 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
       "پیشنهاد تشکیل پرونده ثبت شد و در انتظار تأیید موکل است.",
     );
     if (done) {
-      setCaseForm((current) => ({ ...current, title: "", summary: "", nextActionNote: "" }));
+      setCaseForm((current) => ({ ...current, title: "", summary: "", nextActionNote: "", feeToman: "" }));
     }
+  }
+
+  async function removeDocument(documentId: string) {
+    if (!summary?.trackingCode) return;
+    setDeletingDocId(documentId);
+    const result = await panelFetch(
+      `/api/consultations/${encodeURIComponent(summary.trackingCode)}/documents/${documentId}`,
+      { method: "DELETE" },
+    );
+    setDeletingDocId(null);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setOkMessage("فایل از مدارک پرونده حذف شد.");
+    await load();
   }
 
   async function closeThread() {
@@ -275,50 +332,48 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
 
       {!closed && (
         <SectionCard title="ثبت نوبت" hint="زمان جلسه در گفتگو برای موکل ثبت می‌شود.">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <FieldLabel>نوع جلسه</FieldLabel>
-              <select
-                value={appointment.kind}
-                onChange={(event) =>
-                  setAppointment((current) => ({
-                    ...current,
-                    kind: event.target.value as (typeof appointmentKinds)[number],
-                  }))
-                }
-                className={inputClass}
-              >
-                {appointmentKinds.map((kind) => (
-                  <option key={kind} value={kind}>
-                    {appointmentKindMeta[kind]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <FieldLabel>زمان</FieldLabel>
-              <input
-                type="datetime-local"
+          <div className="grid gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <FieldLabel>نوع جلسه</FieldLabel>
+                <SiteSelect
+                  value={appointment.kind}
+                  onValueChange={(next) =>
+                    setAppointment((current) => ({
+                      ...current,
+                      kind: next as (typeof appointmentKinds)[number],
+                    }))
+                  }
+                  options={appointmentKinds.map((kind) => ({
+                    value: kind,
+                    label: appointmentKindMeta[kind],
+                  }))}
+                  className="h-11 w-full min-w-0"
+                />
+              </label>
+              <label className="block">
+                <FieldLabel>مدت (دقیقه)</FieldLabel>
+                <input
+                  type="number"
+                  min={5}
+                  max={480}
+                  value={appointment.minutes}
+                  onChange={(event) =>
+                    setAppointment((current) => ({ ...current, minutes: event.target.value }))
+                  }
+                  className={inputClass}
+                />
+              </label>
+            </div>
+            <div className="block">
+              <FieldLabel>زمان (شمسی)</FieldLabel>
+              <JalaliDateTimeField
                 value={appointment.scheduledAt}
-                onChange={(event) =>
-                  setAppointment((current) => ({ ...current, scheduledAt: event.target.value }))
+                onValueChange={(scheduledAt) =>
+                  setAppointment((current) => ({ ...current, scheduledAt }))
                 }
-                className={inputClass}
               />
-            </label>
-            <label className="block">
-              <FieldLabel>مدت (دقیقه)</FieldLabel>
-              <input
-                type="number"
-                min={5}
-                max={480}
-                value={appointment.minutes}
-                onChange={(event) =>
-                  setAppointment((current) => ({ ...current, minutes: event.target.value }))
-                }
-                className={inputClass}
-              />
-            </label>
+            </div>
             <label className="block">
               <FieldLabel>توضیح (اختیاری)</FieldLabel>
               <input
@@ -379,35 +434,65 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
                   placeholder="خلاصه موضوع، مدارک لازم و مراحل پیش‌رو را برای موکل بنویسید."
                 />
               </label>
+              <div className="rounded-2xl border border-navy/8 bg-paper/50 p-4">
+                <FieldLabel>مدارک پیوست درخواست</FieldLabel>
+                <p className="mb-2 text-xs leading-6 text-navy/45">
+                  فایل‌های اولیهٔ موکل همراه درخواست. برای مدارک تکمیلی از بخش زیر استفاده کنید.
+                </p>
+                {(summary.documents?.length ?? 0) > 0 ? (
+                  <ConsultDocumentList
+                    trackingCode={summary.trackingCode}
+                    items={summary.documents}
+                    onDelete={(id) => void removeDocument(id)}
+                    deletingId={deletingDocId}
+                  />
+                ) : (
+                  <p className="text-sm text-navy/50">هنوز فایلی به این درخواست پیوست نشده است.</p>
+                )}
+              </div>
+
+              <DocumentRequestEditor
+                conversationId={conversationId}
+                latest={docRequest}
+                onChanged={setDocRequest}
+                pending={pending}
+                setPending={setPending}
+                setError={setError}
+                setOkMessage={setOkMessage}
+              />
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block">
                   <FieldLabel>مرحله</FieldLabel>
-                  <select
+                  <SiteSelect
                     value={caseForm.stage}
-                    onChange={(event) =>
+                    onValueChange={(next) =>
                       setCaseForm((current) => ({
                         ...current,
-                        stage: event.target.value as (typeof caseStages)[number],
+                        stage: next as (typeof caseStages)[number],
                       }))
                     }
-                    className={inputClass}
-                  >
-                    {caseStages.map((stage) => (
-                      <option key={stage} value={stage}>
-                        {caseStageMeta[stage]}
-                      </option>
-                    ))}
-                  </select>
+                    options={caseStages.map((stage) => ({
+                      value: stage,
+                      label: caseStageMeta[stage],
+                    }))}
+                    className="h-11 w-full min-w-0"
+                  />
                 </label>
                 <label className="block">
                   <FieldLabel>حق‌الوکاله پیشنهادی (تومان)</FieldLabel>
                   <input
-                    type="number"
-                    min={0}
+                    type="text"
+                    inputMode="numeric"
                     value={caseForm.feeToman}
-                    onChange={(event) => setCaseForm((current) => ({ ...current, feeToman: event.target.value }))}
+                    onChange={(event) =>
+                      setCaseForm((current) => ({
+                        ...current,
+                        feeToman: toEnDigits(event.target.value).replace(/[^\d]/g, ""),
+                      }))
+                    }
                     className={inputClass}
-                    placeholder="0"
+                    placeholder="مثلاً 25000000"
                   />
                 </label>
                 <label className="block">
@@ -429,15 +514,15 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
                     maxLength={120}
                   />
                 </label>
-                <label className="block">
+                <div className="block sm:col-span-2">
                   <FieldLabel>اقدام بعدی (اختیاری)</FieldLabel>
-                  <input
-                    type="datetime-local"
+                  <JalaliDateTimeField
                     value={caseForm.nextActionAt}
-                    onChange={(event) => setCaseForm((current) => ({ ...current, nextActionAt: event.target.value }))}
-                    className={inputClass}
+                    onValueChange={(nextActionAt) =>
+                      setCaseForm((current) => ({ ...current, nextActionAt }))
+                    }
                   />
-                </label>
+                </div>
                 <label className="block">
                   <FieldLabel>عنوان اقدام بعدی</FieldLabel>
                   <input

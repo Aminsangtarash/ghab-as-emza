@@ -11,7 +11,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { GoldCanvas, SiteViewport } from "@/components/layout/site-canvas";
 import { accountNav } from "@/lib/account";
 import { formatToman, toFaDigits } from "@/lib/format";
-import type { PublicUser } from "@/lib/store";
+import type { PublicUser } from "@/lib/store-types";
 import { cn } from "@/lib/utils";
 
 export function AccountShell({ user, children }: { user: PublicUser; children: React.ReactNode }) {

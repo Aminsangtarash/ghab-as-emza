@@ -28,7 +28,7 @@ import {
 } from "@/lib/consult";
 import { getLawyer } from "@/lib/data";
 import { formatFaDateTime, formatToman, toFaDigits } from "@/lib/format";
-import type { ClientConsultation } from "@/lib/store";
+import type { ClientConsultation } from "@/lib/store-types";
 import { cn } from "@/lib/utils";
 
 export function RequestDetail({ item }: { item: ClientConsultation }) {

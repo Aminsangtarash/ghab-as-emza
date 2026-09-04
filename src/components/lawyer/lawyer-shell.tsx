@@ -11,7 +11,7 @@ import { LawyerAvatar } from "@/components/lawyers/lawyer-avatar";
 import { lawyerNav } from "@/lib/account";
 import type { Lawyer } from "@/lib/data";
 import { initials } from "@/lib/format";
-import type { PublicUser } from "@/lib/store";
+import type { PublicUser } from "@/lib/store-types";
 import { cn } from "@/lib/utils";
 
 export function LawyerShell({

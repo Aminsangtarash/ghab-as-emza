@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -14,13 +16,15 @@ import {
   SunIcon,
   WalletIcon,
   XCircleIcon,
+  ZapIcon,
 } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { SiteDataTable, SiteTableLink } from "@/components/ui/site-data-table";
 import { panelGreeting } from "@/lib/account";
 import { consultationStatusMeta, type ConsultationStatus } from "@/lib/consult";
 import { formatFaDate, formatFaLongDate, formatFaRelative, formatTomanAmount, toFaDigits } from "@/lib/format";
-import type { ClientConsultation, PublicUser } from "@/lib/store";
+import type { ClientConsultation, PublicUser } from "@/lib/store-types";
 import { cn } from "@/lib/utils";
 
 const tableStatusTone: Record<ConsultationStatus, string> = {
@@ -34,6 +38,13 @@ const tableStatusTone: Record<ConsultationStatus, string> = {
 const card = "rounded-[1.35rem] border border-navy/10 bg-white text-navy shadow-sm";
 
 const quickServices = [
+  {
+    href: "/account/consult?service=urgent-consult",
+    title: "مشاوره فوری",
+    hint: "قبل از امضا، همین الان",
+    icon: ZapIcon,
+    tone: "bg-red-50 text-red-700",
+  },
   {
     href: "/account/consult?service=consultation",
     title: "مشاوره آنلاین",
@@ -212,48 +223,58 @@ export function AccountOverview({
               </Link>
             ) : null}
           </div>
-          {rows.length === 0 ? (
-            <EmptyRequests />
-          ) : (
-            <div className="min-w-0 overflow-x-auto">
-              <table className="w-full min-w-[28rem] text-sm md:min-w-0">
-                <thead>
-                  <tr className="border-y border-navy/8 text-start text-[11px] text-navy/40">
-                    <th className="hidden px-4 py-2.5 font-medium md:table-cell md:px-5">ردیف</th>
-                    <th className="px-4 py-2.5 font-medium md:px-5">عنوان</th>
-                    <th className="px-4 py-2.5 font-medium md:px-5">تاریخ</th>
-                    <th className="px-4 py-2.5 font-medium md:px-5">وضعیت</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((item, index) => (
-                    <tr key={item.id} className="border-b border-navy/6 last:border-b-0">
-                      <td className="hidden px-4 py-3.5 text-navy/40 md:table-cell md:px-5">{toFaDigits(index + 1)}</td>
-                      <td className="max-w-0 px-4 py-3.5 md:px-5">
-                        <Link
-                          href={`/account/requests/${item.trackingCode}`}
-                          className="block truncate font-medium text-navy hover:text-gold-deep"
-                        >
-                          {item.subject}
-                        </Link>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-navy/50 md:px-5">{formatFaDate(item.createdAt)}</td>
-                      <td className="px-4 py-3.5 md:px-5">
-                        <span
-                          className={cn(
-                            "inline-flex max-w-[9.5rem] truncate rounded-full px-2.5 py-1 text-[11px] font-medium md:max-w-none",
-                            tableStatusTone[item.status],
-                          )}
-                        >
-                          {consultationStatusMeta[item.status].title}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <SiteDataTable
+            rows={rows}
+            rowKey={(item) => item.id}
+            pageSize={5}
+            minWidthClassName="min-w-[28rem]"
+            empty={<EmptyRequests />}
+            columns={[
+              {
+                id: "index",
+                header: "ردیف",
+                hideOnMobile: true,
+                headerClassName: "px-3 md:px-3",
+                className: "px-3 text-center text-navy/40 md:px-3",
+                cell: (_row, index) => toFaDigits(index + 1),
+              },
+              {
+                id: "subject",
+                header: "عنوان",
+                headerClassName: "text-right",
+                className: "max-w-32 text-right",
+                cell: (item) => (
+                  <SiteTableLink
+                    href={`/account/requests/${item.trackingCode}`}
+                    className="block truncate"
+                  >
+                    {item.subject}
+                  </SiteTableLink>
+                ),
+              },
+              {
+                id: "date",
+                header: "تاریخ",
+                className: "whitespace-nowrap text-center text-navy/50",
+                cell: (item) => formatFaDate(item.createdAt),
+              },
+              {
+                id: "status",
+                header: "وضعیت",
+                className: "text-center",
+                cell: (item) => (
+                  <span
+                    className={cn(
+                      "inline-flex max-w-[9.5rem] truncate rounded-full px-2.5 py-1 text-[11px] font-medium md:max-w-none",
+                      tableStatusTone[item.status],
+                    )}
+                  >
+                    {consultationStatusMeta[item.status].title}
+                  </span>
+                ),
+              },
+            ]}
+          />
         </section>
 
         <aside className={cn(card, "order-3 p-5")}>

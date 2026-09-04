@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 
-import { PanelSupport } from "@/components/panel/panel-support";
-import { panelConsultHref } from "@/lib/account";
+import { AdminSupportDesk } from "@/components/admin/admin-support-desk";
 
 export const metadata: Metadata = {
-  title: "پشتیبانی",
+  title: "پشتیبانی کاربران",
 };
 
 export default function AdminSupportPage() {
-  return <PanelSupport consultHref={panelConsultHref("/admin")} />;
+  return <AdminSupportDesk />;
 }

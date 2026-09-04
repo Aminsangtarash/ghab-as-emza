@@ -1,4 +1,5 @@
-import { getService, lawyers, type Lawyer } from "@/lib/data";
+import { resolveLawyer, resolveServiceFee } from "@/lib/catalog-cache";
+import { getService, type Lawyer } from "@/lib/data";
 
 export const consultChannels = ["text", "phone", "video"] as const;
 export type ConsultChannel = (typeof consultChannels)[number];
@@ -65,7 +66,45 @@ export function applyUrgencyToFee(baseToman: number, urgency: Urgency) {
 }
 
 export function consultBaseFeeToman(serviceSlug: string, urgency: Urgency) {
+  // تعرفه مشاوره فوری خودش نهایی است؛ ضریب urgency دوباره اعمال نمی‌شود.
+  if (isUrgentConsultService(serviceSlug)) return serviceFeeToman(serviceSlug);
   return applyUrgencyToFee(serviceFeeToman(serviceSlug), urgency);
+}
+
+export const URGENT_CONSULT_SERVICE = "urgent-consult";
+export const IN_PERSON_SERVICE = "in-person";
+/** مهلت یافتن وکیل برای درخواست فوری (۱۵ دقیقه) */
+export const URGENT_MATCH_SLA_MS = 15 * 60_000;
+/** در این بازه فقط وکلای هم‌شهر می‌توانند بپذیرند (اگر شهر ثبت شده باشد) */
+export const URGENT_CITY_PRIORITY_MS = 5 * 60_000;
+
+export function isUrgentConsultService(slug: string) {
+  return slug === URGENT_CONSULT_SERVICE;
+}
+
+export function isInPersonService(slug: string) {
+  return slug === IN_PERSON_SERVICE;
+}
+
+export function normalizeCityName(city?: string | null) {
+  return (city ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/ي/g, "ی")
+    .replace(/ك/g, "ک")
+    .toLowerCase();
+}
+
+export function citiesMatch(a?: string | null, b?: string | null) {
+  const left = normalizeCityName(a);
+  const right = normalizeCityName(b);
+  return Boolean(left && right && left === right);
+}
+
+/** آیا هنوز پنجرهٔ اولویت هم‌شهر برای این درخواست باز است؟ */
+export function isUrgentCityPriorityActive(createdAt: Date | string, now = new Date()) {
+  const created = typeof createdAt === "string" ? new Date(createdAt) : createdAt;
+  return now.getTime() - created.getTime() < URGENT_CITY_PRIORITY_MS;
 }
 
 export const caseStageMeta: Record<CaseStage, string> = {
@@ -83,13 +122,18 @@ export const timeSlotMeta: Record<TimeSlot, string> = {
 };
 
 export function consultableServices<T extends { slug: string }>(all: T[]) {
-  return all.filter((item) => item.slug !== "lawyers");
+  return all.filter(
+    (item) =>
+      item.slug !== "lawyers" &&
+      !isUrgentConsultService(item.slug) &&
+      !isInPersonService(item.slug),
+  );
 }
 
 export function lawyerLabel(slug: string | undefined, fallback?: Lawyer) {
   if (fallback) return fallback.name;
   if (!slug) return undefined;
-  return lawyers.find((item) => item.slug === slug)?.name;
+  return resolveLawyer(slug)?.name;
 }
 
 export function serviceTitle(slug: string) {
@@ -97,7 +141,7 @@ export function serviceTitle(slug: string) {
 }
 
 export function serviceFeeToman(slug: string) {
-  return getService(slug)?.feeToman ?? 0;
+  return resolveServiceFee(slug);
 }
 
 export function isFreeService(slug: string) {
@@ -139,7 +183,12 @@ export const consultationStatusMeta: Record<
   },
 };
 
-export function initialConsultationStatus(lawyerMode: LawyerMode): ConsultationStatus {
+export function initialConsultationStatus(
+  lawyerMode: LawyerMode,
+  service?: string,
+): ConsultationStatus {
+  // فوری: پخش به همه وکلا (صف awaiting-lawyer با lawyerSlug خالی)
+  if (service && isUrgentConsultService(service)) return "awaiting-lawyer";
   return lawyerMode === "assign" ? "awaiting-operator" : "awaiting-lawyer";
 }
 

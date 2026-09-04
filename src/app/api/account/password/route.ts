@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getRequestUser, hashPassword } from "@/lib/auth";
 import { isRateLimited } from "@/lib/rate-limit";
-import { updateUserPassword } from "@/lib/store";
+import { updateUserPassword } from "@/lib/store-users";
 import { passwordChangeSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {

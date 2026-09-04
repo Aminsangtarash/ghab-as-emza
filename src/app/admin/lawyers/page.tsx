@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
-import { PanelLawyersDirectory } from "@/components/panel/panel-lawyers-directory";
+import { AdminLawyersPanel } from "@/components/admin/admin-lawyers-panel";
 
 export const metadata: Metadata = {
-  title: "وکلا و متخصصان",
+  title: "وکلا",
 };
 
 export default function AdminLawyersPage() {
-  return <PanelLawyersDirectory prefix="/admin" />;
+  return <AdminLawyersPanel />;
 }

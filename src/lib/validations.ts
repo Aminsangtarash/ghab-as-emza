@@ -61,10 +61,17 @@ export const consultationSchema = consultationFields
     message: "وکیل را انتخاب کنید یا معرفی را به اپراتور بسپارید.",
     path: ["lawyerSlug"],
   })
-  .refine((data) => data.channel === "text" || Boolean(data.preferredSlot), {
-    message: "بازه زمانی ترجیحی را انتخاب کنید.",
-    path: ["preferredSlot"],
-  });
+  .refine(
+    (data) =>
+      data.service === "urgent-consult" ||
+      data.service === "in-person" ||
+      data.channel === "text" ||
+      Boolean(data.preferredSlot),
+    {
+      message: "بازه زمانی ترجیحی را انتخاب کنید.",
+      path: ["preferredSlot"],
+    },
+  );
 
 export { consultationFields };
 
@@ -92,6 +99,43 @@ export const contactSchema = z.object({
 });
 
 export type ContactInput = z.infer<typeof contactSchema>;
+
+export const cooperationSchema = z.object({
+  fullName: z.string().trim().min(3, "نام باید حداقل سه نویسه باشد.").max(80),
+  phone: z
+    .string()
+    .trim()
+    .transform(normalizePhone)
+    .refine((value) => /^09\d{9}$/.test(value), "شماره موبایل معتبر وارد کنید."),
+  email: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .transform((value) => (value ? value : undefined))
+    .refine(
+      (value) => !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+      "ایمیل معتبر نیست.",
+    ),
+  city: z.string().trim().min(2, "شهر را وارد کنید.").max(60),
+  specialty: z.string().trim().min(2, "تخصص را وارد کنید.").max(120),
+  licenseNumber: z
+    .string()
+    .trim()
+    .max(80)
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  experienceYears: z.coerce.number().int().min(0, "سابقه نامعتبر است.").max(60),
+  bio: z
+    .string()
+    .trim()
+    .max(2000)
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  message: z.string().trim().min(20, "توضیح همکاری باید حداقل ۲۰ نویسه باشد.").max(3000),
+});
+
+export type CooperationInput = z.infer<typeof cooperationSchema>;
 
 const phoneField = z
   .string()

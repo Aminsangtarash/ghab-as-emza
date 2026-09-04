@@ -69,12 +69,14 @@ export function RequestActions({
   const hasActions = Boolean(conversationId || cancellable || deletable);
   if (!hasActions && !error) return null;
 
+  const btnH = compact ? "h-8 px-2.5 text-[11px]" : "h-10";
+
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", compact ? "mt-3" : "mt-6")}>
+    <div className={cn("flex flex-wrap items-center gap-2", compact ? "justify-center" : "mt-6")}>
       {conversationId && (
         <a
           href={`/account/chats/${conversationId}`}
-          className={cn(buttonVariants(), "h-10 bg-gold px-4 text-navy-deep hover:bg-gold-bright")}
+          className={cn(buttonVariants(), btnH, "bg-gold px-4 text-navy-deep hover:bg-gold-bright")}
         >
           ورود به گفتگو
         </a>
@@ -86,14 +88,14 @@ export function RequestActions({
           onClick={() => void cancel()}
           className={cn(
             buttonVariants({ variant: "outline" }),
-            "h-10",
+            btnH,
             onDark
               ? "border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
               : "border-navy/20",
           )}
         >
           لغو درخواست
-          {feeToman > 0 ? ` و برگشت ${formatToman(feeToman)} به کیف پول` : ""}
+          {!compact && feeToman > 0 ? ` و برگشت ${formatToman(feeToman)} به کیف پول` : ""}
         </button>
       )}
       {deletable && !confirmDelete && (
@@ -103,13 +105,13 @@ export function RequestActions({
           onClick={() => setConfirmDelete(true)}
           className={cn(
             buttonVariants({ variant: "outline" }),
-            "h-10",
+            btnH,
             onDark
               ? "border-red-300/40 bg-white/5 text-red-100 hover:bg-white/10 hover:text-white"
               : "border-red-200 text-red-800 hover:bg-red-50",
           )}
         >
-          حذف از فهرست
+          {compact ? "حذف" : "حذف از فهرست"}
         </button>
       )}
       {deletable && confirmDelete && (
@@ -118,7 +120,7 @@ export function RequestActions({
             type="button"
             disabled={pending}
             onClick={() => void removeCancelled()}
-            className={cn(buttonVariants(), "h-10 bg-red-700 px-4 text-white hover:bg-red-800")}
+            className={cn(buttonVariants(), btnH, "bg-red-700 px-4 text-white hover:bg-red-800")}
           >
             حذف قطعی
           </button>
@@ -128,15 +130,17 @@ export function RequestActions({
             onClick={() => setConfirmDelete(false)}
             className={cn(
               buttonVariants({ variant: "outline" }),
-              "h-10",
+              btnH,
               onDark ? "border-white/20 text-white hover:bg-white/10 hover:text-white" : "border-navy/20",
             )}
           >
             انصراف
           </button>
-          <p className={cn("w-full text-xs leading-6", onDark ? "text-white/60" : "text-navy/50")}>
-            از فهرست درخواست‌ها حذف می‌شود. گردش کیف پول باقی می‌ماند.
-          </p>
+          {!compact ? (
+            <p className={cn("w-full text-xs leading-6", onDark ? "text-white/60" : "text-navy/50")}>
+              از فهرست درخواست‌ها حذف می‌شود. گردش کیف پول باقی می‌ماند.
+            </p>
+          ) : null}
         </>
       )}
       {error && <p className={cn("w-full text-sm", onDark ? "text-red-200" : "text-red-800")}>{error}</p>}

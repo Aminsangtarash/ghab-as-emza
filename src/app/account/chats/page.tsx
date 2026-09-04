@@ -21,7 +21,7 @@ export default async function AccountChatsPage() {
         مشاوره متنی، تماس تصویری داخل برنامه و هماهنگی تماس تلفنی همه در همین فهرست هستند. پس از تأیید وکیل، گفتگو اینجا
         باز می‌شود.
       </p>
-      <ConversationList items={items} hrefFor={(item) => `/account/chats/${item.id}`} />
+      <ConversationList items={items} />
     </div>
   );
 }

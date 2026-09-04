@@ -1,6 +1,8 @@
-import Link from "next/link";
+"use client";
+
 import { MessageCircleIcon, PhoneIcon, VideoIcon } from "lucide-react";
 
+import { SiteDataTable, SiteTableLink } from "@/components/ui/site-data-table";
 import type { ClientConversation } from "@/lib/conversations";
 import { consultChannelMeta } from "@/lib/consult";
 import { formatFaDateTime, toFaDigits } from "@/lib/format";
@@ -8,81 +10,121 @@ import { cn } from "@/lib/utils";
 
 export function ConversationList({
   items,
-  hrefFor,
   audience = "client",
 }: {
   items: ClientConversation[];
-  hrefFor: (item: ClientConversation) => string;
   audience?: "client" | "lawyer";
 }) {
   const lawyer = audience === "lawyer";
-
-  if (items.length === 0) {
-    return (
-      <div
-        className={
-          lawyer
-            ? "mt-8 border border-dashed border-navy/15 bg-white px-5 py-12 text-center"
-            : "mt-8 rounded-2xl border border-gold/20 bg-white/70 px-5 py-12 text-center shadow-sm"
-        }
-      >
-        {lawyer ? null : (
-          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-gold/15 text-gold-deep">
-            <MessageCircleIcon className="size-5" />
-          </span>
-        )}
-        <p className={cn("font-heading font-semibold text-navy", lawyer ? "" : "mt-4")}>هنوز گفتگویی باز نشده</p>
-        <p className="mt-2 text-sm leading-7 text-navy/60">
-          {lawyer
-            ? "پس از پذیرش درخواست، گفتگو اینجا می‌آید."
-            : "پس از تأیید وکیل، گفتگوی متنی، تماس تصویری یا هماهنگی تماس تلفنی همین‌جا می‌آید."}
-        </p>
-      </div>
-    );
-  }
+  const chatHref = (id: string) => (lawyer ? `/lawyer/chats/${id}` : `/account/chats/${id}`);
 
   return (
-    <div className={lawyer ? "mt-8 divide-y divide-navy/8 overflow-hidden border border-navy/10 bg-white" : "mt-8 space-y-3"}>
-      {items.map((item) => {
-        const Icon = item.channel === "video" ? VideoIcon : item.channel === "phone" ? PhoneIcon : MessageCircleIcon;
-        return (
-          <Link
-            key={item.id}
-            href={hrefFor(item)}
-            className={
-              lawyer
-                ? "block px-5 py-4 transition hover:bg-navy/[0.03]"
-                : "block rounded-2xl bg-white/85 p-4 shadow-sm ring-1 ring-navy/8 transition hover:ring-gold/35 sm:p-5"
-            }
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-heading font-semibold text-navy">{item.subject}</p>
-                <p className="mt-1 flex items-center gap-2 text-sm text-navy/60">
-                  <Icon className={cn("size-3.5", lawyer ? "text-navy/40" : "text-gold-deep")} />
-                  {consultChannelMeta[item.channel].title}
-                  {lawyer ? null : ` · ${item.lawyerName}`}
-                </p>
-              </div>
+    <div
+      className={cn(
+        "mt-8 overflow-hidden",
+        lawyer
+          ? "border border-navy/10 bg-white"
+          : "rounded-[1.35rem] border border-navy/10 bg-white shadow-sm",
+      )}
+    >
+      <SiteDataTable
+        rows={items}
+        rowKey={(item) => item.id}
+        pageSize={10}
+        minWidthClassName="min-w-[42rem]"
+        empty={
+          <div className={lawyer ? "px-5 py-12 text-center" : "px-5 py-12 text-center"}>
+            {lawyer ? null : (
+              <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-gold/15 text-gold-deep">
+                <MessageCircleIcon className="size-5" />
+              </span>
+            )}
+            <p className={cn("font-heading font-semibold text-navy", lawyer ? "" : "mt-4")}>
+              هنوز گفتگویی باز نشده
+            </p>
+            <p className="mt-2 text-sm leading-7 text-navy/60">
+              {lawyer
+                ? "پس از پذیرش درخواست، گفتگو اینجا می‌آید."
+                : "پس از تأیید وکیل، گفتگوی متنی، تماس تصویری یا هماهنگی تماس تلفنی همین‌جا می‌آید."}
+            </p>
+          </div>
+        }
+        columns={[
+          {
+            id: "index",
+            header: "ردیف",
+            hideOnMobile: true,
+            headerClassName: "px-3 md:px-3",
+            className: "px-3 text-center text-navy/40 md:px-3",
+            cell: (_row, index) => toFaDigits(index + 1),
+          },
+          {
+            id: "subject",
+            header: "موضوع",
+            headerClassName: "text-right",
+            className: "max-w-[16rem] text-right",
+            cell: (item) => {
+              const Icon =
+                item.channel === "video" ? VideoIcon : item.channel === "phone" ? PhoneIcon : MessageCircleIcon;
+              return (
+                <div className="min-w-0">
+                  <SiteTableLink href={chatHref(item.id)} className="block truncate">
+                    {item.subject}
+                  </SiteTableLink>
+                  {item.lastMessage ? (
+                    <span className="mt-1 flex items-center gap-1.5 truncate text-[11px] text-navy/45">
+                      <Icon className="size-3 shrink-0" />
+                      <span className="truncate">{item.lastMessage}</span>
+                    </span>
+                  ) : null}
+                </div>
+              );
+            },
+          },
+          {
+            id: "channel",
+            header: "کانال",
+            hideOnMobile: true,
+            className: "whitespace-nowrap text-navy/60",
+            cell: (item) => consultChannelMeta[item.channel].title,
+          },
+          {
+            id: "party",
+            header: lawyer ? "موکل" : "وکیل",
+            hideOnMobile: true,
+            className: "whitespace-nowrap text-navy/60",
+            cell: (item) => (lawyer ? item.clientName ?? "—" : item.lawyerName),
+          },
+          {
+            id: "tracking",
+            header: "کد پیگیری",
+            hideOnMobile: true,
+            className: "whitespace-nowrap text-navy/60",
+            cell: (item) => toFaDigits(item.trackingCode),
+          },
+          {
+            id: "date",
+            header: "تاریخ",
+            className: "whitespace-nowrap text-center text-navy/50",
+            cell: (item) => formatFaDateTime(item.createdAt),
+          },
+          {
+            id: "status",
+            header: "وضعیت",
+            className: "text-center",
+            cell: (item) => (
               <span
-                className={
-                  lawyer
-                    ? "text-[11px] text-navy/45"
-                    : "rounded-full bg-gold/15 px-2.5 py-1 text-[11px] text-gold-deep"
-                }
+                className={cn(
+                  "inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium",
+                  item.closedAt ? "bg-navy/5 text-navy/55" : "bg-emerald-50 text-emerald-800",
+                )}
               >
                 {item.closedAt ? "بسته" : "فعال"}
               </span>
-            </div>
-            {item.lastMessage && (
-              <p className="mt-3 line-clamp-2 text-sm leading-6 text-navy/55">{item.lastMessage}</p>
-            )}
-            <p className="mt-3 text-xs text-navy/40">
-              {toFaDigits(item.trackingCode)} · {formatFaDateTime(item.createdAt)}
-            </p>
-          </Link>
-        );
-      })}
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

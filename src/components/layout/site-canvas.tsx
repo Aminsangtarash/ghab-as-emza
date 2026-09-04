@@ -12,10 +12,13 @@ export function GoldCanvas({
   children,
   className,
   fill = false,
+  tone = "gold",
 }: {
   children: React.ReactNode;
   className?: string;
   fill?: boolean;
+  /** پنل ادمین/مدیر: سرمه‌ای خیلی کمرنگ؛ بقیه: طلایی کمرنگ */
+  tone?: "gold" | "navy";
 }) {
   const scrollerId = useId();
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -121,7 +124,11 @@ export function GoldCanvas({
 
   return (
     <div
-      className={cn("relative overflow-hidden rounded-[1.6rem] bg-gold/8", fill ? "h-full" : "min-h-0 flex-1")}
+      className={cn(
+        "relative overflow-hidden rounded-[1.6rem]",
+        tone === "navy" ? "bg-navy/[0.035]" : "bg-gold/8",
+        fill ? "h-full" : "min-h-0 flex-1",
+      )}
       onMouseEnter={() => {
         hoveringRef.current = true;
         reveal();
