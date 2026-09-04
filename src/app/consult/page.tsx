@@ -49,7 +49,7 @@ export default async function ConsultPage({ searchParams }: PageProps<"/consult"
           <span className="mt-3 block h-1 w-14 rounded-full bg-gold" />
           <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">
             {urgent
-              ? "موضوع را کوتاه بنویسید، قرارداد را در صورت نیاز آپلود کنید و پس از پرداخت منتظر اولین وکیل بمانید."
+              ? "موضوع را کوتاه بنویسید و پرداخت کنید؛ نحوه ارتباط و درخواست مدرک بر اساس صلاح‌دید وکیل است."
               : "مشاوره متنی و تماس تصویری داخل سایت انجام می‌شود؛ تماس تلفنی را دفتر هماهنگ می‌کند. اگر وکیل انتخاب نکنید، اپراتور متخصص مناسب را مشخص می‌کند."}
           </p>
         </div>

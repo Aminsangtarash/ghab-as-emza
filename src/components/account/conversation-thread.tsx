@@ -15,9 +15,11 @@ import { cn } from "@/lib/utils";
 export function ConversationThread({
   conversationId,
   viewer,
+  hideDocuments = false,
 }: {
   conversationId: string;
   viewer: "user" | "lawyer";
+  hideDocuments?: boolean;
 }) {
   const [summary, setSummary] = useState<ClientConversation | null>(null);
   const [messages, setMessages] = useState<ClientMessage[]>([]);
@@ -300,7 +302,7 @@ export function ConversationThread({
         </p>
       </div>
 
-      {summary.documents?.length ? (
+      {!hideDocuments && summary.documents?.length ? (
         <div
           className={
             viewer === "lawyer"
