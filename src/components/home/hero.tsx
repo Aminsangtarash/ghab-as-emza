@@ -69,8 +69,20 @@ export function Hero() {
         <div className="absolute inset-0 bg-gradient-to-r from-transparent from-[8%] via-navy-deep/40 via-[42%] to-navy-deep to-[72%]" />
       </div>
 
-      <section ref={heroRef} className="relative z-10 bg-navy-deep md:bg-transparent">
-        <div className="relative mx-auto flex min-h-[30rem] w-full max-w-6xl items-center px-4 pt-16 pb-14 sm:min-h-[34rem] sm:px-6 sm:pt-20 sm:pb-16">
+      <section ref={heroRef} className="relative z-10 overflow-hidden bg-navy-deep md:overflow-visible md:bg-transparent">
+        <div className="absolute inset-0 md:hidden" aria-hidden="true">
+          <Image
+            src="/images/hero-legal.jpg"
+            alt=""
+            fill
+            priority
+            className="object-cover object-[center_30%]"
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-navy-deep/88 via-navy-deep/82 to-navy-deep/92" />
+        </div>
+
+        <div className="relative z-10 mx-auto flex min-h-[30rem] w-full max-w-6xl items-center px-4 pt-16 pb-14 sm:min-h-[34rem] sm:px-6 sm:pt-20 sm:pb-16">
           <div className="w-full max-w-2xl">
             <p
               className="hero-animate mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-gold/45 bg-white/8 px-4 py-1.5 text-xs font-medium text-gold backdrop-blur-sm"
