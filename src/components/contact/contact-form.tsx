@@ -136,7 +136,10 @@ export function ContactForm() {
             placeholder="پیام"
             required
             aria-invalid={Boolean(fieldErrors.message)}
-            className="min-h-32 rounded-xl py-3.5 pr-11"
+            className={cn(
+              "min-h-32 rounded-xl py-3.5 pr-11",
+              fieldErrors.message && "border-red-400 bg-red-50/40 ring-2 ring-red-200/70",
+            )}
           />
         </div>
         {fieldErrors.message && (
@@ -200,7 +203,11 @@ function IconField({
           placeholder={label}
           required={required}
           aria-invalid={Boolean(error)}
-          className={cn("h-12 rounded-xl pr-11", ltr && "text-right")}
+          className={cn(
+            "h-12 rounded-xl pr-11",
+            ltr && "text-right",
+            error && "border-red-400 bg-red-50/40 ring-2 ring-red-200/70",
+          )}
         />
       </div>
       {error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}

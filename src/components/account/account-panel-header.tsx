@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BellIcon, MessageCircleIcon, SearchIcon, WalletIcon } from "lucide-react";
 
+import { useOptionalChatNotifications } from "@/components/chat/chat-notifications-provider";
+import { UnreadBadge } from "@/components/chat/unread-badge";
 import { accountBreadcrumb } from "@/lib/account";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +15,7 @@ export function AccountPanelHeader() {
   const router = useRouter();
   const crumbs = accountBreadcrumb(pathname);
   const [query, setQuery] = useState("");
+  const chat = useOptionalChatNotifications();
 
   function onSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,7 +60,12 @@ export function AccountPanelHeader() {
           <BellIcon className="size-4" />
         </HeaderIcon>
         <HeaderIcon href="/account/chats" label="گفتگوها">
-          <MessageCircleIcon className="size-4" />
+          <span className="relative inline-flex">
+            <MessageCircleIcon className="size-4" />
+            {chat && chat.unreadTotal > 0 ? (
+              <UnreadBadge count={chat.unreadTotal} className="absolute -top-2.5 -left-2.5 min-w-4 px-1" />
+            ) : null}
+          </span>
         </HeaderIcon>
         <Link
           href="/account/wallet"
@@ -87,7 +95,7 @@ function HeaderIcon({
     <Link
       href={href}
       aria-label={label}
-      className="flex size-11 items-center justify-center rounded-2xl border border-navy/10 bg-white text-navy/70 transition hover:border-gold/40 hover:text-navy"
+      className="relative flex size-11 items-center justify-center rounded-2xl border border-navy/10 bg-white text-navy/70 transition hover:border-gold/40 hover:text-navy"
     >
       {children}
     </Link>

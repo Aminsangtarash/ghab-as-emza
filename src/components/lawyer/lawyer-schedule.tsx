@@ -6,11 +6,13 @@ import { CalendarClockIcon } from "lucide-react";
 import {
   EmptyRow,
   ErrorNote,
+  FieldError,
   FieldLabel,
   LawyerHeading,
   OkNote,
   SectionCard,
   Tone,
+  controlClass,
   inputClass,
   panelCard,
   panelFetch,
@@ -52,6 +54,7 @@ export function LawyerSchedule() {
     minutes: "30",
     note: "",
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const query =
@@ -101,12 +104,14 @@ export function LawyerSchedule() {
   }
 
   async function create() {
-    if (!form.userId) {
-      setError("موکل را انتخاب کنید.");
-      return;
-    }
-    if (!form.scheduledAt) {
-      setError("زمان جلسه را انتخاب کنید.");
+    const nextErrors: Record<string, string> = {};
+    if (!form.userId) nextErrors.userId = "موکل را انتخاب کنید.";
+    if (!form.scheduledAt) nextErrors.scheduledAt = "زمان جلسه را انتخاب کنید.";
+    const minutes = Number(form.minutes);
+    if (!Number.isFinite(minutes) || minutes < 5) nextErrors.minutes = "مدت جلسه را وارد کنید.";
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setError("لطفاً فیلدهای مشخص‌شده را تکمیل کنید.");
       return;
     }
     setPending(true);
@@ -127,6 +132,7 @@ export function LawyerSchedule() {
       return;
     }
     setOkMessage("نوبت ثبت شد.");
+    setFieldErrors({});
     const all = await panelFetch<{ items: ClientAppointment[] }>("/api/lawyer/appointments");
     setForm((current) => ({
       ...current,
@@ -265,17 +271,27 @@ export function LawyerSchedule() {
         <SectionCard title="ثبت نوبت جدید" hint="برای موکلی که قبلاً درخواست ثبت کرده است.">
           <div className="grid gap-3">
             <label className="block">
-              <FieldLabel>موکل</FieldLabel>
+              <FieldLabel required invalid={Boolean(fieldErrors.userId)}>
+                موکل
+              </FieldLabel>
               <SiteSelect
                 value={form.userId || null}
-                onValueChange={(userId) => setForm((current) => ({ ...current, userId }))}
+                onValueChange={(userId) => {
+                  setForm((current) => ({ ...current, userId }));
+                  setFieldErrors((current) => {
+                    const { userId: _u, ...rest } = current;
+                    return rest;
+                  });
+                }}
                 options={clients.map((client) => ({
                   value: client.userId,
                   label: `${client.fullName} — ${toFaDigits(client.phone)}`,
                 }))}
                 placeholder="انتخاب کنید…"
+                invalid={Boolean(fieldErrors.userId)}
                 className="h-11 w-full min-w-0"
               />
+              <FieldError>{fieldErrors.userId}</FieldError>
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block">
@@ -296,23 +312,43 @@ export function LawyerSchedule() {
                 />
               </label>
               <label className="block">
-                <FieldLabel>مدت (دقیقه)</FieldLabel>
+                <FieldLabel required invalid={Boolean(fieldErrors.minutes)}>
+                  مدت (دقیقه)
+                </FieldLabel>
                 <input
                   type="number"
                   min={5}
                   max={480}
                   value={form.minutes}
-                  onChange={(event) => setForm((current) => ({ ...current, minutes: event.target.value }))}
-                  className={inputClass}
+                  onChange={(event) => {
+                    setForm((current) => ({ ...current, minutes: event.target.value }));
+                    setFieldErrors((current) => {
+                      const { minutes: _m, ...rest } = current;
+                      return rest;
+                    });
+                  }}
+                  aria-invalid={Boolean(fieldErrors.minutes)}
+                  className={controlClass(Boolean(fieldErrors.minutes))}
                 />
+                <FieldError>{fieldErrors.minutes}</FieldError>
               </label>
             </div>
             <div className="block">
-              <FieldLabel>زمان (شمسی)</FieldLabel>
+              <FieldLabel required invalid={Boolean(fieldErrors.scheduledAt)}>
+                زمان (شمسی)
+              </FieldLabel>
               <JalaliDateTimeField
                 value={form.scheduledAt}
-                onValueChange={(scheduledAt) => setForm((current) => ({ ...current, scheduledAt }))}
+                invalid={Boolean(fieldErrors.scheduledAt)}
+                onValueChange={(scheduledAt) => {
+                  setForm((current) => ({ ...current, scheduledAt }));
+                  setFieldErrors((current) => {
+                    const { scheduledAt: _s, ...rest } = current;
+                    return rest;
+                  });
+                }}
               />
+              <FieldError>{fieldErrors.scheduledAt}</FieldError>
             </div>
             <label className="block">
               <FieldLabel>توضیح (اختیاری)</FieldLabel>

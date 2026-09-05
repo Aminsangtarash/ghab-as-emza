@@ -49,7 +49,14 @@ export function LawyerChats({ initialFilter = "all" }: { initialFilter?: string 
     setItems(null);
     void load();
     const timer = window.setInterval(() => void load(), 10000);
-    return () => window.clearInterval(timer);
+    function onLive() {
+      void load();
+    }
+    window.addEventListener("gae-chat-message", onLive);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("gae-chat-message", onLive);
+    };
   }, [load]);
 
   return (
@@ -115,9 +122,17 @@ export function LawyerChats({ initialFilter = "all" }: { initialFilter?: string 
                         : MessageCircleIcon;
                   return (
                     <div className="min-w-0">
-                      <SiteTableLink href={`/lawyer/chats/${item.id}`} className="block truncate">
-                        {item.subject}
-                      </SiteTableLink>
+                      <div className="flex items-center gap-2">
+                        <SiteTableLink href={`/lawyer/chats/${item.id}`} className="block min-w-0 truncate">
+                          {item.subject}
+                        </SiteTableLink>
+                        {item.unreadCount > 0 ? (
+                          <span className="inline-flex shrink-0 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                            {toFaDigits(item.unreadCount > 99 ? 99 : item.unreadCount)}
+                            {item.unreadCount > 99 ? "+" : ""}
+                          </span>
+                        ) : null}
+                      </div>
                       {item.lastMessage ? (
                         <span className="mt-1 flex items-center gap-1.5 truncate text-[11px] text-navy/45">
                           <Icon className="size-3 shrink-0" />

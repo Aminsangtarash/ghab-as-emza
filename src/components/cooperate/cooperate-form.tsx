@@ -124,13 +124,16 @@ export function CooperateForm() {
       </div>
 
       <div>
-        <Label htmlFor="message">انگیزه و نوع همکاری موردنظر</Label>
+        <Label htmlFor="message" className={fieldErrors.message ? "text-red-700" : undefined}>
+          انگیزه و نوع همکاری موردنظر
+        </Label>
         <Textarea
           id="message"
           name="message"
           rows={5}
           required
-          className="mt-1.5"
+          aria-invalid={Boolean(fieldErrors.message)}
+          className={cn("mt-1.5", fieldErrors.message && "border-red-400 bg-red-50/40 ring-2 ring-red-200/70")}
           placeholder="چرا می‌خواهید با قبل از امضا همکاری کنید و چه خدماتی ارائه می‌دهید؟"
         />
         {fieldErrors.message ? <p className="mt-1 text-xs text-red-600">{fieldErrors.message}</p> : null}
@@ -164,10 +167,18 @@ function Field({
 }) {
   return (
     <div>
-      <Label htmlFor={name}>{label}</Label>
+      <Label htmlFor={name} className={error ? "text-red-700" : undefined}>
+        {label}
+      </Label>
       <div className="relative mt-1.5">
         {Icon ? <Icon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-navy/35" /> : null}
-        <Input id={name} name={name} className={Icon ? "ps-9" : undefined} {...props} />
+        <Input
+          id={name}
+          name={name}
+          aria-invalid={Boolean(error)}
+          className={cn(Icon ? "ps-9" : undefined, error && "border-red-400 bg-red-50/40 ring-2 ring-red-200/70")}
+          {...props}
+        />
       </div>
       {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
     </div>

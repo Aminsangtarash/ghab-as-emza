@@ -40,11 +40,13 @@ export function JalaliDateTimeField({
   value,
   onValueChange,
   withTime = true,
+  invalid,
   className,
 }: {
   value: string;
   onValueChange: (value: string) => void;
   withTime?: boolean;
+  invalid?: boolean;
   className?: string;
 }) {
   const parsed = parseDateTimeLocalValue(value);
@@ -97,6 +99,7 @@ export function JalaliDateTimeField({
         onValueChange={(next) => emit({ year: Number(next) })}
         options={yearOptions}
         placeholder="سال"
+        invalid={invalid}
         className="h-11 w-full min-w-0"
       />
       <SiteSelect
@@ -104,6 +107,7 @@ export function JalaliDateTimeField({
         onValueChange={(next) => emit({ month: Number(next) })}
         options={monthOptions}
         placeholder="ماه"
+        invalid={invalid}
         className="h-11 w-full min-w-0"
       />
       <SiteSelect
@@ -111,6 +115,7 @@ export function JalaliDateTimeField({
         onValueChange={(next) => emit({ day: Number(next) })}
         options={dayOptions}
         placeholder="روز"
+        invalid={invalid}
         className="h-11 w-full min-w-0"
       />
       {withTime ? (
@@ -120,6 +125,7 @@ export function JalaliDateTimeField({
             onValueChange={(next) => emit({ hour: Number(next) })}
             options={hourOptions}
             placeholder="ساعت"
+            invalid={invalid}
             className="h-11 w-full min-w-0"
           />
           <SiteSelect
@@ -127,6 +133,7 @@ export function JalaliDateTimeField({
             onValueChange={(next) => emit({ minute: Number(next) })}
             options={minuteOptions}
             placeholder="دقیقه"
+            invalid={invalid}
             className="h-11 w-full min-w-0"
           />
           {value ? (

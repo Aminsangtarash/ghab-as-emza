@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckIcon, EyeIcon } from "lucide-react";
 
 import { ConsultDocumentList } from "@/components/consult/document-list";
+import { AccountCaseProgress } from "@/components/account/account-case-progress";
 import { DocumentPreviewModal } from "@/components/consult/document-preview-modal";
 import { buttonVariants } from "@/components/ui/button";
 import { caseEventKindMeta, caseStageMeta, caseStatusMeta, type ClientCase } from "@/lib/case-model";
@@ -83,6 +84,10 @@ export function AccountCaseDetail({ caseId }: { caseId: string }) {
         >
           {caseStatusMeta[item.status].title}
         </span>
+      </div>
+
+      <div className="mt-4">
+        <AccountCaseProgress status={item.status} stage={item.stage} />
       </div>
 
       <div className="mt-4 rounded-2xl bg-white/85 p-5 shadow-sm ring-1 ring-navy/8">
@@ -214,7 +219,8 @@ export function AccountCaseDetail({ caseId }: { caseId: string }) {
       ) : null}
 
       <div className="mt-4 rounded-2xl bg-white/85 p-5 shadow-sm ring-1 ring-navy/8">
-        <h2 className="font-heading text-base font-semibold text-navy">روند پرونده</h2>
+        <h2 className="font-heading text-base font-semibold text-navy">جزئیات رویدادها</h2>
+        <p className="mt-1 text-sm text-navy/55">یادداشت‌ها و اقدام‌هایی که وکیل ثبت کرده است.</p>
         {item.events.length === 0 ? (
           <p className="mt-3 text-sm text-navy/55">هنوز رویدادی ثبت نشده است.</p>
         ) : (

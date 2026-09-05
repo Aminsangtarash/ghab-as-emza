@@ -25,6 +25,7 @@ export function SiteSelect({
   placeholder = "انتخاب کنید",
   id,
   required,
+  invalid,
   className,
 }: {
   options: readonly SiteSelectOption[];
@@ -35,6 +36,7 @@ export function SiteSelect({
   placeholder?: string;
   id?: string;
   required?: boolean;
+  invalid?: boolean;
   className?: string;
 }) {
   const isControlled = value !== undefined;
@@ -55,7 +57,15 @@ export function SiteSelect({
         onValueChange?.(nextValue);
       }}
     >
-      <SelectTrigger id={id} className={cn("w-full min-w-44", className)}>
+      <SelectTrigger
+        id={id}
+        aria-invalid={invalid || undefined}
+        className={cn(
+          "w-full min-w-44",
+          invalid && "border-red-400 bg-red-50/40 ring-2 ring-red-200/80",
+          className,
+        )}
+      >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent align="end" alignItemWithTrigger={false} sideOffset={6}>

@@ -4,6 +4,8 @@ import { randomBytes } from "crypto";
 import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 
+import { publishChatMessage } from "@/lib/chat-events";
+import { refreshAndPublishUnread } from "@/lib/chat-unread";
 import { prisma } from "@/lib/db";
 import {
   MAX_CONSULT_FILE_BYTES,
@@ -172,7 +174,7 @@ export async function createDocumentRequest(input: {
 
   const conversation = await prisma.conversation.findFirst({
     where: { id: input.conversationId, lawyerSlug: input.lawyerSlug },
-    include: { consultation: { select: { id: true, trackingCode: true } } },
+    include: { consultation: { select: { id: true, trackingCode: true, subject: true } } },
   });
   if (!conversation) return { error: "گفتگو پیدا نشد." as const };
   if (conversation.closedAt) return { error: "گفتگوی بسته‌شده قابل درخواست مدرک نیست." as const };
@@ -212,10 +214,24 @@ export async function createDocumentRequest(input: {
       include: requestInclude,
     });
 
-    return request;
+    return { message, request };
   });
 
-  return { ok: true as const, request: toClientRequest(created) };
+  publishChatMessage({
+    conversationId: conversation.id,
+    subject: conversation.consultation.subject,
+    message: {
+      id: created.message.id,
+      authorRole: "system",
+      body: created.message.body,
+      createdAt: created.message.createdAt.toISOString(),
+    },
+    userId: conversation.userId,
+    lawyerSlug: conversation.lawyerSlug,
+  });
+  void refreshAndPublishUnread({ audience: "user", userId: conversation.userId });
+
+  return { ok: true as const, request: toClientRequest(created.request) };
 }
 
 export async function uploadDocumentRequestItem(input: {

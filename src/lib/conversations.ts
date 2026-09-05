@@ -11,6 +11,8 @@ import {
   type ConsultChannel,
   type ConsultationStatus,
 } from "@/lib/consult";
+import { publishChatMessage } from "@/lib/chat-events";
+import { getUnreadSnapshot, refreshAndPublishUnread } from "@/lib/chat-unread";
 import { prisma } from "@/lib/db";
 import { getLawyer } from "@/lib/data";
 
@@ -42,6 +44,7 @@ export type ClientConversation = {
   lastMessage?: string;
   lastMessageRole?: MessageAuthor;
   needsReply: boolean;
+  unreadCount: number;
   clientName?: string;
   clientPhone?: string;
   caseId?: string;
@@ -79,9 +82,23 @@ async function refundConsultation(consultationId: string, userId: string, feeTom
 }
 
 async function addSystemMessage(conversationId: string, body: string) {
-  await prisma.message.create({
+  const message = await prisma.message.create({
     data: { conversationId, authorRole: "system", body },
   });
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    include: { consultation: { select: { subject: true } } },
+  });
+  if (conversation) {
+    publishChatMessage({
+      conversationId: conversation.id,
+      subject: conversation.consultation.subject,
+      message: toClientMessage(message),
+      userId: conversation.userId,
+      lawyerSlug: conversation.lawyerSlug,
+    });
+  }
+  return message;
 }
 
 async function resolveLawyerCity(lawyerSlug: string) {
@@ -173,7 +190,7 @@ export async function acceptConsultation(
   const intro = firstMessage?.trim();
   if (intro) {
     const lawyerAccount = await prisma.user.findFirst({ where: { lawyerSlug } });
-    await prisma.message.create({
+    const message = await prisma.message.create({
       data: {
         conversationId: conversation.id,
         authorRole: "lawyer",
@@ -181,6 +198,14 @@ export async function acceptConsultation(
         userId: lawyerAccount?.id,
       },
     });
+    publishChatMessage({
+      conversationId: conversation.id,
+      subject: updated.subject,
+      message: toClientMessage(message),
+      userId: conversation.userId,
+      lawyerSlug,
+    });
+    void refreshAndPublishUnread({ audience: "user", userId: conversation.userId });
   }
 
   return { conversationId: conversation.id };
@@ -243,28 +268,34 @@ const conversationInclude = {
 } as const;
 
 export async function listUserConversations(userId: string): Promise<ClientConversation[]> {
-  const rows = await prisma.conversation.findMany({
-    where: { userId },
-    include: conversationInclude,
-    orderBy: { createdAt: "desc" },
-  });
-  return rows.map(toClientConversation);
+  const [rows, unread] = await Promise.all([
+    prisma.conversation.findMany({
+      where: { userId },
+      include: conversationInclude,
+      orderBy: { createdAt: "desc" },
+    }),
+    getUnreadSnapshot({ audience: "user", userId }),
+  ]);
+  return rows.map((row) => toClientConversation(row, "user", unread.byConversation[row.id] ?? 0));
 }
 
 export async function listLawyerConversations(
   lawyerSlug: string,
   filter: "all" | "open" | "closed" | "needs-reply" = "all",
 ): Promise<ClientConversation[]> {
-  const rows = await prisma.conversation.findMany({
-    where: {
-      lawyerSlug,
-      ...(filter === "open" || filter === "needs-reply" ? { closedAt: null } : {}),
-      ...(filter === "closed" ? { closedAt: { not: null } } : {}),
-    },
-    include: conversationInclude,
-    orderBy: { createdAt: "desc" },
-  });
-  const items = rows.map(toClientConversation);
+  const [rows, unread] = await Promise.all([
+    prisma.conversation.findMany({
+      where: {
+        lawyerSlug,
+        ...(filter === "open" || filter === "needs-reply" ? { closedAt: null } : {}),
+        ...(filter === "closed" ? { closedAt: { not: null } } : {}),
+      },
+      include: conversationInclude,
+      orderBy: { createdAt: "desc" },
+    }),
+    getUnreadSnapshot({ audience: "lawyer", lawyerSlug }),
+  ]);
+  const items = rows.map((row) => toClientConversation(row, "lawyer", unread.byConversation[row.id] ?? 0));
   return filter === "needs-reply" ? items.filter((item) => item.needsReply) : items;
 }
 
@@ -432,7 +463,11 @@ export async function getConversationForUser(userId: string, conversationId: str
     include: { ...conversationInclude, messages: { orderBy: { createdAt: "asc" } } },
   });
   if (!row) return null;
-  return { summary: toClientConversation(row), messages: row.messages.map(toClientMessage), rating: row.rating };
+  return {
+    summary: toClientConversation(row, "user"),
+    messages: row.messages.map(toClientMessage),
+    rating: row.rating,
+  };
 }
 
 export async function getConversationForLawyer(lawyerSlug: string, conversationId: string) {
@@ -451,7 +486,7 @@ export async function getConversationForLawyer(lawyerSlug: string, conversationI
   });
   if (!row) return null;
   return {
-    summary: toClientConversation(row),
+    summary: toClientConversation(row, "lawyer"),
     messages: row.messages.map(toClientMessage),
     rating: row.rating,
     detail: {
@@ -496,7 +531,24 @@ export async function postConversationMessage(input: {
       userId: input.userId,
     },
   });
-  return { message: toClientMessage(message) };
+  const clientMessage = toClientMessage(message);
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: row.consultationId },
+    select: { subject: true },
+  });
+  publishChatMessage({
+    conversationId: row.id,
+    subject: consultation?.subject ?? "گفتگو",
+    message: clientMessage,
+    userId: row.userId,
+    lawyerSlug: row.lawyerSlug,
+  });
+  if (input.authorRole === "user") {
+    void refreshAndPublishUnread({ audience: "lawyer", lawyerSlug: row.lawyerSlug });
+  } else {
+    void refreshAndPublishUnread({ audience: "user", userId: row.userId });
+  }
+  return { message: clientMessage };
 }
 
 export async function markPhoneCallDone(lawyerSlug: string, conversationId: string) {
@@ -684,10 +736,21 @@ function toClientConversation(
     rating?: Rating | null;
     messages?: Message[];
   },
+  audience: "user" | "lawyer" = "user",
+  unreadCountOverride?: number,
 ): ClientConversation {
   const sorted = row.messages ? [...row.messages].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()) : [];
   const last = sorted[0];
   const lastRole = last?.authorRole as MessageAuthor | undefined;
+  const cursor =
+    audience === "lawyer"
+      ? (row.lawyerLastReadAt ?? row.createdAt)
+      : (row.userLastReadAt ?? row.createdAt);
+  const unreadAuthor = audience === "lawyer" ? "user" : "lawyer";
+  const computedUnread = (row.messages ?? []).filter(
+    (message) => message.authorRole === unreadAuthor && message.createdAt > cursor,
+  ).length;
+
   return {
     id: row.id,
     trackingCode: row.consultation.trackingCode,
@@ -707,6 +770,7 @@ function toClientConversation(
     lastMessage: last?.body,
     lastMessageRole: lastRole,
     needsReply: !row.closedAt && lastRole === "user",
+    unreadCount: unreadCountOverride ?? computedUnread,
     clientName: row.user?.fullName,
     clientPhone: row.user?.phone,
     caseId: row.consultation.case?.id,

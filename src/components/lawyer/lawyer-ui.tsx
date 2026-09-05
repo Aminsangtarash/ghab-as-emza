@@ -108,8 +108,26 @@ export function EmptyRow({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <span className="mb-1.5 block text-xs font-medium text-navy/60">{children}</span>;
+export function FieldLabel({
+  children,
+  required,
+  invalid,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+  invalid?: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        "mb-1.5 block text-xs font-medium",
+        invalid ? "text-red-700" : "text-navy/60",
+      )}
+    >
+      {children}
+      {required ? <span className="mr-1 text-red-600">*</span> : null}
+    </span>
+  );
 }
 
 export const inputClass =
@@ -118,6 +136,17 @@ export const inputClass =
 export const textareaClass =
   "min-h-24 w-full rounded-xl border border-navy/15 bg-white p-3 text-sm leading-7 text-navy outline-none ring-gold/40 transition focus:ring-2";
 
+export const fieldInvalidClass =
+  "border-red-400 bg-red-50/40 ring-2 ring-red-200/80 focus:ring-red-300";
+
+export function controlClass(invalid?: boolean, base: string = inputClass) {
+  return cn(base, invalid && fieldInvalidClass);
+}
+
+export function FieldError({ children }: { children?: React.ReactNode }) {
+  if (!children) return null;
+  return <p className="mt-1.5 text-xs leading-5 text-red-700">{children}</p>;
+}
 export function ErrorNote({ children }: { children: React.ReactNode }) {
   if (!children) return null;
   return (

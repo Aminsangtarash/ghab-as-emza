@@ -131,3 +131,144 @@ export function parseCaseStage(value: unknown): CaseStage | undefined {
 export function parseCaseEventKind(value: unknown): CaseEventKind | undefined {
   return caseEventKinds.includes(value as CaseEventKind) ? (value as CaseEventKind) : undefined;
 }
+
+/** مسیر نمایشی پیگیری پرونده برای موکل (فقط خواندنی). */
+export const clientCaseStagePath: CaseStage[] = [
+  "review",
+  "filing",
+  "first-court",
+  "appeal",
+  "supreme",
+  "execution",
+];
+
+export type ClientProgressStepState = "done" | "current" | "upcoming" | "cancelled";
+
+export type ClientProgressStep = {
+  id: string;
+  title: string;
+  hint: string;
+  state: ClientProgressStepState;
+};
+
+export function clientCaseStagePathFor(stage: CaseStage): CaseStage[] {
+  if (stage === "arbitration") return ["review", "arbitration"];
+  if (stage === "other") return ["review", "other"];
+  if (!clientCaseStagePath.includes(stage)) {
+    return [...clientCaseStagePath, stage];
+  }
+  // اگر پرونده در مرحله زودتر است، مسیر کامل استاندارد را نشان بده
+  return clientCaseStagePath;
+}
+
+export function buildClientCaseProgress(input: {
+  status: CaseStatus;
+  stage: CaseStage;
+}): ClientProgressStep[] {
+  const { status, stage } = input;
+
+  if (status === "declined") {
+    return [
+      {
+        id: "proposed",
+        title: "پیشنهاد تشکیل پرونده",
+        hint: "وکیل پیشنهاد تشکیل پرونده را ثبت کرد.",
+        state: "done",
+      },
+      {
+        id: "declined",
+        title: "پیشنهاد پذیرفته نشد",
+        hint: "تشکیل پرونده از سوی شما تأیید نشد.",
+        state: "cancelled",
+      },
+    ];
+  }
+
+  const stagePath = clientCaseStagePathFor(stage);
+  const stageIndex = Math.max(0, stagePath.indexOf(stage));
+
+  const lifecycle: ClientProgressStep[] = [
+    {
+      id: "proposed",
+      title: "پیشنهاد تشکیل پرونده",
+      hint: "وکیل پیشنهاد کارشناسی و تشکیل پرونده را ثبت کرد.",
+      state: "done",
+    },
+    {
+      id: "accepted",
+      title: "تأیید شما",
+      hint:
+        status === "proposed"
+          ? "در انتظار پذیرش شما برای شروع پیگیری است."
+          : "پیشنهاد را پذیرفتید و پرونده تشکیل شد.",
+      state: status === "proposed" ? "current" : "done",
+    },
+  ];
+
+  if (status === "proposed") {
+    for (const stepStage of stagePath) {
+      lifecycle.push({
+        id: `stage-${stepStage}`,
+        title: caseStageMeta[stepStage],
+        hint: "پس از تأیید شما فعال می‌شود.",
+        state: "upcoming",
+      });
+    }
+    lifecycle.push({
+      id: "closed",
+      title: "اتمام پرونده",
+      hint: "پس از جمع‌بندی نهایی وکیل تکمیل می‌شود.",
+      state: "upcoming",
+    });
+    return lifecycle;
+  }
+
+  for (let index = 0; index < stagePath.length; index += 1) {
+    const stepStage = stagePath[index]!;
+    let state: ClientProgressStepState = "upcoming";
+    if (status === "closed") {
+      state = "done";
+    } else if (index < stageIndex) {
+      state = "done";
+    } else if (index === stageIndex) {
+      state = status === "on-hold" ? "current" : "current";
+    }
+    lifecycle.push({
+      id: `stage-${stepStage}`,
+      title: caseStageMeta[stepStage],
+      hint:
+        state === "current"
+          ? status === "on-hold"
+            ? "پرونده موقتاً معلق است؛ همین مرحله جاری محسوب می‌شود."
+            : "مرحله جاری پرونده شما."
+          : state === "done"
+            ? "این مرحله پشت سر گذاشته شده است."
+            : "هنوز به این مرحله نرسیده‌اید.",
+      state,
+    });
+  }
+
+  lifecycle.push({
+    id: "closed",
+    title: "اتمام پرونده",
+    hint:
+      status === "closed"
+        ? "پرونده با جمع‌بندی نهایی بسته شده است."
+        : "پس از جمع‌بندی نهایی وکیل تکمیل می‌شود.",
+    state: status === "closed" ? "done" : "upcoming",
+  });
+
+  return lifecycle;
+}
+
+export function clientCaseProgressSummary(steps: ClientProgressStep[]) {
+  const current = steps.find((step) => step.state === "current");
+  const doneCount = steps.filter((step) => step.state === "done").length;
+  const total = steps.length;
+  return {
+    currentTitle: current?.title ?? (steps.every((s) => s.state === "done") ? "اتمام یافته" : "—"),
+    doneCount,
+    total,
+    percent: total === 0 ? 0 : Math.round((doneCount / total) * 100),
+  };
+}

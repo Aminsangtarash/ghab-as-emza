@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogOutIcon, MenuIcon, XIcon } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { ChatNotificationsProvider, useChatNotifications } from "@/components/chat/chat-notifications-provider";
+import { UnreadBadge } from "@/components/chat/unread-badge";
 import { GoldCanvas, SiteViewport } from "@/components/layout/site-canvas";
 import { LawyerAvatar } from "@/components/lawyers/lawyer-avatar";
 import { lawyerNav } from "@/lib/account";
@@ -51,54 +53,56 @@ export function LawyerShell({
   }
 
   return (
-    <SiteViewport>
-      <aside
-        className={cn(
-          "fixed inset-y-2.5 start-2.5 z-40 w-[min(19rem,calc(100%-1.25rem))] flex-col rounded-[1.6rem] bg-navy-deep text-white shadow-xl md:inset-y-3 md:start-3 lg:flex lg:w-80",
-          menuOpen ? "flex" : "hidden lg:flex",
-        )}
-      >
-        <LawyerSidebar
-          user={user}
-          lawyer={lawyer}
-          pathname={pathname}
-          onClose={() => setMenuOpen(false)}
-          onLogout={() => void onLogout()}
-        />
-      </aside>
-      {menuOpen && (
-        <button
-          type="button"
-          aria-label="بستن منو"
-          className="fixed inset-0 z-30 bg-navy-deep/50 lg:hidden"
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
-
-      <div className="flex h-full min-w-0 flex-col overflow-hidden lg:ps-[calc(20rem+0.75rem)]">
-        <header className="mb-2.5 flex shrink-0 items-center justify-between rounded-[1.4rem] bg-navy-deep px-3 py-2.5 text-white md:px-4 md:py-3 lg:hidden">
+    <ChatNotificationsProvider>
+      <SiteViewport>
+        <aside
+          className={cn(
+            "fixed inset-y-2.5 start-2.5 z-40 w-[min(19rem,calc(100%-1.25rem))] flex-col rounded-[1.6rem] bg-navy-deep text-white shadow-xl md:inset-y-3 md:start-3 lg:flex lg:w-80",
+            menuOpen ? "flex" : "hidden lg:flex",
+          )}
+        >
+          <LawyerSidebar
+            user={user}
+            lawyer={lawyer}
+            pathname={pathname}
+            onClose={() => setMenuOpen(false)}
+            onLogout={() => void onLogout()}
+          />
+        </aside>
+        {menuOpen && (
           <button
             type="button"
-            className="flex size-10 items-center justify-center rounded-xl bg-white/10"
-            aria-label="باز کردن منو"
-            onClick={() => setMenuOpen(true)}
-          >
-            <MenuIcon className="size-5" />
-          </button>
-          <p className="text-sm font-medium">میز وکیل</p>
-          {lawyer ? (
-            <LawyerAvatar src={lawyer.image} name={lawyer.name} size={40} className="size-10" />
-          ) : (
-            <span className="flex size-10 items-center justify-center rounded-full bg-white/10 text-sm">
-              {initials(user.fullName)}
-            </span>
-          )}
-        </header>
-        <GoldCanvas className="px-4 pb-7 pt-8 sm:px-6 sm:pb-9 sm:pt-10 md:px-8 lg:px-10 lg:pt-12">
-          <div className="mx-auto min-w-0 max-w-6xl">{children}</div>
-        </GoldCanvas>
-      </div>
-    </SiteViewport>
+            aria-label="بستن منو"
+            className="fixed inset-0 z-30 bg-navy-deep/50 lg:hidden"
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
+
+        <div className="flex h-full min-w-0 flex-col overflow-hidden lg:ps-[calc(20rem+0.75rem)]">
+          <header className="mb-2.5 flex shrink-0 items-center justify-between rounded-[1.4rem] bg-navy-deep px-3 py-2.5 text-white md:px-4 md:py-3 lg:hidden">
+            <button
+              type="button"
+              className="flex size-10 items-center justify-center rounded-xl bg-white/10"
+              aria-label="باز کردن منو"
+              onClick={() => setMenuOpen(true)}
+            >
+              <MenuIcon className="size-5" />
+            </button>
+            <p className="text-sm font-medium">میز وکیل</p>
+            {lawyer ? (
+              <LawyerAvatar src={lawyer.image} name={lawyer.name} size={40} className="size-10" />
+            ) : (
+              <span className="flex size-10 items-center justify-center rounded-full bg-white/10 text-sm">
+                {initials(user.fullName)}
+              </span>
+            )}
+          </header>
+          <GoldCanvas className="px-4 pb-7 pt-8 sm:px-6 sm:pb-9 sm:pt-10 md:px-8 lg:px-10 lg:pt-12">
+            <div className="mx-auto min-w-0 max-w-6xl">{children}</div>
+          </GoldCanvas>
+        </div>
+      </SiteViewport>
+    </ChatNotificationsProvider>
   );
 }
 
@@ -115,6 +119,8 @@ function LawyerSidebar({
   onClose: () => void;
   onLogout: () => void;
 }) {
+  const { unreadTotal } = useChatNotifications();
+
   return (
     <>
       <div className="border-b border-white/10 px-6 pb-5 pt-6">
@@ -159,6 +165,7 @@ function LawyerSidebar({
               ? pathname === item.href
               : pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;
+            const showBadge = item.href === "/lawyer/chats" && unreadTotal > 0;
             return (
               <li key={item.href}>
                 <Link
@@ -169,7 +176,8 @@ function LawyerSidebar({
                   )}
                 >
                   <Icon className="size-4 shrink-0" />
-                  {item.label}
+                  <span className="flex-1">{item.label}</span>
+                  {showBadge ? <UnreadBadge count={unreadTotal} /> : null}
                 </Link>
               </li>
             );

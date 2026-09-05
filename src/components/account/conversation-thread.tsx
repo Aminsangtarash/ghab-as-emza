@@ -4,9 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PhoneIcon, VideoIcon } from "lucide-react";
 
 import { ConsultDocumentList } from "@/components/consult/document-list";
+import { ConversationRatingDialog } from "@/components/account/conversation-rating-dialog";
 import { DocumentRequestCard } from "@/components/account/document-request-card";
+import { useOptionalChatNotifications } from "@/components/chat/chat-notifications-provider";
+import { Stars } from "@/components/lawyers/stars";
 import { buttonVariants } from "@/components/ui/button";
 import type { ClientConversation, ClientMessage } from "@/lib/conversations";
+import type { ChatStreamEvent } from "@/lib/chat-event-types";
 import type { ClientDocumentRequest } from "@/lib/document-request-types";
 import { consultChannelMeta } from "@/lib/consult";
 import { formatFaDateTime, toFaDigits } from "@/lib/format";
@@ -27,13 +31,28 @@ export function ConversationThread({
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [score, setScore] = useState(5);
-  const [comment, setComment] = useState("");
   const [cameraOn, setCameraOn] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [ratingOpen, setRatingOpen] = useState(false);
+  const ratingPromptedRef = useRef<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
+  const chat = useOptionalChatNotifications();
+
+  const markRead = useCallback(async () => {
+    try {
+      await fetch("/api/chat/read", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId }),
+      });
+      await chat?.refreshUnread();
+    } catch {
+      /* ignore */
+    }
+  }, [chat, conversationId]);
 
   const load = useCallback(async () => {
     const requestsPromise = fetch(`/api/conversations/${conversationId}/document-requests`, {
@@ -87,10 +106,41 @@ export function ConversationThread({
   }, [conversationId, viewer]);
 
   useEffect(() => {
+    chat?.setActiveConversationId(conversationId);
+    void markRead();
+    return () => {
+      chat?.setActiveConversationId(null);
+    };
+  }, [chat, conversationId, markRead]);
+
+  useEffect(() => {
     void load();
-    const timer = window.setInterval(() => void load(), 4000);
+    const timer = window.setInterval(() => void load(), 8000);
     return () => window.clearInterval(timer);
   }, [load]);
+
+  useEffect(() => {
+    function onLiveMessage(event: Event) {
+      const detail = (event as CustomEvent<ChatStreamEvent>).detail;
+      if (!detail || detail.type !== "message") return;
+      if (detail.conversationId !== conversationId) return;
+      setMessages((prev) => {
+        if (prev.some((item) => item.id === detail.message.id)) return prev;
+        return [...prev, detail.message];
+      });
+      if (!document.hidden) void markRead();
+    }
+    window.addEventListener("gae-chat-message", onLiveMessage);
+    return () => window.removeEventListener("gae-chat-message", onLiveMessage);
+  }, [conversationId, markRead]);
+
+  useEffect(() => {
+    function onVisibility() {
+      if (!document.hidden) void markRead();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [markRead]);
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
@@ -257,22 +307,12 @@ export function ConversationThread({
     await load();
   }
 
-  async function submitRating() {
-    setPending(true);
-    const response = await fetch(`/api/conversations/${conversationId}/rating`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ score, comment }),
-    });
-    const payload = (await response.json()) as { error?: string };
-    setPending(false);
-    if (!response.ok) {
-      setError(payload.error ?? "امتیاز ثبت نشد.");
-      return;
-    }
-    await load();
-  }
+  useEffect(() => {
+    if (viewer !== "user" || !summary?.closedAt || summary.hasRated) return;
+    if (ratingPromptedRef.current === conversationId) return;
+    ratingPromptedRef.current = conversationId;
+    setRatingOpen(true);
+  }, [viewer, summary?.closedAt, summary?.hasRated, conversationId]);
 
   if (!summary) {
     return <p className="text-sm text-navy/60">{error ?? "در حال بارگذاری گفتگو…"}</p>;
@@ -280,6 +320,7 @@ export function ConversationThread({
 
   const closed = Boolean(summary.closedAt);
   const channel = consultChannelMeta[summary.channel];
+  const canRate = viewer === "user" && closed && !summary.hasRated;
 
   return (
     <div className="flex min-h-[70vh] flex-col">
@@ -456,49 +497,49 @@ export function ConversationThread({
             ارسال
           </button>
         </form>
-      ) : viewer === "user" && !summary.hasRated ? (
-        <div className="mt-4 rounded-2xl bg-white/80 p-5 ring-1 ring-navy/8">
-          <p className="font-heading font-semibold text-navy">امتیاز به این مشاوره</p>
-          <p className="mt-1 text-sm text-navy/60">پس از بسته شدن کامل توسط وکیل می‌توانید امتیاز بدهید.</p>
-          <div className="mt-3 flex gap-1">
-            {[1, 2, 3, 4, 5].map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setScore(item)}
-                className={cn(
-                  "size-10 rounded-xl text-lg",
-                  item <= score ? "bg-gold text-navy-deep" : "bg-paper text-navy/30",
-                )}
-              >
-                {toFaDigits(item)}
-              </button>
-            ))}
-          </div>
-          <textarea
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
-            className="mt-3 min-h-20 w-full rounded-xl border border-navy/15 p-3 text-sm"
-            placeholder="توضیح اختیاری"
-            maxLength={500}
-          />
+      ) : canRate ? (
+        <div className="mt-4 rounded-2xl border border-gold/25 bg-gradient-to-l from-gold-wash/70 to-white p-5 shadow-sm">
+          <p className="font-heading text-base font-semibold text-navy">گفتگو بسته شد</p>
+          <p className="mt-1 text-sm leading-7 text-navy/65">
+            با ثبت امتیاز، به بهبود کیفیت مشاوره کمک می‌کنید.
+          </p>
           <button
             type="button"
-            disabled={pending}
-            onClick={() => void submitRating()}
-            className={cn(buttonVariants(), "mt-3 h-10 bg-navy px-5 text-white hover:bg-navy-mid")}
+            onClick={() => setRatingOpen(true)}
+            className={cn(buttonVariants(), "mt-4 h-11 w-full bg-navy text-white hover:bg-navy-mid sm:w-auto sm:px-6")}
           >
-            ثبت امتیاز
+            ثبت امتیاز با ستاره
           </button>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-navy/55">
-          {summary.hasRated
-            ? `امتیاز شما: ${toFaDigits(summary.ratingScore ?? 0)} از ۵`
-            : "این گفتگو بسته شده است."}
-        </p>
+        <div className="mt-4 rounded-2xl bg-white/80 px-4 py-3.5 ring-1 ring-navy/8">
+          {summary.hasRated ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm text-navy/70">امتیاز شما:</p>
+              <Stars rating={summary.ratingScore ?? 0} size="md" />
+              <span className="text-sm text-navy/50">{toFaDigits(summary.ratingScore ?? 0)} از ۵</span>
+            </div>
+          ) : (
+            <p className="text-sm text-navy/55">این گفتگو بسته شده است.</p>
+          )}
+        </div>
       )}
 
+      {viewer === "user" ? (
+        <ConversationRatingDialog
+          open={ratingOpen}
+          onOpenChange={setRatingOpen}
+          lawyerName={summary.lawyerName}
+          subject={summary.subject}
+          conversationId={conversationId}
+          onSubmitted={(score) => {
+            setSummary((prev) =>
+              prev ? { ...prev, hasRated: true, ratingScore: score } : prev,
+            );
+            void load();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

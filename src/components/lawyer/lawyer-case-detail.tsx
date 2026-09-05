@@ -7,11 +7,13 @@ import { CalendarClockIcon, CheckIcon, EyeIcon, LockIcon, PlusIcon, Trash2Icon }
 import {
   EmptyRow,
   ErrorNote,
+  FieldError,
   FieldLabel,
   LawyerHeading,
   OkNote,
   SectionCard,
   Tone,
+  controlClass,
   inputClass,
   panelCard,
   panelFetch,
@@ -74,6 +76,9 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
     happensAt: "",
     visibleToClient: true,
   });
+  const [eventErrors, setEventErrors] = useState<Record<string, string>>({});
+  const [appointmentErrors, setAppointmentErrors] = useState<Record<string, string>>({});
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   const [noteText, setNoteText] = useState("");
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
@@ -167,8 +172,11 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
   }
 
   async function addEvent() {
-    if (!event.title.trim()) {
-      setError("عنوان رویداد را بنویسید.");
+    const nextErrors: Record<string, string> = {};
+    if (event.title.trim().length < 3) nextErrors.title = "عنوان رویداد را کامل‌تر بنویسید.";
+    setEventErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setError("لطفاً فیلدهای مشخص‌شده را تکمیل کنید.");
       return;
     }
     const done = await run(
@@ -185,11 +193,18 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
         }),
       "رویداد در تایم‌لاین ثبت شد.",
     );
-    if (done) setEvent((current) => ({ ...current, title: "", body: "", happensAt: "" }));
+    if (done) {
+      setEventErrors({});
+      setEvent((current) => ({ ...current, title: "", body: "", happensAt: "" }));
+    }
   }
 
   async function addNote() {
-    if (!noteText.trim()) return;
+    if (!noteText.trim()) {
+      setNoteError("متن یادداشت را بنویسید.");
+      return;
+    }
+    setNoteError(null);
     const done = await run(
       () =>
         panelFetch("/api/lawyer/notes", {
@@ -241,8 +256,13 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
   }
 
   async function scheduleAppointment() {
-    if (!appointment.scheduledAt) {
-      setError("زمان جلسه را انتخاب کنید.");
+    const nextErrors: Record<string, string> = {};
+    if (!appointment.scheduledAt) nextErrors.scheduledAt = "زمان جلسه را انتخاب کنید.";
+    const minutes = Number(appointment.minutes);
+    if (!Number.isFinite(minutes) || minutes < 5) nextErrors.minutes = "مدت جلسه را وارد کنید.";
+    setAppointmentErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setError("لطفاً فیلدهای مشخص‌شده را تکمیل کنید.");
       return;
     }
     const done = await run(
@@ -260,6 +280,7 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
       "جلسه ثبت شد.",
     );
     if (done) {
+      setAppointmentErrors({});
       const list = await panelFetch<{ items: Array<{ scheduledAt: string }> }>("/api/lawyer/appointments");
       setAppointment((current) => ({
         ...current,
@@ -462,14 +483,24 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
               </div>
             </div>
             <label className="mt-3 block">
-              <FieldLabel>عنوان</FieldLabel>
+              <FieldLabel required invalid={Boolean(eventErrors.title)}>
+                عنوان
+              </FieldLabel>
               <input
                 value={event.title}
-                onChange={(e) => setEvent((c) => ({ ...c, title: e.target.value }))}
-                className={inputClass}
+                onChange={(e) => {
+                  setEvent((c) => ({ ...c, title: e.target.value }));
+                  setEventErrors((current) => {
+                    const { title: _t, ...rest } = current;
+                    return rest;
+                  });
+                }}
+                aria-invalid={Boolean(eventErrors.title)}
+                className={controlClass(Boolean(eventErrors.title))}
                 maxLength={160}
                 placeholder="مثلاً: جلسه رسیدگی شعبه ۱۰۲"
               />
+              <FieldError>{eventErrors.title}</FieldError>
             </label>
             <label className="mt-3 block">
               <FieldLabel>توضیح (اختیاری)</FieldLabel>
@@ -638,23 +669,43 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
                   />
                 </label>
                 <label className="block">
-                  <FieldLabel>مدت (دقیقه)</FieldLabel>
+                  <FieldLabel required invalid={Boolean(appointmentErrors.minutes)}>
+                    مدت (دقیقه)
+                  </FieldLabel>
                   <input
                     type="number"
                     min={5}
                     max={480}
                     value={appointment.minutes}
-                    onChange={(e) => setAppointment((c) => ({ ...c, minutes: e.target.value }))}
-                    className={inputClass}
+                    onChange={(e) => {
+                      setAppointment((c) => ({ ...c, minutes: e.target.value }));
+                      setAppointmentErrors((current) => {
+                        const { minutes: _m, ...rest } = current;
+                        return rest;
+                      });
+                    }}
+                    aria-invalid={Boolean(appointmentErrors.minutes)}
+                    className={controlClass(Boolean(appointmentErrors.minutes))}
                   />
+                  <FieldError>{appointmentErrors.minutes}</FieldError>
                 </label>
               </div>
               <div className="block">
-                <FieldLabel>زمان (شمسی)</FieldLabel>
+                <FieldLabel required invalid={Boolean(appointmentErrors.scheduledAt)}>
+                  زمان (شمسی)
+                </FieldLabel>
                 <JalaliDateTimeField
                   value={appointment.scheduledAt}
-                  onValueChange={(scheduledAt) => setAppointment((c) => ({ ...c, scheduledAt }))}
+                  invalid={Boolean(appointmentErrors.scheduledAt)}
+                  onValueChange={(scheduledAt) => {
+                    setAppointment((c) => ({ ...c, scheduledAt }));
+                    setAppointmentErrors((current) => {
+                      const { scheduledAt: _s, ...rest } = current;
+                      return rest;
+                    });
+                  }}
                 />
+                <FieldError>{appointmentErrors.scheduledAt}</FieldError>
               </div>
               <label className="block">
                 <FieldLabel>توضیح</FieldLabel>
@@ -680,11 +731,16 @@ export function LawyerCaseDetail({ caseId }: { caseId: string }) {
           <SectionCard title="یادداشت خصوصی" action={<Tone tone="bg-navy/5 text-navy/55">فقط شما</Tone>}>
             <textarea
               value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              className={textareaClass}
+              onChange={(e) => {
+                setNoteText(e.target.value);
+                if (noteError) setNoteError(null);
+              }}
+              aria-invalid={Boolean(noteError)}
+              className={controlClass(Boolean(noteError), textareaClass)}
               maxLength={4000}
               placeholder="نکات دفاع، ادله و پیگیری‌ها…"
             />
+            <FieldError>{noteError}</FieldError>
             <button
               type="button"
               disabled={pending}

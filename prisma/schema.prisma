@@ -119,6 +119,8 @@ model Conversation {
   videoStartedAt   DateTime?
   videoEndedAt     DateTime?
   closeSummary     String?      @db.Text
+  userLastReadAt   DateTime?
+  lawyerLastReadAt DateTime?
   consultation     Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
   user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages         Message[]

@@ -504,7 +504,10 @@ export function ConsultationWizard({
       >
         {step === 1 && (
           <StepShell title="چطور مشاوره بگیرید؟" subtitle="هر مسیر بعد از ثبت، قابل پیگیری است؛ فقط محل گفتگو فرق می‌کند.">
-            <div className="grid gap-4 md:grid-cols-3" data-field-error={bad("channel") ? "" : undefined}>
+            <div
+              className={cn("grid gap-4 md:grid-cols-3", bad("channel") && "rounded-2xl p-2 ring-2 ring-red-300/80")}
+              data-field-error={bad("channel") ? "" : undefined}
+            >
               {consultChannels.map((channel) => {
                 const meta = consultChannelMeta[channel];
                 const Icon = channelIcons[channel];
@@ -536,7 +539,10 @@ export function ConsultationWizard({
             <h3 className={cn("mb-3 font-heading text-sm font-semibold", bad("service") ? "text-red-700" : "text-navy")}>
               نوع خدمت
             </h3>
-            <div className="grid gap-3 sm:grid-cols-2" data-field-error={bad("service") ? "" : undefined}>
+            <div
+              className={cn("grid gap-3 sm:grid-cols-2", bad("service") && "rounded-2xl p-2 ring-2 ring-red-300/80")}
+              data-field-error={bad("service") ? "" : undefined}
+            >
               {availableServices.map((service) => (
                 <button
                   key={service.slug}
@@ -570,7 +576,10 @@ export function ConsultationWizard({
             <h3 className={cn("mt-8 mb-3 font-heading text-sm font-semibold", bad("lawyerMode") ? "text-red-700" : "text-navy")}>
               وکیل
             </h3>
-            <div className="grid gap-3 sm:grid-cols-2" data-field-error={bad("lawyerMode") ? "" : undefined}>
+            <div
+              className={cn("grid gap-3 sm:grid-cols-2", bad("lawyerMode") && "rounded-2xl p-2 ring-2 ring-red-300/80")}
+              data-field-error={bad("lawyerMode") ? "" : undefined}
+            >
               <ChoiceCard
                 selected={draft.lawyerMode === "assign"}
                 invalid={bad("lawyerMode")}
@@ -1191,9 +1200,16 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5" data-field-error={error ? "" : undefined}>
+    <div
+      className={cn(
+        "space-y-1.5 rounded-xl transition",
+        error && "bg-red-50/50 p-2 ring-2 ring-red-200/80",
+      )}
+      data-field-error={error ? "" : undefined}
+    >
       <Label htmlFor={htmlFor} className={error ? "text-red-700" : undefined}>
         {label}
+        {error ? <span className="mr-1 text-red-600">*</span> : null}
       </Label>
       {children}
       {error && hint ? <p className="text-xs text-red-700">{hint}</p> : null}

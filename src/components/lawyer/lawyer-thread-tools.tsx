@@ -15,10 +15,12 @@ import {
 import {
   EmptyRow,
   ErrorNote,
+  FieldError,
   FieldLabel,
   OkNote,
   SectionCard,
   Tone,
+  controlClass,
   inputClass,
   panelFetch,
   textareaClass,
@@ -82,6 +84,9 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
     nextActionAt: "",
     nextActionNote: "",
   });
+  const [caseErrors, setCaseErrors] = useState<Record<string, string>>({});
+  const [appointmentErrors, setAppointmentErrors] = useState<Record<string, string>>({});
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const [conversation, noteList, requests, appointments] = await Promise.all([
@@ -134,7 +139,11 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
   }
 
   async function addNote() {
-    if (!noteText.trim()) return;
+    if (!noteText.trim()) {
+      setNoteError("متن یادداشت را بنویسید.");
+      return;
+    }
+    setNoteError(null);
     const done = await run(
       () =>
         panelFetch("/api/lawyer/notes", {
@@ -154,8 +163,13 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
   }
 
   async function scheduleAppointment() {
-    if (!appointment.scheduledAt) {
-      setError("زمان جلسه را انتخاب کنید.");
+    const nextErrors: Record<string, string> = {};
+    if (!appointment.scheduledAt) nextErrors.scheduledAt = "زمان جلسه را انتخاب کنید.";
+    const minutes = Number(appointment.minutes);
+    if (!Number.isFinite(minutes) || minutes < 5) nextErrors.minutes = "مدت جلسه را وارد کنید.";
+    setAppointmentErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setError("لطفاً فیلدهای مشخص‌شده را تکمیل کنید.");
       return;
     }
     const done = await run(
@@ -173,6 +187,7 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
       "نوبت ثبت شد و به موکل اطلاع داده شد.",
     );
     if (done) {
+      setAppointmentErrors({});
       const list = await panelFetch<{ items: Array<{ scheduledAt: string }> }>("/api/lawyer/appointments");
       setAppointment((current) => ({
         ...current,
@@ -186,8 +201,13 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
 
   async function createCase() {
     const feeToman = Number(toEnDigits(caseForm.feeToman)) || 0;
-    if (feeToman <= 0) {
-      setError("مبلغ پیشنهادی حق‌الوکاله را وارد کنید.");
+    const nextErrors: Record<string, string> = {};
+    if (caseForm.title.trim().length < 4) nextErrors.title = "عنوان پرونده را کامل‌تر بنویسید.";
+    if (caseForm.summary.trim().length < 20) nextErrors.summary = "شرح پرونده باید حداقل ۲۰ نویسه باشد.";
+    if (feeToman <= 0) nextErrors.feeToman = "مبلغ پیشنهادی حق‌الوکاله را وارد کنید.";
+    setCaseErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setError("لطفاً فیلدهای مشخص‌شده را تکمیل کنید.");
       return;
     }
     if (docRequest && (docRequest.pendingCount > 0 || docRequest.uploadedCount > 0)) {
@@ -218,6 +238,7 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
       "پیشنهاد تشکیل پرونده ثبت شد و در انتظار تأیید موکل است.",
     );
     if (done) {
+      setCaseErrors({});
       setCaseForm((current) => ({ ...current, title: "", summary: "", nextActionNote: "", feeToman: "" }));
     }
   }
@@ -352,27 +373,43 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
                 />
               </label>
               <label className="block">
-                <FieldLabel>مدت (دقیقه)</FieldLabel>
+                <FieldLabel required invalid={Boolean(appointmentErrors.minutes)}>
+                  مدت (دقیقه)
+                </FieldLabel>
                 <input
                   type="number"
                   min={5}
                   max={480}
                   value={appointment.minutes}
-                  onChange={(event) =>
-                    setAppointment((current) => ({ ...current, minutes: event.target.value }))
-                  }
-                  className={inputClass}
+                  onChange={(event) => {
+                    setAppointment((current) => ({ ...current, minutes: event.target.value }));
+                    setAppointmentErrors((current) => {
+                      const { minutes: _m, ...rest } = current;
+                      return rest;
+                    });
+                  }}
+                  aria-invalid={Boolean(appointmentErrors.minutes)}
+                  className={controlClass(Boolean(appointmentErrors.minutes))}
                 />
+                <FieldError>{appointmentErrors.minutes}</FieldError>
               </label>
             </div>
             <div className="block">
-              <FieldLabel>زمان (شمسی)</FieldLabel>
+              <FieldLabel required invalid={Boolean(appointmentErrors.scheduledAt)}>
+                زمان (شمسی)
+              </FieldLabel>
               <JalaliDateTimeField
                 value={appointment.scheduledAt}
-                onValueChange={(scheduledAt) =>
-                  setAppointment((current) => ({ ...current, scheduledAt }))
-                }
+                invalid={Boolean(appointmentErrors.scheduledAt)}
+                onValueChange={(scheduledAt) => {
+                  setAppointment((current) => ({ ...current, scheduledAt }));
+                  setAppointmentErrors((current) => {
+                    const { scheduledAt: _s, ...rest } = current;
+                    return rest;
+                  });
+                }}
               />
+              <FieldError>{appointmentErrors.scheduledAt}</FieldError>
             </div>
             <label className="block">
               <FieldLabel>توضیح (اختیاری)</FieldLabel>
@@ -415,24 +452,44 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
           <>
             <div className="grid gap-3">
               <label className="block">
-                <FieldLabel>عنوان پرونده</FieldLabel>
+                <FieldLabel required invalid={Boolean(caseErrors.title)}>
+                  عنوان پرونده
+                </FieldLabel>
                 <input
                   value={caseForm.title}
-                  onChange={(event) => setCaseForm((current) => ({ ...current, title: event.target.value }))}
-                  className={inputClass}
+                  onChange={(event) => {
+                    setCaseForm((current) => ({ ...current, title: event.target.value }));
+                    setCaseErrors((current) => {
+                      const { title: _t, ...rest } = current;
+                      return rest;
+                    });
+                  }}
+                  aria-invalid={Boolean(caseErrors.title)}
+                  className={controlClass(Boolean(caseErrors.title))}
                   maxLength={160}
                   placeholder="مثلاً: مطالبه وجه چک و خسارت تأخیر"
                 />
+                <FieldError>{caseErrors.title}</FieldError>
               </label>
               <label className="block">
-                <FieldLabel>شرح و برنامه کار</FieldLabel>
+                <FieldLabel required invalid={Boolean(caseErrors.summary)}>
+                  شرح و برنامه کار
+                </FieldLabel>
                 <textarea
                   value={caseForm.summary}
-                  onChange={(event) => setCaseForm((current) => ({ ...current, summary: event.target.value }))}
-                  className={textareaClass}
+                  onChange={(event) => {
+                    setCaseForm((current) => ({ ...current, summary: event.target.value }));
+                    setCaseErrors((current) => {
+                      const { summary: _s, ...rest } = current;
+                      return rest;
+                    });
+                  }}
+                  aria-invalid={Boolean(caseErrors.summary)}
+                  className={controlClass(Boolean(caseErrors.summary), textareaClass)}
                   maxLength={4000}
                   placeholder="خلاصه موضوع، مدارک لازم و مراحل پیش‌رو را برای موکل بنویسید."
                 />
+                <FieldError>{caseErrors.summary}</FieldError>
               </label>
               <div className="rounded-2xl border border-navy/8 bg-paper/50 p-4">
                 <FieldLabel>مدارک پیوست درخواست</FieldLabel>
@@ -463,7 +520,7 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block">
-                  <FieldLabel>مرحله</FieldLabel>
+                  <FieldLabel required>مرحله</FieldLabel>
                   <SiteSelect
                     value={caseForm.stage}
                     onValueChange={(next) =>
@@ -480,20 +537,28 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
                   />
                 </label>
                 <label className="block">
-                  <FieldLabel>حق‌الوکاله پیشنهادی (تومان)</FieldLabel>
+                  <FieldLabel required invalid={Boolean(caseErrors.feeToman)}>
+                    حق‌الوکاله پیشنهادی (تومان)
+                  </FieldLabel>
                   <input
                     type="text"
                     inputMode="numeric"
                     value={caseForm.feeToman}
-                    onChange={(event) =>
+                    onChange={(event) => {
                       setCaseForm((current) => ({
                         ...current,
                         feeToman: toEnDigits(event.target.value).replace(/[^\d]/g, ""),
-                      }))
-                    }
-                    className={inputClass}
+                      }));
+                      setCaseErrors((current) => {
+                        const { feeToman: _f, ...rest } = current;
+                        return rest;
+                      });
+                    }}
+                    aria-invalid={Boolean(caseErrors.feeToman)}
+                    className={controlClass(Boolean(caseErrors.feeToman))}
                     placeholder="مثلاً 25000000"
                   />
+                  <FieldError>{caseErrors.feeToman}</FieldError>
                 </label>
                 <label className="block">
                   <FieldLabel>مرجع رسیدگی (اختیاری)</FieldLabel>
@@ -557,11 +622,16 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
       >
         <textarea
           value={noteText}
-          onChange={(event) => setNoteText(event.target.value)}
-          className={textareaClass}
+          onChange={(event) => {
+            setNoteText(event.target.value);
+            if (noteError) setNoteError(null);
+          }}
+          aria-invalid={Boolean(noteError)}
+          className={controlClass(Boolean(noteError), textareaClass)}
           maxLength={4000}
           placeholder="نکات پرونده، ادله، پیگیری‌های لازم…"
         />
+        <FieldError>{noteError}</FieldError>
         <button
           type="button"
           disabled={pending}
