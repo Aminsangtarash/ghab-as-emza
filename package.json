@@ -7,8 +7,10 @@
     "build": "next build",
     "start": "next start --port 43145",
     "lint": "eslint",
-    "postinstall": "prisma generate",
-    "db:push": "prisma db push"
+    "postinstall": "node scripts/with-db-url.mjs npx prisma generate",
+    "db:push": "node scripts/with-db-url.mjs npx prisma db push",
+    "db:migrate": "node scripts/with-db-url.mjs npx prisma migrate deploy",
+    "db:generate": "node scripts/with-db-url.mjs npx prisma generate"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
