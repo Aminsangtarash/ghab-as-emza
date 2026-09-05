@@ -23,6 +23,10 @@ export function newSessionToken() {
   return randomBytes(24).toString("hex");
 }
 
+function randomPasswordHash() {
+  return hashPassword(randomBytes(32).toString("hex"));
+}
+
 function publicFromStored(user: StoredUser): PublicUser {
   const { passwordHash: _passwordHash, ...publicUser } = user;
   return publicUser;
@@ -67,6 +71,39 @@ export async function loginAccount(phone: string, password: string) {
     return { error: "حساب شما غیرفعال شده است." as const };
   }
   await markUserLogin(user.id);
+  const token = newSessionToken();
+  await createSession(token, user.id);
+  return { user: publicFromStored(user), token };
+}
+
+export async function loginAccountWithOtp(phone: string) {
+  const user = await findUserByPhone(phone);
+  if (!user) {
+    return { error: "حسابی با این شماره یافت نشد. ابتدا ثبت نام کنید." as const };
+  }
+  if (user.active === false) {
+    return { error: "حساب شما غیرفعال شده است." as const };
+  }
+  await markUserLogin(user.id);
+  const token = newSessionToken();
+  await createSession(token, user.id);
+  return { user: publicFromStored(user), token };
+}
+
+export async function registerAccountWithOtp(fullName: string, phone: string) {
+  const name = fullName.trim();
+  if (name.length < 3) {
+    return { error: "نام باید حداقل سه نویسه باشد." as const };
+  }
+  const existing = await findUserByPhone(phone);
+  if (existing) {
+    return { error: "این شماره قبلاً ثبت شده است." as const };
+  }
+  const user = await createUser({
+    fullName: name,
+    phone,
+    passwordHash: randomPasswordHash(),
+  });
   const token = newSessionToken();
   await createSession(token, user.id);
   return { user: publicFromStored(user), token };

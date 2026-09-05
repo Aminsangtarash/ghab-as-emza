@@ -154,8 +154,58 @@ export const registerSchema = z.object({
   password: z.string().min(8, "رمز عبور باید حداقل ۸ نویسه باشد."),
 });
 
+export const otpSendSchema = z.object({
+  purpose: z.enum(["login", "register"]),
+  phone: phoneField,
+  fullName: z
+    .string()
+    .trim()
+    .min(3, "نام باید حداقل سه نویسه باشد.")
+    .max(80)
+    .optional(),
+}).superRefine((data, ctx) => {
+  if (data.purpose === "register" && !data.fullName) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["fullName"],
+      message: "نام باید حداقل سه نویسه باشد.",
+    });
+  }
+});
+
+export const otpVerifySchema = z.object({
+  purpose: z.enum(["login", "register"]),
+  phone: phoneField,
+  code: z
+    .string()
+    .trim()
+    .transform((value) =>
+      value
+        .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+        .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+        .replace(/\D/g, ""),
+    )
+    .refine((value) => /^\d{5}$/.test(value), "کد تأیید باید ۵ رقم باشد."),
+  fullName: z
+    .string()
+    .trim()
+    .min(3, "نام باید حداقل سه نویسه باشد.")
+    .max(80)
+    .optional(),
+}).superRefine((data, ctx) => {
+  if (data.purpose === "register" && !data.fullName) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["fullName"],
+      message: "نام باید حداقل سه نویسه باشد.",
+    });
+  }
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type OtpSendInput = z.infer<typeof otpSendSchema>;
+export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;
 
 export const profileUpdateSchema = z.object({
   fullName: z.string().trim().min(3, "نام باید حداقل سه نویسه باشد.").max(80, "نام بیش از حد طولانی است."),

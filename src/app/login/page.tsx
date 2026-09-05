@@ -23,7 +23,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     <>
       <PageHero
         title="ورود"
-        description="با شماره موبایل وارد شوید. ثبت درخواست مشاوره فقط با حساب کاربری ممکن است."
+        description="با شماره موبایل و کد تأیید پیامکی وارد شوید. ثبت درخواست مشاوره فقط با حساب کاربری ممکن است."
       />
       <section className="mx-auto w-full max-w-md px-4 pb-12 pt-10 sm:px-6 sm:pt-12">
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-navy/10">

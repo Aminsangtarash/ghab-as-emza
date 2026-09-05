@@ -23,7 +23,7 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registe
     <>
       <PageHero
         title="ثبت نام"
-        description="حساب بسازید تا بتوانید درخواست مشاوره ثبت کنید و بعداً وضعیت آن را ببینید."
+        description="با شماره موبایل حساب بسازید؛ کد تأیید پیامکی برای شما ارسال می‌شود."
       />
       <section className="mx-auto w-full max-w-md px-4 pb-12 pt-10 sm:px-6 sm:pt-12">
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-navy/10">

@@ -20,8 +20,8 @@ export function AuthDialog({ open }: { open: boolean }) {
             </Dialog.Title>
             <span className="mt-3 block h-1 w-12 rounded-full bg-gold" />
             <Dialog.Description className="mt-3 text-sm leading-7 text-navy/70">
-              ثبت درخواست مشاوره فقط پس از ورود یا ایجاد حساب انجام می‌شود. با همان شماره موبایل بعداً
-              وضعیت درخواست را می‌بینید.
+              ثبت درخواست مشاوره فقط پس از ورود یا ایجاد حساب انجام می‌شود. کد تأیید به شماره موبایل
+              شما پیامک می‌شود.
             </Dialog.Description>
             <div className="mt-5">
               <AuthForm mode={mode} variant="dialog" onModeChange={setMode} />
