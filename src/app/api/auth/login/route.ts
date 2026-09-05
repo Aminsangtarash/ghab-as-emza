@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = NextResponse.json({ ok: true, user: result.user });
-    response.cookies.set(SESSION_COOKIE, result.token, sessionCookieOptions());
+    response.cookies.set(SESSION_COOKIE, result.token, sessionCookieOptions(undefined, request));
     return response;
   } catch {
     return NextResponse.json(

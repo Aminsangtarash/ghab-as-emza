@@ -8,6 +8,6 @@ export async function POST(request: NextRequest) {
   if (token) await deleteSession(token);
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(SESSION_COOKIE, "", { ...sessionCookieOptions(), maxAge: 0 });
+  response.cookies.set(SESSION_COOKIE, "", { ...sessionCookieOptions(undefined, request), maxAge: 0 });
   return response;
 }

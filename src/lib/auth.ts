@@ -72,11 +72,29 @@ export async function loginAccount(phone: string, password: string) {
   return { user: publicFromStored(user), token };
 }
 
-export function sessionCookieOptions(maxAgeSeconds = 7 * 24 * 60 * 60) {
+function cookieShouldBeSecure(request?: {
+  headers: { get(name: string): string | null };
+}) {
+  const explicit = process.env.COOKIE_SECURE?.trim().toLowerCase();
+  if (explicit === "0" || explicit === "false" || explicit === "off") return false;
+  if (explicit === "1" || explicit === "true" || explicit === "on") return true;
+
+  const proto = request?.headers.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
+  if (proto === "https") return true;
+  if (proto === "http") return false;
+
+  // Bare http://IP in production must not force Secure or the browser drops the cookie.
+  return false;
+}
+
+export function sessionCookieOptions(
+  maxAgeSeconds = 7 * 24 * 60 * 60,
+  request?: { headers: { get(name: string): string | null } },
+) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieShouldBeSecure(request),
     path: "/",
     maxAge: maxAgeSeconds,
   };
