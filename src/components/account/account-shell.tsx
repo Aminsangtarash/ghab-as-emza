@@ -10,6 +10,7 @@ import { UserAvatar } from "@/components/account/user-avatar";
 import { useAuth } from "@/components/auth/auth-provider";
 import { ChatNotificationsProvider, useChatNotifications } from "@/components/chat/chat-notifications-provider";
 import { UnreadBadge } from "@/components/chat/unread-badge";
+import { PanelMobileDrawer } from "@/components/layout/panel-mobile-drawer";
 import { GoldCanvas, SiteViewport } from "@/components/layout/site-canvas";
 import { accountNav } from "@/lib/account";
 import { formatToman, toFaDigits } from "@/lib/format";
@@ -47,27 +48,30 @@ export function AccountShell({ user, children }: { user: PublicUser; children: R
   return (
     <ChatNotificationsProvider>
       <SiteViewport>
-        <aside
-          className={cn(
-            "fixed inset-y-2.5 start-2.5 z-40 w-[min(18.5rem,calc(100%-1.25rem))] flex-col rounded-[1.6rem] bg-navy text-white shadow-xl md:inset-y-3 md:start-3 xl:flex xl:w-72",
-            menuOpen ? "flex" : "hidden xl:flex",
-          )}
+        <aside className="fixed inset-y-3 start-3 z-40 hidden w-72 flex-col rounded-[1.6rem] bg-navy text-white shadow-xl xl:flex">
+          <SidebarBody
+            user={user}
+            pathname={pathname}
+            onClose={() => setMenuOpen(false)}
+            onLogout={() => void onLogout()}
+            mobile={false}
+          />
+        </aside>
+
+        <PanelMobileDrawer
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          hideFromClassName="xl:hidden"
+          className="bg-navy text-white"
         >
           <SidebarBody
             user={user}
             pathname={pathname}
             onClose={() => setMenuOpen(false)}
             onLogout={() => void onLogout()}
+            mobile
           />
-        </aside>
-        {menuOpen && (
-          <button
-            type="button"
-            aria-label="بستن منو"
-            className="fixed inset-0 z-30 bg-navy-deep/45 xl:hidden"
-            onClick={() => setMenuOpen(false)}
-          />
-        )}
+        </PanelMobileDrawer>
 
         <div className="flex h-full min-w-0 flex-col overflow-hidden xl:ps-[calc(18rem+0.75rem)]">
           <header className="mb-2.5 flex shrink-0 items-center justify-between rounded-[1.4rem] bg-navy px-3 py-2.5 text-white md:px-4 md:py-3 xl:hidden">
@@ -75,6 +79,7 @@ export function AccountShell({ user, children }: { user: PublicUser; children: R
               type="button"
               className="flex size-10 items-center justify-center rounded-xl bg-white/10 md:size-11"
               aria-label="باز کردن منو"
+              aria-expanded={menuOpen}
               onClick={() => setMenuOpen(true)}
             >
               <MenuIcon className="size-5" />
@@ -108,27 +113,34 @@ function SidebarBody({
   pathname,
   onClose,
   onLogout,
+  mobile,
 }: {
   user: PublicUser;
   pathname: string;
   onClose: () => void;
   onLogout: () => void;
+  mobile: boolean;
 }) {
   const { unreadTotal } = useChatNotifications();
 
   return (
-    <>
-      <div className="px-4 pt-5">
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] font-medium tracking-wide text-gold">قبل از امضا</p>
-          <button
-            type="button"
-            className="flex size-8 items-center justify-center rounded-lg bg-white/10 text-white xl:hidden"
-            aria-label="بستن منو"
-            onClick={onClose}
-          >
-            <XIcon className="size-4" />
-          </button>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className={cn("px-4", mobile ? "pt-5 pb-1" : "pt-5")}>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <p className="text-[11px] font-medium tracking-wide text-gold">قبل از امضا</p>
+            {mobile ? <p className="mt-0.5 text-xs text-white/45">منوی پنل کاربری</p> : null}
+          </div>
+          {mobile ? (
+            <button
+              type="button"
+              className="flex size-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/15"
+              aria-label="بستن منو"
+              onClick={onClose}
+            >
+              <XIcon className="size-4" />
+            </button>
+          ) : null}
         </div>
         <div className="mt-4 rounded-2xl bg-navy-mid/80 p-3 ring-1 ring-white/10">
           <div className="flex items-center gap-3">
@@ -136,7 +148,11 @@ function SidebarBody({
             <div className="min-w-0">
               <p className="truncate font-heading text-sm font-semibold">{user.fullName}</p>
               <p className="mt-0.5 truncate text-xs text-white/60">{toFaDigits(user.phone)}</p>
-              <Link href="/account/wallet" className="mt-2 inline-block text-[11px] text-gold hover:underline">
+              <Link
+                href="/account/wallet"
+                onClick={onClose}
+                className="mt-2 inline-block text-[11px] text-gold hover:underline"
+              >
                 {formatToman(user.walletBalance)}
               </Link>
             </div>
@@ -156,10 +172,11 @@ function SidebarBody({
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={onClose}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
                     active
-                      ? "bg-white/8 font-medium text-gold"
+                      ? "bg-white/10 font-medium text-gold"
                       : "text-white/75 hover:bg-white/8 hover:text-white",
                   )}
                 >
@@ -173,9 +190,10 @@ function SidebarBody({
         </ul>
       </nav>
 
-      <div className="space-y-1 border-t border-white/10 p-3">
+      <div className="space-y-1 border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <Link
           href="/"
+          onClick={onClose}
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 hover:bg-white/8 hover:text-white"
         >
           <GlobeIcon className="size-4" />
@@ -190,6 +208,6 @@ function SidebarBody({
           خروج
         </button>
       </div>
-    </>
+    </div>
   );
 }

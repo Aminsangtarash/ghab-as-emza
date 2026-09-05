@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogOutIcon, MenuIcon, ShieldIcon, XIcon } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { PanelMobileDrawer } from "@/components/layout/panel-mobile-drawer";
 import { GoldCanvas, SiteViewport } from "@/components/layout/site-canvas";
 import { adminNavForRole, panelLabel } from "@/lib/account";
 import { initials } from "@/lib/format";
@@ -44,11 +45,23 @@ export function AdminShell({ user, children }: { user: PublicUser; children: Rea
 
   return (
     <SiteViewport>
-      <aside
-        className={cn(
-          "fixed inset-y-2.5 start-2.5 z-40 w-[min(18.5rem,calc(100%-1.25rem))] flex-col overflow-hidden rounded-[1.6rem] border border-navy-deep/10 bg-gradient-to-b from-gold via-gold to-[#c9a227] text-navy-deep shadow-[0_20px_50px_-24px_rgba(20,30,60,0.55)] md:inset-y-3 md:start-3 lg:flex lg:w-72",
-          menuOpen ? "flex" : "hidden lg:flex",
-        )}
+      <aside className="fixed inset-y-3 start-3 z-40 hidden w-72 flex-col overflow-hidden rounded-[1.6rem] border border-navy-deep/10 bg-gradient-to-b from-gold via-gold to-[#c9a227] text-navy-deep shadow-[0_20px_50px_-24px_rgba(20,30,60,0.55)] lg:flex">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_55%)]" />
+        <AdminSidebar
+          user={user}
+          pathname={pathname}
+          nav={nav}
+          onClose={() => setMenuOpen(false)}
+          onLogout={() => void onLogout()}
+          mobile={false}
+        />
+      </aside>
+
+      <PanelMobileDrawer
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        hideFromClassName="lg:hidden"
+        className="border-s border-navy-deep/10 bg-gradient-to-b from-gold via-gold to-[#c9a227] text-navy-deep"
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_55%)]" />
         <AdminSidebar
@@ -57,16 +70,9 @@ export function AdminShell({ user, children }: { user: PublicUser; children: Rea
           nav={nav}
           onClose={() => setMenuOpen(false)}
           onLogout={() => void onLogout()}
+          mobile
         />
-      </aside>
-      {menuOpen && (
-        <button
-          type="button"
-          aria-label="بستن منو"
-          className="fixed inset-0 z-30 bg-navy-deep/40 lg:hidden"
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
+      </PanelMobileDrawer>
 
       <div className="flex h-full min-w-0 flex-col overflow-hidden lg:ps-[calc(18rem+0.75rem)]">
         <header className="mb-2.5 flex shrink-0 items-center justify-between rounded-[1.4rem] border border-navy-deep/10 bg-gradient-to-l from-gold to-[#d4af37] px-3 py-2.5 text-navy-deep shadow-sm md:px-4 md:py-3 lg:hidden">
@@ -74,6 +80,7 @@ export function AdminShell({ user, children }: { user: PublicUser; children: Rea
             type="button"
             className="flex size-10 items-center justify-center rounded-xl bg-navy/10"
             aria-label="باز کردن منو"
+            aria-expanded={menuOpen}
             onClick={() => setMenuOpen(true)}
           >
             <MenuIcon className="size-5" />
@@ -97,28 +104,35 @@ function AdminSidebar({
   nav,
   onClose,
   onLogout,
+  mobile,
 }: {
   user: PublicUser;
   pathname: string;
   nav: ReturnType<typeof adminNavForRole>;
   onClose: () => void;
   onLogout: () => void;
+  mobile: boolean;
 }) {
   return (
     <div className="relative flex h-full min-h-0 flex-col">
-      <div className="px-5 pt-7">
-        <div className="flex items-start justify-between">
-          <p className="text-[10px] font-semibold tracking-[0.16em] text-navy/55">قبل از امضا</p>
-          <button
-            type="button"
-            className="flex size-8 items-center justify-center rounded-md bg-navy/10 lg:hidden"
-            aria-label="بستن منو"
-            onClick={onClose}
-          >
-            <XIcon className="size-4" />
-          </button>
+      <div className={cn("px-5", mobile ? "pt-5" : "pt-7")}>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-semibold tracking-[0.16em] text-navy/55">قبل از امضا</p>
+            {mobile ? <p className="mt-1 text-xs text-navy/45">منوی مدیریت</p> : null}
+          </div>
+          {mobile ? (
+            <button
+              type="button"
+              className="flex size-9 items-center justify-center rounded-xl bg-navy/10 text-navy-deep transition hover:bg-navy/15"
+              aria-label="بستن منو"
+              onClick={onClose}
+            >
+              <XIcon className="size-4" />
+            </button>
+          ) : null}
         </div>
-        <div className="mt-6 rounded-2xl bg-navy px-4 py-4 text-white shadow-lg shadow-navy/20">
+        <div className={cn("rounded-2xl bg-navy px-4 py-4 text-white shadow-lg shadow-navy/20", mobile ? "mt-4" : "mt-6")}>
           <span className="flex size-11 items-center justify-center rounded-xl bg-gold text-navy-deep">
             <ShieldIcon className="size-5" />
           </span>
@@ -143,6 +157,7 @@ function AdminSidebar({
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={onClose}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
                     active
@@ -159,9 +174,10 @@ function AdminSidebar({
         </ul>
       </nav>
 
-      <div className="border-t border-navy/15 bg-navy/[0.04] p-3">
+      <div className="border-t border-navy/15 bg-navy/[0.04] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <Link
           href="/"
+          onClick={onClose}
           className="block rounded-xl px-3 py-2.5 text-sm text-navy-deep/70 hover:bg-navy/10 hover:text-navy-deep"
         >
           بازگشت به سایت
