@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>پلن ارتقا محصول — قبل از امضا</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #0b1f33;
+      --navy-mid: #16324d;
+      --gold: #c9a227;
+      --gold-soft: #f7efd6;
+      --paper: #faf9f7;
+      --ink: #1a2430;
+      --muted: #5a6675;
+      --line: #e4e0d8;
+      --card: #ffffff;
+      --ok: #1f6b4a;
+      --warn: #9a5b00;
+      --crit: #8b1e2d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(ellipse 80% 50% at 100% 0%, rgba(201, 162, 39, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 0% 100%, rgba(11, 31, 51, 0.06), transparent 50%),
+        var(--paper);
+      color: var(--ink);
+      line-height: 1.85;
+      font-size: 15.5px;
+    }
+
+    .page {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+
+    .cover {
+      background: linear-gradient(145deg, var(--navy) 0%, var(--navy-mid) 55%, #1e4060 100%);
+      color: #fff;
+      border-radius: 1.4rem;
+      padding: 2.4rem 2rem 2rem;
+      box-shadow: 0 18px 40px rgba(11, 31, 51, 0.22);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -40% 40%;
+      height: 180px;
+      background: radial-gradient(circle, rgba(201, 162, 39, 0.35), transparent 70%);
+      pointer-events: none;
+    }
+
+    .cover-kicker {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--gold-soft);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(201, 162, 39, 0.35);
+      border-radius: 999px;
+      padding: 0.35rem 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .cover h1 {
+      margin: 0 0 0.6rem;
+      font-size: clamp(1.55rem, 4vw, 2.1rem);
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .cover .subtitle {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 1rem;
+      max-width: 36rem;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 1.5rem;
+    }
+
+    .meta span {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 0.7rem;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .meta strong { color: var(--gold); font-weight: 700; }
+
+    .hint {
+      margin-top: 1.25rem;
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    nav.toc {
+      margin: 1.5rem 0 0;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      padding: 1.1rem 1.25rem;
+    }
+
+    nav.toc h2 {
+      margin: 0 0 0.6rem;
+      font-size: 0.95rem;
+      color: var(--navy);
+    }
+
+    nav.toc ol {
+      margin: 0;
+      padding-inline-start: 1.3rem;
+      columns: 1;
+    }
+
+    @media (min-width: 700px) {
+      nav.toc ol { columns: 2; column-gap: 2rem; }
+    }
+
+    nav.toc a {
+      color: var(--navy-mid);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    nav.toc a:hover { color: var(--gold); text-decoration: underline; }
+
+    section {
+      margin-top: 2.25rem;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 1.1rem;
+      padding: 1.5rem 1.4rem 1.35rem;
+      box-shadow: 0 4px 16px rgba(11, 31, 51, 0.04);
+    }
+
+    section h2 {
+      margin: 0 0 1rem;
+      font-size: 1.2rem;
+      color: var(--navy);
+      padding-bottom: 0.65rem;
+      border-bottom: 2px solid var(--gold-soft);
+      display: flex;
+      align-items: baseline;
+      gap: 0.55rem;
+    }
+
+    section h2 .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.7rem;
+      height: 1.7rem;
+      border-radius: 0.45rem;
+      background: var(--navy);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    h3 {
+      margin: 1.35rem 0 0.55rem;
+      font-size: 1.02rem;
+      color: var(--navy-mid);
+    }
+
+    p { margin: 0.55rem 0; color: var(--ink); }
+
+    ul, ol { margin: 0.4rem 0 0.6rem; padding-inline-start: 1.35rem; }
+    li { margin: 0.25rem 0; }
+
+    .muted { color: var(--muted); }
+
+    .callout {
+      margin: 1rem 0 0;
+      padding: 0.95rem 1.1rem;
+      border-radius: 0.85rem;
+      background: var(--gold-soft);
+      border-inline-start: 4px solid var(--gold);
+      color: var(--navy);
+      font-size: 0.95rem;
+    }
+
+    .summary-box {
+      margin-top: 1rem;
+      padding: 1.1rem 1.2rem;
+      border-radius: 0.9rem;
+      background: linear-gradient(135deg, #f3f7fb, #fff);
+      border: 1px solid #d5e0ea;
+    }
+
+    .summary-box p {
+      margin: 0.35rem 0;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .flow {
+      margin: 1rem 0 0;
+      padding: 1rem 1.1rem;
+      border-radius: 0.85rem;
+      background: #f4f6f8;
+      border: 1px dashed #c5ced8;
+      font-family: "Vazirmatn", Tahoma, sans-serif;
+      font-size: 0.92rem;
+      color: var(--navy-mid);
+      white-space: pre-wrap;
+      line-height: 1.7;
+    }
+
+    .phases {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    @media (min-width: 720px) {
+      .phases { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .phase {
+      border-radius: 0.9rem;
+      padding: 0.95rem 0.9rem;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .phase .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 0.35rem;
+    }
+
+    .phase .title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.5;
+    }
+
+    .phase.now {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #fff;
+    }
+
+    .phase.now .label { color: var(--gold); }
+    .phase.now .title { color: #fff; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0 0.4rem;
+      font-size: 0.88rem;
+      overflow: hidden;
+      border-radius: 0.7rem;
+    }
+
+    thead th {
+      background: var(--navy);
+      color: #fff;
+      font-weight: 600;
+      text-align: right;
+      padding: 0.7rem 0.75rem;
+    }
+
+    tbody td {
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: #fafbfc; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .badge.crit { background: #fde8ec; color: var(--crit); }
+    .badge.imp { background: #fff3df; color: var(--warn); }
+    .badge.next { background: #e8f3ee; color: var(--ok); }
+
+    .grid-2 {
+      display: grid;
+      gap: 0.85rem;
+    }
+
+    @media (min-width: 700px) {
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+    }
+
+    .mini-card {
+      border: 1px solid var(--line);
+      border-radius: 0.85rem;
+      padding: 0.9rem 1rem;
+      background: #fff;
+    }
+
+    .mini-card h4 {
+      margin: 0 0 0.45rem;
+      font-size: 0.92rem;
+      color: var(--navy);
+    }
+
+    .mini-card p, .mini-card li {
+      font-size: 0.88rem;
+      margin: 0.2rem 0;
+      color: var(--muted);
+    }
+
+    .decision {
+      counter-reset: q;
+    }
+
+    .decision li {
+      list-style: none;
+      position: relative;
+      padding: 0.85rem 1rem 0.85rem 1rem;
+      margin: 0.55rem 0;
+      background: #f7f9fb;
+      border-radius: 0.75rem;
+      border: 1px solid var(--line);
+      padding-inline-start: 3rem;
+    }
+
+    .decision li::before {
+      counter-increment: q;
+      content: counter(q);
+      position: absolute;
+      inset-inline-start: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1.55rem;
+      height: 1.55rem;
+      border-radius: 50%;
+      background: var(--gold);
+      color: var(--navy);
+      font-weight: 800;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    footer.doc-foot {
+      margin-top: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+      padding: 0 0.5rem;
+    }
+
+    .print-bar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding: 0.75rem 0 0;
+    }
+
+    .print-bar button {
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 0.65rem;
+      padding: 0.55rem 1rem;
+      cursor: pointer;
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .print-bar button:hover { background: var(--navy-mid); }
+
+    @media print {
+      body { background: #fff; font-size: 11.5pt; }
+      .print-bar { display: none; }
+      .page { max-width: none; padding: 0; }
+      .cover, section {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+      section { page-break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="print-bar">
+      <button type="button" onclick="window.print()">چاپ / ذخیره PDF</button>
+    </div>
+
+    <header class="cover">
+      <div class="cover-kicker">سند ارائه به کارفرما</div>
+      <h1>پلن ارتقا محصول «قبل از امضا»</h1>
+      <p class="subtitle">
+        مسیر تکمیل نسخهٔ MVP و رسیدن به نسخهٔ نهایی قابل ارائه به بازار
+      </p>
+      <div class="meta">
+        <span>نسخه سند: <strong>۱.۰</strong></span>
+        <span>وضعیت فعلی: <strong>تحویل MVP</strong></span>
+        <span>مخاطب: <strong>کارفرما / تصمیم‌گیرنده محصول</strong></span>
+      </div>
+      <p class="hint">این فایل با هر مرورگری (Chrome، Edge، Firefox، Safari) باز می‌شود. برای PDF از دکمه بالا یا Ctrl+P استفاده کنید.</p>
+    </header>
+
+    <nav class="toc" aria-label="فهرست مطالب">
+      <h2>فهرست</h2>
+      <ol>
+        <li><a href="#s1">مقدمه</a></li>
+        <li><a href="#s2">وضعیت فعلی MVP</a></li>
+        <li><a href="#s3">محدودیت‌های آگاهانه</a></li>
+        <li><a href="#s4">نقشه راه</a></li>
+        <li><a href="#s5">فاز ۱ — تکمیل MVP</a></li>
+        <li><a href="#s6">فاز ۲ — تجربه و عملیات</a></li>
+        <li><a href="#s7">فاز ۳ — نسخه نهایی</a></li>
+        <li><a href="#s8">جمع‌بندی به تفکیک سطح</a></li>
+        <li><a href="#s9">ترتیب اجرا</a></li>
+        <li><a href="#s10">سؤالات تصمیم‌گیری</a></li>
+      </ol>
+    </nav>
+
+    <section id="s1">
+      <h2><span class="num">۱</span> مقدمه</h2>
+      <p>
+        نسخهٔ فعلی سامانه به‌عنوان <strong>MVP عملیاتی</strong> تحویل شده است:
+        کاربر می‌تواند درخواست مشاوره ثبت کند، وکیل درخواست را بپذیرد، گفتگو و پیگیری انجام شود،
+        و در صورت نیاز پرونده حقوقی داخل سامانه شکل بگیرد.
+      </p>
+      <p class="muted">این سند مشخص می‌کند:</p>
+      <ol>
+        <li>چه قابلیت‌هایی هم‌اکنون در MVP وجود دارد</li>
+        <li>چه مواردی برای «تکمیل صادقانهٔ MVP» ضروری است</li>
+        <li>چه قابلیت‌هایی نسخهٔ نهایی (محصول بازار) را کامل می‌کند</li>
+        <li>اولویت‌بندی پیشنهادی اجرا برای تصمیم‌گیری کارفرما</li>
+      </ol>
+    </section>
+
+    <section id="s2">
+      <h2><span class="num">۲</span> وضعیت فعلی MVP — چه چیزی تحویل شده است؟</h2>
+
+      <h3>۲.۱ سایت عمومی</h3>
+      <ul>
+        <li>صفحات اصلی، خدمات، وکلا، مقالات، درباره ما، تماس، همکاری</li>
+        <li>ویزارد ثبت درخواست مشاوره (چندمرحله‌ای، مسیر فوری)</li>
+        <li>ورود / ثبت‌نام با <strong>کد یکبارمصرف (OTP)</strong></li>
+        <li>فرم همکاری وکلا و ثبت تیکت تماس</li>
+      </ul>
+
+      <h3>۲.۲ پنل کاربر (موکل)</h3>
+      <ul>
+        <li>داشبورد، درخواست‌ها، گفتگوها، پرونده‌ها، پروفایل، پشتیبانی</li>
+        <li>گفتگوی آنلاین با وکیل + اعلان پیام خوانده‌نشده</li>
+        <li>پیگیری پیشرفت پرونده (نوار مراحل فقط‌خواندنی)</li>
+        <li>بارگذاری مدارک و پاسخ به درخواست مدرک وکیل</li>
+        <li>کیف پول (مشاهده موجودی و تراکنش‌ها؛ شارژ درگاه هنوز وصل نیست)</li>
+      </ul>
+
+      <h3>۲.۳ پنل وکیل</h3>
+      <ul>
+        <li>میز کار، صف درخواست‌ها، گفتگوها، پرونده‌ها</li>
+        <li>زمان‌بندی / نوبت، موکلان، درآمد (گزارشی)، امتیازها، یادداشت‌ها</li>
+        <li>ابزارهای گفتگو: نوبت، یادداشت، درخواست مدرک، پیشنهاد پرونده</li>
+        <li>ثبت و مدیریت مراحل پرونده برای موکل</li>
+      </ul>
+
+      <h3>۲.۴ پنل مدیریت</h3>
+      <ul>
+        <li>داشبورد عملیات، صف درخواست‌ها، کاربران، وکلا</li>
+        <li>تأیید همکاری وکیل، تعرفه‌ها / کد تخفیف</li>
+        <li>پشتیبانی، کارکنان، تخصیص وکیل، تعدیل کیف پول و لغو/استرداد</li>
+      </ul>
+
+      <h3>۲.۵ جریان اصلی محصول (هسته MVP)</h3>
+      <div class="flow">ثبت درخواست → پذیرش/تخصیص وکیل → گفتگو و هماهنگی
+        → درخواست مدرک / نوبت
+        → پیشنهاد و تشکیل پرونده → پیگیری مراحل</div>
+      <p style="margin-top:0.85rem">
+        این هسته نسبت به یک MVP حداقلی جلوتر است و قابل دمو و استفاده کنترل‌شده است.
+      </p>
+    </section>
+
+    <section id="s3">
+      <h2><span class="num">۳</span> محدودیت‌های آگاهانهٔ MVP</h2>
+      <p class="muted">
+        موارد زیر در نسخهٔ فعلی عمداً یا موقتاً کامل نیستند و نباید به‌عنوان «محصول نهایی بازار»
+        معرفی شوند مگر تکمیل شوند:
+      </p>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>موضوع</th>
+              <th>وضعیت فعلی</th>
+              <th>ریسک اگر بدون توضیح ارائه شود</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>پرداخت آنلاین</td>
+              <td>ثبت آزمایشی / بدون درگاه واقعی</td>
+              <td>بی‌اعتمادی کاربر و مشکل حقوقی/مالی</td>
+            </tr>
+            <tr>
+              <td>شارژ کیف پول</td>
+              <td>دکمه/مسیر غیرفعال</td>
+              <td>انتظار شارژ واقعی برآورده نمی‌شود</td>
+            </tr>
+            <tr>
+              <td>مشاوره ویدئویی</td>
+              <td>پیش‌نمایش دوربین محلی (بدون تماس دوطرفه)</td>
+              <td>وعدهٔ ویدئو واقعی برآورده نمی‌شود</td>
+            </tr>
+            <tr>
+              <td>مشاوره حضوری</td>
+              <td>مسیر عمومی «به‌زودی» / نیمه‌کاره</td>
+              <td>تبلیغ خدمتی که رزرو نمی‌شود</td>
+            </tr>
+            <tr>
+              <td>خبرنامه</td>
+              <td>فقط موفقیت ظاهری در مرورگر</td>
+              <td>داده ذخیره نمی‌شود</td>
+            </tr>
+            <tr>
+              <td>پشتیبانی</td>
+              <td>ثبت تیکت؛ گفتگوی دوطرفه کامل نیست</td>
+              <td>انتظار پاسخ داخل پنل برآورده نمی‌شود</td>
+            </tr>
+            <tr>
+              <td>تسویه درآمد وکیل</td>
+              <td>گزارش داخل سامانه؛ تسویه خارج از سیستم</td>
+              <td>ابهام مالی برای وکیل</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <strong>پیشنهاد کوتاه‌مدت تا تکمیل فاز ۱:</strong>
+        در رابط کاربری و قرارداد/پیوست فنی، این موارد با برچسب صریح
+        «آزمایشی / خارج از سامانه / به‌زودی» مشخص بمانند تا اعتماد کاربر حفظ شود.
+      </div>
+    </section>
+
+    <section id="s4">
+      <h2><span class="num">۴</span> نقشه راه پیشنهادی</h2>
+      <p>ترتیب بر اساس <strong>اعتماد کاربر، درآمد، و پایداری عملیات</strong> است.</p>
+      <div class="phases">
+        <div class="phase now">
+          <div class="label">فاز ۰ — الان</div>
+          <div class="title">MVP تحویل‌شده (هسته مشاوره و پرونده)</div>
+        </div>
+        <div class="phase">
+          <div class="label">فاز ۱</div>
+          <div class="title">تکمیل MVP صادقانه + قابلیت درآمدزایی</div>
+        </div>
+        <div class="phase">
+          <div class="label">فاز ۲</div>
+          <div class="title">بلوغ تجربه کاربری و عملیات روزانه</div>
+        </div>
+        <div class="phase">
+          <div class="label">فاز ۳</div>
+          <div class="title">نسخه نهایی بازار (مقیاس، کیفیت، تمایز)</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s5">
+      <h2><span class="num">۵</span> فاز ۱ — تکمیل MVP (اولویت بحرانی)</h2>
+      <p><strong>هدف:</strong> محصولی که وعده می‌دهد همان را انجام دهد، و مسیر پول واقعی باز شود.</p>
+
+      <h3>۵.۱ پرداخت و کیف پول واقعی</h3>
+      <ul>
+        <li>اتصال درگاه پرداخت معتبر (مثلاً زرین‌پال / پی‌پینگ / مشابه مورد تأیید کارفرما)</li>
+        <li>وضعیت‌های شفاف: در انتظار پرداخت / پرداخت‌شده / ناموفق / استرداد</li>
+        <li>شارژ کیف پول + پرداخت مشاوره از کیف پول یا کارت</li>
+        <li>حذف وضعیت‌های «پرداخت آزمایشی» در محیط عملیاتی</li>
+        <li>رسید دیجیتال و گزارش مالی پایه برای ادمین</li>
+      </ul>
+      <p class="muted"><strong>خروجی:</strong> کاربر واقعاً پرداخت می‌کند؛ موجودی و تراکنش‌ها قابل اتکا است.</p>
+
+      <h3>۵.۲ صداقت کانال‌های مشاوره</h3>
+      <p class="muted">یکی از دو مسیر (با تصمیم کارفرما):</p>
+      <div class="grid-2">
+        <div class="mini-card">
+          <h4>الف — تکمیل فنی</h4>
+          <p>تماس ویدئویی واقعی + رزرو حضوری کامل (زمان، مکان، تأیید)</p>
+        </div>
+        <div class="mini-card">
+          <h4>ب — موقتاً محدودسازی</h4>
+          <p>حذف/غیرفعال‌کردن «ویدئو» و «حضوری» از کاتالوگ تا آماده شدن؛ نگه داشتن چت/تماس تلفنی هماهنگی‌شده</p>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:0.85rem"><strong>خروجی:</strong> هیچ خدمتی تبلیغ نمی‌شود مگر مسیر کامل داشته باشد.</p>
+
+      <h3>۵.۳ امنیت و استقرار پایدار</h3>
+      <ul>
+        <li>سخت‌سازی حساب‌های مدیریتی (رمز قوی، اجبار تغییر در اولین ورود)</li>
+        <li>پایدارسازی OTP و اعلان لحظه‌ای برای چند سرور / ری‌استارت</li>
+        <li>پشتیبان‌گیری منظم دیتابیس و رویه بازیابی</li>
+      </ul>
+
+      <h3>۵.۴ پشتیبانی حداقل قابل اتکا</h3>
+      <ul>
+        <li>امکان پاسخ ادمین به تیکت کاربر داخل پنل</li>
+        <li>وضعیت تیکت: باز / در حال بررسی / پاسخ‌داده‌شده / بسته‌شده</li>
+        <li>اعلان ساده به کاربر هنگام پاسخ</li>
+      </ul>
+    </section>
+
+    <section id="s6">
+      <h2><span class="num">۶</span> فاز ۲ — تکمیل تجربه و عملیات روزانه</h2>
+      <p><strong>هدف:</strong> کاربر و وکیل هر روز بدون سردرگمی کار کنند؛ نرخ رها کردن کاهش یابد.</p>
+
+      <h3>۶.۱ پنل کاربر</h3>
+      <ul>
+        <li><strong>صندوق اقدام (Action Inbox):</strong> «الان چه کاری از شما لازم است؟» (پرداخت، مدرک، تأیید پرونده، نوبت، پشتیبانی)</li>
+        <li>نمایش کیف پول در منوی اصلی + توضیح نقش آن</li>
+        <li>مرکز اعلان یکپارچه (چت + پرونده + نوبت + پشتیبانی)</li>
+        <li>صفحه «نوبت‌های من» با تقویم/لیست شفاف</li>
+        <li>کارت اقدام روی پرونده + بهبود داشبورد</li>
+      </ul>
+
+      <h3>۶.۲ پنل وکیل</h3>
+      <ul>
+        <li>تفکیک ابزارهای گفتگو (تب‌بندی / شیت موبایل)</li>
+        <li>نمایش واضح SLA صف و زمان باقی‌مانده برای پذیرش فوری</li>
+        <li>سقف پذیرش خودکار + ساعات کاری</li>
+        <li>یک وضعیت واحد «روش ارتباط فعال»</li>
+        <li>برچسب شفاف حق‌الوکاله + خروجی مالی / درخواست تسویه</li>
+      </ul>
+
+      <h3>۶.۳ پنل ادمین</h3>
+      <ul>
+        <li>داشبورد عملیاتی با متریک انتظار صف و اکشن گروهی</li>
+        <li>چک‌لیست onboarding وکیل بعد از تأیید همکاری</li>
+        <li>لاگ اقدامات حساس (کیف پول، تعرفه، تعلیق)</li>
+        <li>بهبود کیفیت صف: هشدار + محدودسازی پذیرش</li>
+      </ul>
+
+      <h3>۶.۴ سایت عمومی</h3>
+      <ul>
+        <li>آیتم واضح «ثبت درخواست مشاوره» در منوی اصلی</li>
+        <li>توضیح شفاف سه مدل انتخاب وکیل در ابتدای ویزارد</li>
+        <li>SEO پایه (sitemap، متا، پیش‌نمایش اشتراک‌گذاری)</li>
+        <li>مسیر مشخص به‌روزرسانی مقالات / محتوا</li>
+      </ul>
+    </section>
+
+    <section id="s7">
+      <h2><span class="num">۷</span> فاز ۳ — نسخه نهایی بازار</h2>
+      <p><strong>هدف:</strong> محصول مقیاس‌پذیر، متمایز، و آماده رشد کاربر و وکیل.</p>
+
+      <div class="grid-2">
+        <div class="mini-card">
+          <h4>۷.۱ ارتباطات حرفه‌ای</h4>
+          <ul>
+            <li>ویدئو پایدار با کیفیت</li>
+            <li>رزرو حضوری کامل + یادآوری SMS</li>
+            <li>تماس تلفنی با ثبت وضعیت</li>
+          </ul>
+        </div>
+        <div class="mini-card">
+          <h4>۷.۲ مالی و قرارداد</h4>
+          <ul>
+            <li>فاکتور / رسید رسمی</li>
+            <li>تفکیک کارمزد و سهم وکیل</li>
+            <li>تسویه دوره‌ای + گزارش حسابداری</li>
+          </ul>
+        </div>
+        <div class="mini-card">
+          <h4>۷.۳ اعلان و ماندگاری</h4>
+          <ul>
+            <li>اعلان SMS/ایمیل رویدادهای مهم</li>
+            <li>ترجیحات اعلان کاربر</li>
+            <li>یادآوری خودکار موعدها</li>
+          </ul>
+        </div>
+        <div class="mini-card">
+          <h4>۷.۴ کیفیت و انطباق</h4>
+          <ul>
+            <li>احراز تکمیلی (در صورت نیاز)</li>
+            <li>رضایت‌نامه و حریم خصوصی در جریان ثبت</li>
+            <li>آرشیو امن مدارک + مانیتورینگ</li>
+          </ul>
+        </div>
+        <div class="mini-card">
+          <h4>۷.۵ مقیاس فنی</h4>
+          <ul>
+            <li>منبع واحد داده وکلا</li>
+            <li>آمادگی چندسروری</li>
+            <li>محیط آزمایش / استیجینگ / تولید</li>
+          </ul>
+        </div>
+        <div class="mini-card">
+          <h4>۷.۶ رشد (اختیاری)</h4>
+          <ul>
+            <li>اپ موبایل یا PWA پیشرفته</li>
+            <li>بازارچه خدمات بسته‌ای</li>
+            <li>پنل سازمانی (B2B) و کمک هوش مصنوعی با نظارت انسانی</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="s8">
+      <h2><span class="num">۸</span> جمع‌بندی پیشنهادها به تفکیک سطح</h2>
+
+      <h3>سایت عمومی</h3>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>اولویت</th><th>موضوع</th><th>پیشنهاد</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge crit">بحرانی</span></td><td>پرداخت آزمایشی</td><td>درگاه واقعی یا برچسب صریح آزمایشی</td></tr>
+            <tr><td><span class="badge crit">بحرانی</span></td><td>حضوری / ویدئو ناقص</td><td>تکمیل یا حذف موقت از کاتالوگ</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>مسیر مشاوره در منو</td><td>دکمه/لینک ثبت درخواست در هدر</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>ابهام انتخاب وکیل</td><td>توضیح تفاوت مدل‌ها در ویزارد</td></tr>
+            <tr><td><span class="badge next">بعدی</span></td><td>مقالات و SEO</td><td>sitemap، OG، مدیریت محتوا</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>پنل کاربر</h3>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>اولویت</th><th>موضوع</th><th>پیشنهاد</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge crit">بحرانی</span></td><td>سردرگمی اقدام بعدی</td><td>صندوق اقدام (Action Inbox)</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>کیف پول پنهان</td><td>ورود به منو + نقش شفاف</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>اعلان محدود به چت</td><td>مرکز اعلان یکپارچه</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>پشتیبانی یک‌طرفه</td><td>پاسخ و تاریخچه تیکت</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>نوبت‌ها</td><td>صفحه/ویجت نوبت‌های من</td></tr>
+            <tr><td><span class="badge next">بعدی</span></td><td>پرونده</td><td>CTA اقدام روی استپر</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>پنل وکیل</h3>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>اولویت</th><th>موضوع</th><th>پیشنهاد</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge crit">بحرانی</span></td><td>ابهام مالی حق‌الوکاله</td><td>برچسب ثبت دفتری / پرداخت سامانه‌ای</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>شلوغی ابزار گفتگو</td><td>تب‌بندی / شیت موبایل</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>صف فوری</td><td>تایمر SLA و هشدار</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>پذیرش خودکار</td><td>سقف ظرفیت + ساعات کاری</td></tr>
+            <tr><td><span class="badge next">بعدی</span></td><td>درآمد</td><td>درخواست تسویه / خروجی مالی</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>پنل ادمین</h3>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>اولویت</th><th>موضوع</th><th>پیشنهاد</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge crit">بحرانی</span></td><td>پشتیبانی بدون پاسخ</td><td>ترد پیام + وضعیت + مسئول</td></tr>
+            <tr><td><span class="badge crit">بحرانی</span></td><td>امنیت دسترسی مدیر</td><td>سخت‌سازی رمز و سیاست ورود</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>عملیات صف</td><td>متریک انتظار + اکشن گروهی</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>شفافیت تغییرات</td><td>لاگ اقدامات حساس</td></tr>
+            <tr><td><span class="badge imp">مهم</span></td><td>ورود وکیل جدید</td><td>چک‌لیست onboarding</td></tr>
+            <tr><td><span class="badge next">بعدی</span></td><td>کیفیت وکلا</td><td>محدودیت صف / تعلیق پذیرش</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s9">
+      <h2><span class="num">۹</span> ترتیب پیشنهادی اجرا</h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr><th>مرحله</th><th>تمرکز</th><th>نتیجه برای کارفرما</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>۱</strong></td>
+              <td>درگاه پرداخت + صداقت ویدئو/حضوری + امنیت پایه + پاسخ پشتیبانی</td>
+              <td>MVP قابل فروش / پایلوت واقعی</td>
+            </tr>
+            <tr>
+              <td><strong>۲</strong></td>
+              <td>صندوق اقدام، اعلان‌ها، UX وکیل/ادمین، شفافیت مالی وکیل</td>
+              <td>استفاده روزانه روان‌تر</td>
+            </tr>
+            <tr>
+              <td><strong>۳</strong></td>
+              <td>ویدئو/حضوری کامل، تسویه، اعلان SMS، مقیاس و انطباق</td>
+              <td>نسخه نهایی بازار</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s10">
+      <h2><span class="num">۱۰</span> سؤالات تصمیم‌گیری برای جلسه بعدی</h2>
+      <p class="muted">برای شروع فاز ۱، تصمیم‌گیری روی این ۳ مورد کافی است:</p>
+      <ol class="decision">
+        <li><strong>درگاه پرداخت:</strong> کدام ارائه‌دهنده و مدل کارمزد؟</li>
+        <li><strong>ویدئو و حضوری:</strong> تکمیل فنی در فاز ۱، یا موقتاً حذف از کاتالوگ؟</li>
+        <li><strong>افق زمانی:</strong> پایلوت محدود با کاربران واقعی، یا انتشار عمومی پس از فاز ۱؟</li>
+      </ol>
+      <p class="muted">پس از این تصمیم‌ها می‌توان برآورد زمان/هزینهٔ هر فاز را جداگانه ارائه کرد.</p>
+
+      <div class="summary-box">
+        <p>MVP فعلی هسته مشاوره تا پرونده را پوشش می‌دهد.</p>
+        <p>فاز ۱ آن را صادقانه و قابل درآمدزایی می‌کند.</p>
+        <p>فاز ۲ کار روزمره کاربر و وکیل را کامل می‌کند.</p>
+        <p>فاز ۳ محصول را به نسخهٔ نهایی بازار می‌رساند.</p>
+      </div>
+    </section>
+
+    <footer class="doc-foot">
+      این سند بر اساس بررسی وضعیت فعلی سامانه «قبل از امضا» پس از تحویل MVP تهیه شده
+      و برای ارائه به کارفرما جهت برنامه‌ریزی ارتقاهای بعدی قابل استفاده است.
+    </footer>
+  </div>
+</body>
+</html>

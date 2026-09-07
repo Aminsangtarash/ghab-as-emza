@@ -11,10 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { panelHome } from "@/lib/account";
 import { OTP_LENGTH } from "@/lib/otp-constants";
+import { isPasswordPanelPath } from "@/lib/paths";
 import { cn } from "@/lib/utils";
 
 type AuthMode = "login" | "register";
 type Step = "phone" | "otp";
+type LoginMethod = "otp" | "password";
 
 export function AuthForm({
   mode,
@@ -29,20 +31,25 @@ export function AuthForm({
 }) {
   const router = useRouter();
   const { refresh } = useAuth();
+  const passwordAllowed = mode === "login" && variant === "page" && isPasswordPanelPath(nextHref);
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>(passwordAllowed ? "password" : "otp");
   const [step, setStep] = useState<Step>("phone");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [retryAfterSec, setRetryAfterSec] = useState(0);
 
   useEffect(() => {
+    setLoginMethod(passwordAllowed ? "password" : "otp");
     setStep("phone");
     setOtp("");
+    setPassword("");
     setMessage(null);
     setRetryAfterSec(0);
-  }, [mode]);
+  }, [mode, passwordAllowed]);
 
   useEffect(() => {
     if (retryAfterSec <= 0) return;
@@ -55,6 +62,29 @@ export function AuthForm({
     if (variant === "page") {
       router.push(nextHref || panelHome(userRole));
       router.refresh();
+    }
+  }
+
+  async function loginWithPassword() {
+    setPending(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, password }),
+      });
+      const payload = (await response.json()) as { error?: string; user?: { role?: string } };
+      if (!response.ok) {
+        setMessage(payload.error ?? "ورود انجام نشد.");
+        return;
+      }
+      await finishAuth(payload.user?.role);
+    } catch {
+      setMessage("ارتباط با سرور برقرار نشد.");
+    } finally {
+      setPending(false);
     }
   }
 
@@ -123,6 +153,10 @@ export function AuthForm({
   async function onPhoneSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     event.stopPropagation();
+    if (loginMethod === "password") {
+      await loginWithPassword();
+      return;
+    }
     await sendOtp();
   }
 
@@ -141,9 +175,94 @@ export function AuthForm({
         ? `/login?next=${encodeURIComponent(nextHref)}`
         : "/login";
 
+  const showPasswordForm = passwordAllowed && loginMethod === "password" && step === "phone";
+
   return (
     <div className="space-y-4">
-      {step === "phone" ? (
+      {passwordAllowed ? (
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-navy/[0.04] p-1">
+          <button
+            type="button"
+            onClick={() => {
+              setLoginMethod("password");
+              setStep("phone");
+              setOtp("");
+              setMessage(null);
+            }}
+            className={cn(
+              "rounded-lg px-3 py-2 text-sm font-medium transition",
+              loginMethod === "password" ? "bg-white text-navy shadow-sm" : "text-navy/55 hover:text-navy",
+            )}
+          >
+            ورود با رمز
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setLoginMethod("otp");
+              setStep("phone");
+              setPassword("");
+              setMessage(null);
+            }}
+            className={cn(
+              "rounded-lg px-3 py-2 text-sm font-medium transition",
+              loginMethod === "otp" ? "bg-white text-navy shadow-sm" : "text-navy/55 hover:text-navy",
+            )}
+          >
+            کد پیامکی
+          </button>
+        </div>
+      ) : null}
+
+      {showPasswordForm ? (
+        <form onSubmit={(event) => void onPhoneSubmit(event)} className="space-y-4" method="post">
+          <div className="space-y-1.5">
+            <Label htmlFor="auth-phone">شماره موبایل</Label>
+            <Input
+              id="auth-phone"
+              name="phone"
+              className="h-10"
+              dir="ltr"
+              inputMode="numeric"
+              placeholder="0912xxxxxxx"
+              autoComplete="username"
+              required
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="auth-password">رمز عبور</Label>
+            <Input
+              id="auth-password"
+              name="password"
+              type="password"
+              className="h-10"
+              dir="ltr"
+              autoComplete="current-password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </div>
+          {message && (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm leading-7 text-red-800" role="alert">
+              {message}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={pending}
+            className={cn(
+              buttonVariants(),
+              "h-11 w-full bg-navy text-white hover:bg-navy-mid disabled:opacity-50",
+            )}
+          >
+            {pending ? "در حال ورود…" : "ورود به پنل"}
+          </button>
+        </form>
+      ) : step === "phone" ? (
         <form onSubmit={(event) => void onPhoneSubmit(event)} className="space-y-4" method="post">
           {mode === "register" && (
             <div className="space-y-1.5">
@@ -253,43 +372,45 @@ export function AuthForm({
         </form>
       )}
 
-      <p className="text-center text-sm text-navy/70">
-        {mode === "login" ? (
-          <>
-            حساب ندارید؟{" "}
-            {variant === "dialog" ? (
-              <button
-                type="button"
-                className="font-medium text-navy hover:text-gold-deep"
-                onClick={() => onModeChange?.("register")}
-              >
-                ثبت نام
-              </button>
-            ) : (
-              <Link href={switchHref} className="font-medium text-navy hover:text-gold-deep">
-                ثبت نام
-              </Link>
-            )}
-          </>
-        ) : (
-          <>
-            قبلاً ثبت‌نام کرده‌اید؟{" "}
-            {variant === "dialog" ? (
-              <button
-                type="button"
-                className="font-medium text-navy hover:text-gold-deep"
-                onClick={() => onModeChange?.("login")}
-              >
-                ورود
-              </button>
-            ) : (
-              <Link href={switchHref} className="font-medium text-navy hover:text-gold-deep">
-                ورود
-              </Link>
-            )}
-          </>
-        )}
-      </p>
+      {!passwordAllowed ? (
+        <p className="text-center text-sm text-navy/70">
+          {mode === "login" ? (
+            <>
+              حساب ندارید؟{" "}
+              {variant === "dialog" ? (
+                <button
+                  type="button"
+                  className="font-medium text-navy hover:text-gold-deep"
+                  onClick={() => onModeChange?.("register")}
+                >
+                  ثبت نام
+                </button>
+              ) : (
+                <Link href={switchHref} className="font-medium text-navy hover:text-gold-deep">
+                  ثبت نام
+                </Link>
+              )}
+            </>
+          ) : (
+            <>
+              قبلاً ثبت‌نام کرده‌اید؟{" "}
+              {variant === "dialog" ? (
+                <button
+                  type="button"
+                  className="font-medium text-navy hover:text-gold-deep"
+                  onClick={() => onModeChange?.("login")}
+                >
+                  ورود
+                </button>
+              ) : (
+                <Link href={switchHref} className="font-medium text-navy hover:text-gold-deep">
+                  ورود
+                </Link>
+              )}
+            </>
+          )}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -29,7 +29,7 @@ import {
   type ClientAppointment,
 } from "@/lib/appointment-model";
 import { suggestNextAppointmentLocalValue } from "@/lib/appointment-slot";
-import { formatFaDateTime, toFaDigits } from "@/lib/format";
+import { formatFaDateTime, normalizePhone, toFaDigits } from "@/lib/format";
 import type { LawyerClient } from "@/lib/lawyer-desk";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +40,19 @@ const tabs = [
   { id: "all", label: "همه" },
 ] as const;
 
+type ClientMode = "existing" | "guest";
+
+const emptyForm = {
+  clientMode: "existing" as ClientMode,
+  userId: "",
+  guestName: "",
+  guestPhone: "",
+  kind: "in-person" as (typeof appointmentKinds)[number],
+  scheduledAt: "",
+  minutes: "30",
+  note: "",
+};
+
 export function LawyerSchedule() {
   const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("upcoming");
   const [items, setItems] = useState<ClientAppointment[] | null>(null);
@@ -47,13 +60,7 @@ export function LawyerSchedule() {
   const [error, setError] = useState<string | null>(null);
   const [okMessage, setOkMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [form, setForm] = useState({
-    userId: "",
-    kind: "phone" as (typeof appointmentKinds)[number],
-    scheduledAt: "",
-    minutes: "30",
-    note: "",
-  });
+  const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
@@ -105,7 +112,14 @@ export function LawyerSchedule() {
 
   async function create() {
     const nextErrors: Record<string, string> = {};
-    if (!form.userId) nextErrors.userId = "موکل را انتخاب کنید.";
+    if (form.clientMode === "existing") {
+      if (!form.userId) nextErrors.userId = "موکل را انتخاب کنید.";
+    } else {
+      if (form.guestName.trim().length < 3) nextErrors.guestName = "نام موکل را وارد کنید.";
+      if (!/^09\d{9}$/.test(normalizePhone(form.guestPhone))) {
+        nextErrors.guestPhone = "شماره موبایل معتبر وارد کنید.";
+      }
+    }
     if (!form.scheduledAt) nextErrors.scheduledAt = "زمان جلسه را انتخاب کنید.";
     const minutes = Number(form.minutes);
     if (!Number.isFinite(minutes) || minutes < 5) nextErrors.minutes = "مدت جلسه را وارد کنید.";
@@ -119,7 +133,12 @@ export function LawyerSchedule() {
     const result = await panelFetch("/api/lawyer/appointments", {
       method: "POST",
       body: JSON.stringify({
-        userId: form.userId,
+        ...(form.clientMode === "existing"
+          ? { userId: form.userId }
+          : {
+              guestClientName: form.guestName.trim(),
+              guestClientPhone: normalizePhone(form.guestPhone),
+            }),
         kind: form.kind,
         scheduledAt: new Date(form.scheduledAt).toISOString(),
         minutes: Number(form.minutes) || 30,
@@ -135,8 +154,8 @@ export function LawyerSchedule() {
     setFieldErrors({});
     const all = await panelFetch<{ items: ClientAppointment[] }>("/api/lawyer/appointments");
     setForm((current) => ({
-      ...current,
-      note: "",
+      ...emptyForm,
+      clientMode: current.clientMode,
       scheduledAt: suggestNextAppointmentLocalValue(
         all.ok ? all.data.items : [{ scheduledAt: new Date(form.scheduledAt).toISOString() }],
       ),
@@ -196,7 +215,10 @@ export function LawyerSchedule() {
                     cell: (item) => (
                       <div className="min-w-0">
                         <p className="truncate font-medium text-navy">{item.clientName}</p>
-                        <p className="mt-0.5 text-[11px] text-navy/45">{appointmentKindMeta[item.kind]}</p>
+                        <p className="mt-0.5 text-[11px] text-navy/45">
+                          {appointmentKindMeta[item.kind]}
+                          {item.isGuestClient ? " · خارج از سامانه" : ""}
+                        </p>
                       </div>
                     ),
                   },
@@ -268,31 +290,117 @@ export function LawyerSchedule() {
           )}
         </div>
 
-        <SectionCard title="ثبت نوبت جدید" hint="برای موکلی که قبلاً درخواست ثبت کرده است.">
+        <SectionCard
+          title="ثبت نوبت جدید"
+          hint="می‌توانید موکل سامانه را انتخاب کنید یا مشخصات موکل خارج از سامانه را دستی وارد کنید."
+        >
           <div className="grid gap-3">
-            <label className="block">
-              <FieldLabel required invalid={Boolean(fieldErrors.userId)}>
-                موکل
-              </FieldLabel>
-              <SiteSelect
-                value={form.userId || null}
-                onValueChange={(userId) => {
-                  setForm((current) => ({ ...current, userId }));
-                  setFieldErrors((current) => {
-                    const { userId: _u, ...rest } = current;
-                    return rest;
-                  });
-                }}
-                options={clients.map((client) => ({
-                  value: client.userId,
-                  label: `${client.fullName} — ${toFaDigits(client.phone)}`,
-                }))}
-                placeholder="انتخاب کنید…"
-                invalid={Boolean(fieldErrors.userId)}
-                className="h-11 w-full min-w-0"
-              />
-              <FieldError>{fieldErrors.userId}</FieldError>
-            </label>
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-paper/80 p-1 ring-1 ring-navy/8">
+              {(
+                [
+                  { id: "existing", label: "موکل سامانه" },
+                  { id: "guest", label: "ورود دستی" },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => {
+                    setForm((current) => ({
+                      ...current,
+                      clientMode: option.id,
+                      userId: option.id === "existing" ? current.userId : "",
+                      guestName: option.id === "guest" ? current.guestName : "",
+                      guestPhone: option.id === "guest" ? current.guestPhone : "",
+                    }));
+                    setFieldErrors((current) => {
+                      const { userId: _u, guestName: _n, guestPhone: _p, ...rest } = current;
+                      return rest;
+                    });
+                  }}
+                  className={cn(
+                    "rounded-lg px-3 py-2 text-sm font-medium transition",
+                    form.clientMode === option.id
+                      ? "bg-white text-navy shadow-sm"
+                      : "text-navy/55 hover:text-navy",
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            {form.clientMode === "existing" ? (
+              <label className="block">
+                <FieldLabel required invalid={Boolean(fieldErrors.userId)}>
+                  موکل
+                </FieldLabel>
+                <SiteSelect
+                  value={form.userId || null}
+                  onValueChange={(userId) => {
+                    setForm((current) => ({ ...current, userId }));
+                    setFieldErrors((current) => {
+                      const { userId: _u, ...rest } = current;
+                      return rest;
+                    });
+                  }}
+                  options={clients.map((client) => ({
+                    value: client.userId,
+                    label: `${client.fullName} — ${toFaDigits(client.phone)}`,
+                  }))}
+                  placeholder="انتخاب کنید…"
+                  invalid={Boolean(fieldErrors.userId)}
+                  className="h-11 w-full min-w-0"
+                />
+                <FieldError>{fieldErrors.userId}</FieldError>
+              </label>
+            ) : (
+              <div className="grid gap-3">
+                <label className="block">
+                  <FieldLabel required invalid={Boolean(fieldErrors.guestName)}>
+                    نام و نام خانوادگی
+                  </FieldLabel>
+                  <input
+                    value={form.guestName}
+                    onChange={(event) => {
+                      setForm((current) => ({ ...current, guestName: event.target.value }));
+                      setFieldErrors((current) => {
+                        const { guestName: _n, ...rest } = current;
+                        return rest;
+                      });
+                    }}
+                    aria-invalid={Boolean(fieldErrors.guestName)}
+                    className={controlClass(Boolean(fieldErrors.guestName))}
+                    placeholder="مثلاً: علی رضایی"
+                    maxLength={120}
+                  />
+                  <FieldError>{fieldErrors.guestName}</FieldError>
+                </label>
+                <label className="block">
+                  <FieldLabel required invalid={Boolean(fieldErrors.guestPhone)}>
+                    شماره موبایل
+                  </FieldLabel>
+                  <input
+                    value={form.guestPhone}
+                    onChange={(event) => {
+                      setForm((current) => ({ ...current, guestPhone: event.target.value }));
+                      setFieldErrors((current) => {
+                        const { guestPhone: _p, ...rest } = current;
+                        return rest;
+                      });
+                    }}
+                    dir="ltr"
+                    inputMode="numeric"
+                    placeholder="0912xxxxxxx"
+                    aria-invalid={Boolean(fieldErrors.guestPhone)}
+                    className={controlClass(Boolean(fieldErrors.guestPhone))}
+                    maxLength={14}
+                  />
+                  <FieldError>{fieldErrors.guestPhone}</FieldError>
+                </label>
+              </div>
+            )}
+
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block">
                 <FieldLabel>نوع جلسه</FieldLabel>

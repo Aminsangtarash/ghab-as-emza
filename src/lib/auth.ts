@@ -70,6 +70,9 @@ export async function loginAccount(phone: string, password: string) {
   if (user.active === false) {
     return { error: "حساب شما غیرفعال شده است." as const };
   }
+  if (user.role !== "lawyer" && user.role !== "admin" && user.role !== "manager") {
+    return { error: "ورود با رمز فقط برای حساب وکیل و کارکنان است. از کد پیامکی استفاده کنید." as const };
+  }
   await markUserLogin(user.id);
   const token = newSessionToken();
   await createSession(token, user.id);

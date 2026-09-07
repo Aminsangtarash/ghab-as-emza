@@ -16,7 +16,7 @@ export function LawyerAvatar({
   return (
     <span
       className={cn(
-        "relative shrink-0 overflow-hidden rounded-full bg-navy ring-2 ring-gold/30",
+        "relative inline-flex shrink-0 overflow-hidden rounded-full bg-navy ring-2 ring-gold/30",
         className,
       )}
     >
@@ -25,7 +25,7 @@ export function LawyerAvatar({
         alt={name}
         width={size}
         height={size}
-        className="size-full object-cover object-top"
+        className="h-full w-full max-h-full max-w-full object-cover object-top"
       />
     </span>
   );

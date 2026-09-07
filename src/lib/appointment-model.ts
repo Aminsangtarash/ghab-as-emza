@@ -26,6 +26,7 @@ export type ClientAppointment = {
   note?: string;
   clientName: string;
   clientPhone?: string;
+  isGuestClient?: boolean;
   conversationId?: string;
   caseId?: string;
   trackingCode?: string;

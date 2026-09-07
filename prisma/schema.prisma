@@ -239,19 +239,21 @@ model CaseEvent {
 }
 
 model Appointment {
-  id             String        @id @default(uuid())
-  userId         String
-  lawyerSlug     String
-  conversationId String?
-  caseId         String?
-  kind           String
-  scheduledAt    DateTime
-  minutes        Int           @default(30)
-  status         String        @default("scheduled")
-  note           String?       @db.VarChar(300)
-  createdAt      DateTime      @default(now())
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  id               String        @id @default(uuid())
+  userId           String?
+  guestClientName  String?       @db.VarChar(120)
+  guestClientPhone String?       @db.VarChar(20)
+  lawyerSlug       String
+  conversationId   String?
+  caseId           String?
+  kind             String
+  scheduledAt      DateTime
+  minutes          Int           @default(30)
+  status           String        @default("scheduled")
+  note             String?       @db.VarChar(300)
+  createdAt        DateTime      @default(now())
+  user             User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation     Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([lawyerSlug, scheduledAt])
   @@index([userId, scheduledAt])

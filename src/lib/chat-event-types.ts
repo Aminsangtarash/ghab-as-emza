@@ -19,6 +19,7 @@ export type ChatStreamEvent =
   | {
       type: "unread";
       total: number;
+      byConversation: Record<string, number>;
       forAudience: ChatAudience;
     }
   | {

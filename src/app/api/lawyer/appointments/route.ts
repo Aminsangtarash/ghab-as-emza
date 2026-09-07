@@ -31,6 +31,8 @@ export async function POST(request: NextRequest) {
     conversationId: asText(body.conversationId, 60),
     caseId: asText(body.caseId, 60),
     userId: asText(body.userId, 60),
+    guestClientName: asText(body.guestClientName, 120),
+    guestClientPhone: asText(body.guestClientPhone, 20),
     kind,
     scheduledAt,
     minutes: asInt(body.minutes) ?? 30,

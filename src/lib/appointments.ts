@@ -7,12 +7,21 @@ import {
   type ClientAppointment,
 } from "@/lib/appointment-model";
 import { prisma } from "@/lib/db";
-import { formatFaDateTime } from "@/lib/format";
+import { formatFaDateTime, normalizePhone } from "@/lib/format";
 
 type AppointmentRow = Appointment & {
   user?: Pick<User, "fullName" | "phone"> | null;
   conversation?: { id: string; consultation: { trackingCode: string; subject: string } } | null;
 };
+
+function parseGuestClient(input?: { name?: string; phone?: string }) {
+  const name = input?.name?.trim() ?? "";
+  const phone = normalizePhone(input?.phone?.trim() ?? "");
+  if (!name && !phone) return undefined;
+  if (name.length < 3) return { error: "نام موکل باید حداقل سه نویسه باشد." as const };
+  if (!/^09\d{9}$/.test(phone)) return { error: "شماره موبایل موکل معتبر نیست." as const };
+  return { name: name.slice(0, 120), phone };
+}
 
 const appointmentInclude = {
   user: { select: { fullName: true, phone: true } },
@@ -26,6 +35,8 @@ export async function createAppointment(input: {
   conversationId?: string;
   caseId?: string;
   userId?: string;
+  guestClientName?: string;
+  guestClientPhone?: string;
   kind: AppointmentKind;
   scheduledAt: Date;
   minutes: number;
@@ -39,6 +50,12 @@ export async function createAppointment(input: {
   }
 
   let userId = input.userId;
+  const guest = parseGuestClient({
+    name: input.guestClientName,
+    phone: input.guestClientPhone,
+  });
+  if (guest && "error" in guest) return guest;
+
   if (input.conversationId) {
     const conversation = await prisma.conversation.findFirst({
       where: { id: input.conversationId, lawyerSlug: input.lawyerSlug },
@@ -53,11 +70,19 @@ export async function createAppointment(input: {
     if (!row) return { error: "پرونده پیدا نشد." as const };
     userId = row.userId;
   }
-  if (!userId) return { error: "موکل نوبت مشخص نیست." as const };
+
+  if (userId) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!user) return { error: "موکل پیدا نشد." as const };
+  } else if (!guest) {
+    return { error: "موکل نوبت مشخص نیست." as const };
+  }
 
   const created = await prisma.appointment.create({
     data: {
-      userId,
+      userId: userId ?? null,
+      guestClientName: userId ? null : guest?.name ?? null,
+      guestClientPhone: userId ? null : guest?.phone ?? null,
       lawyerSlug: input.lawyerSlug,
       conversationId: input.conversationId ?? null,
       caseId: input.caseId ?? null,
@@ -170,6 +195,7 @@ export async function countUpcomingAppointments(lawyerSlug: string) {
 }
 
 function toClientAppointment(row: AppointmentRow): ClientAppointment {
+  const isGuestClient = !row.userId;
   return {
     id: row.id,
     kind: row.kind as AppointmentKind,
@@ -177,8 +203,9 @@ function toClientAppointment(row: AppointmentRow): ClientAppointment {
     scheduledAt: row.scheduledAt.toISOString(),
     minutes: row.minutes,
     note: row.note ?? undefined,
-    clientName: row.user?.fullName ?? "موکل",
-    clientPhone: row.user?.phone,
+    clientName: row.user?.fullName ?? row.guestClientName ?? "موکل",
+    clientPhone: row.user?.phone ?? row.guestClientPhone ?? undefined,
+    isGuestClient,
     conversationId: row.conversationId ?? undefined,
     caseId: row.caseId ?? undefined,
     trackingCode: row.conversation?.consultation.trackingCode,

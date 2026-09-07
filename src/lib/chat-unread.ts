@@ -85,22 +85,40 @@ export async function markConversationRead(input: {
 
   if (input.audience === "user") {
     if (row.userId !== input.userId) return { error: "اجازه ندارید." as const };
+    const unreadBefore = await countUnreadForUser(row.userId);
+    if (!unreadBefore.byConversation[row.id]) {
+      return { ok: true as const, ...unreadBefore };
+    }
     await prisma.conversation.update({
       where: { id: row.id },
       data: { userLastReadAt: new Date() },
     });
     const snapshot = await countUnreadForUser(row.userId);
-    publishUnreadTotal({ audience: "user", userId: row.userId, total: snapshot.total });
+    publishUnreadTotal({
+      audience: "user",
+      userId: row.userId,
+      total: snapshot.total,
+      byConversation: snapshot.byConversation,
+    });
     return { ok: true as const, ...snapshot };
   }
 
   if (row.lawyerSlug !== input.lawyerSlug) return { error: "اجازه ندارید." as const };
+  const unreadBefore = await countUnreadForLawyer(row.lawyerSlug);
+  if (!unreadBefore.byConversation[row.id]) {
+    return { ok: true as const, ...unreadBefore };
+  }
   await prisma.conversation.update({
     where: { id: row.id },
     data: { lawyerLastReadAt: new Date() },
   });
   const snapshot = await countUnreadForLawyer(row.lawyerSlug);
-  publishUnreadTotal({ audience: "lawyer", lawyerSlug: row.lawyerSlug, total: snapshot.total });
+  publishUnreadTotal({
+    audience: "lawyer",
+    lawyerSlug: row.lawyerSlug,
+    total: snapshot.total,
+    byConversation: snapshot.byConversation,
+  });
   return { ok: true as const, ...snapshot };
 }
 
@@ -111,10 +129,20 @@ export async function refreshAndPublishUnread(input: {
 }) {
   const snapshot = await getUnreadSnapshot(input);
   if (input.audience === "user" && input.userId) {
-    publishUnreadTotal({ audience: "user", userId: input.userId, total: snapshot.total });
+    publishUnreadTotal({
+      audience: "user",
+      userId: input.userId,
+      total: snapshot.total,
+      byConversation: snapshot.byConversation,
+    });
   }
   if (input.audience === "lawyer" && input.lawyerSlug) {
-    publishUnreadTotal({ audience: "lawyer", lawyerSlug: input.lawyerSlug, total: snapshot.total });
+    publishUnreadTotal({
+      audience: "lawyer",
+      lawyerSlug: input.lawyerSlug,
+      total: snapshot.total,
+      byConversation: snapshot.byConversation,
+    });
   }
   return snapshot;
 }

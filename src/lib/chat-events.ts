@@ -65,12 +65,18 @@ export function publishChatMessage(input: {
 
 export function publishUnreadTotal(input: {
   total: number;
+  byConversation?: Record<string, number>;
   userId?: string;
   lawyerSlug?: string;
   audience: ChatAudience;
 }) {
   publishToMatching(
-    { type: "unread", total: input.total, forAudience: input.audience },
+    {
+      type: "unread",
+      total: input.total,
+      byConversation: input.byConversation ?? {},
+      forAudience: input.audience,
+    },
     (sub) =>
       (input.audience === "user" && Boolean(input.userId) && sub.userId === input.userId) ||
       (input.audience === "lawyer" && Boolean(input.lawyerSlug) && sub.lawyerSlug === input.lawyerSlug),

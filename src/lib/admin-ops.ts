@@ -1070,6 +1070,7 @@ export async function getAdminLawyerDetail(slug: string) {
         kind: true,
         scheduledAt: true,
         status: true,
+        guestClientName: true,
         user: { select: { fullName: true } },
       },
     }),
@@ -1123,7 +1124,7 @@ export async function getAdminLawyerDetail(slug: string) {
       id: a.id,
       kind: a.kind,
       status: a.status,
-      clientName: a.user.fullName,
+      clientName: a.user?.fullName ?? a.guestClientName ?? "موکل",
       scheduledAt: a.scheduledAt.toISOString(),
     })),
   };

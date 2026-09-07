@@ -39,20 +39,32 @@ export function ConversationThread({
   const streamRef = useRef<MediaStream | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const chat = useOptionalChatNotifications();
+  const applyUnreadSnapshot = chat?.applyUnreadSnapshot;
+  const setActiveConversationId = chat?.setActiveConversationId;
+  const markingReadRef = useRef(false);
 
   const markRead = useCallback(async () => {
+    if (markingReadRef.current) return;
+    markingReadRef.current = true;
     try {
-      await fetch("/api/chat/read", {
+      const response = await fetch("/api/chat/read", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId }),
       });
-      await chat?.refreshUnread();
+      if (!response.ok) return;
+      const payload = (await response.json()) as {
+        total?: number;
+        byConversation?: Record<string, number>;
+      };
+      applyUnreadSnapshot?.(payload);
     } catch {
       /* ignore */
+    } finally {
+      markingReadRef.current = false;
     }
-  }, [chat, conversationId]);
+  }, [applyUnreadSnapshot, conversationId]);
 
   const load = useCallback(async () => {
     const requestsPromise = fetch(`/api/conversations/${conversationId}/document-requests`, {
@@ -106,12 +118,12 @@ export function ConversationThread({
   }, [conversationId, viewer]);
 
   useEffect(() => {
-    chat?.setActiveConversationId(conversationId);
+    setActiveConversationId?.(conversationId);
     void markRead();
     return () => {
-      chat?.setActiveConversationId(null);
+      setActiveConversationId?.(null);
     };
-  }, [chat, conversationId, markRead]);
+  }, [conversationId, markRead, setActiveConversationId]);
 
   useEffect(() => {
     void load();

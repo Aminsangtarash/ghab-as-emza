@@ -67,7 +67,7 @@ export function LawyerThreadTools({ conversationId }: { conversationId: string }
   const [docRequest, setDocRequest] = useState<ClientDocumentRequest | null>(null);
 
   const [appointment, setAppointment] = useState({
-    kind: "phone" as (typeof appointmentKinds)[number],
+    kind: "in-person" as (typeof appointmentKinds)[number],
     scheduledAt: "",
     minutes: "30",
     note: "",

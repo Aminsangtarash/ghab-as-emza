@@ -13,11 +13,17 @@ import { usePathname, useRouter } from "next/navigation";
 
 import type { ChatStreamEvent } from "@/lib/chat-event-types";
 
+type UnreadSnapshotPayload = {
+  total?: number;
+  byConversation?: Record<string, number>;
+};
+
 type ChatNotificationsContextValue = {
   unreadTotal: number;
   byConversation: Record<string, number>;
   setActiveConversationId: (id: string | null) => void;
   refreshUnread: () => Promise<void>;
+  applyUnreadSnapshot: (snapshot: UnreadSnapshotPayload) => void;
   requestPermission: () => Promise<NotificationPermission | "unsupported">;
 };
 
@@ -55,6 +61,12 @@ function showBrowserNotification(input: {
   }
 }
 
+function unreadMapsEqual(a: Record<string, number>, b: Record<string, number>) {
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  return keys.every((key) => a[key] === b[key]);
+}
+
 export function ChatNotificationsProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -68,20 +80,33 @@ export function ChatNotificationsProvider({ children }: { children: React.ReactN
     activeConversationIdRef.current = id;
   }, []);
 
-  const refreshUnread = useCallback(async () => {
-    try {
-      const response = await fetch("/api/chat/unread", { credentials: "include" });
-      if (!response.ok) return;
-      const payload = (await response.json()) as {
-        total?: number;
-        byConversation?: Record<string, number>;
-      };
-      setUnreadTotal(payload.total ?? 0);
-      setByConversation(payload.byConversation ?? {});
-    } catch {
-      /* ignore */
-    }
+  const applyUnreadSnapshot = useCallback((snapshot: UnreadSnapshotPayload) => {
+    const nextMap = snapshot.byConversation ?? {};
+    const nextTotal = snapshot.total ?? Object.values(nextMap).reduce((sum, value) => sum + value, 0);
+    setUnreadTotal((prev) => (prev === nextTotal ? prev : nextTotal));
+    setByConversation((prev) => (unreadMapsEqual(prev, nextMap) ? prev : nextMap));
   }, []);
+
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
+  const refreshUnread = useCallback(async () => {
+    if (refreshInFlightRef.current) return refreshInFlightRef.current;
+    const request = (async () => {
+      try {
+        const response = await fetch("/api/chat/unread", { credentials: "include" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as UnreadSnapshotPayload;
+        applyUnreadSnapshot(payload);
+      } catch {
+        /* ignore */
+      }
+    })();
+    refreshInFlightRef.current = request;
+    try {
+      await request;
+    } finally {
+      if (refreshInFlightRef.current === request) refreshInFlightRef.current = null;
+    }
+  }, [applyUnreadSnapshot]);
 
   const requestPermission = useCallback(async () => {
     if (typeof window === "undefined" || !("Notification" in window)) return "unsupported" as const;
@@ -127,8 +152,7 @@ export function ChatNotificationsProvider({ children }: { children: React.ReactN
         if (payload.type === "ping") return;
 
         if (payload.type === "unread") {
-          setUnreadTotal(payload.total);
-          void refreshUnread();
+          applyUnreadSnapshot(payload);
           return;
         }
 
@@ -138,12 +162,6 @@ export function ChatNotificationsProvider({ children }: { children: React.ReactN
           const onChatsList = pathnameRef.current.includes("/chats");
 
           if (viewingThis) {
-            void fetch("/api/chat/read", {
-              method: "POST",
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ conversationId: payload.conversationId }),
-            }).then(() => refreshUnread());
             window.dispatchEvent(
               new CustomEvent("gae-chat-message", { detail: payload }),
             );
@@ -187,7 +205,7 @@ export function ChatNotificationsProvider({ children }: { children: React.ReactN
       if (reconnectTimer) clearTimeout(reconnectTimer);
       source?.close();
     };
-  }, [refreshUnread, router]);
+  }, [applyUnreadSnapshot, router]);
 
   const value = useMemo(
     () => ({
@@ -195,9 +213,10 @@ export function ChatNotificationsProvider({ children }: { children: React.ReactN
       byConversation,
       setActiveConversationId,
       refreshUnread,
+      applyUnreadSnapshot,
       requestPermission,
     }),
-    [unreadTotal, byConversation, setActiveConversationId, refreshUnread, requestPermission],
+    [unreadTotal, byConversation, setActiveConversationId, refreshUnread, applyUnreadSnapshot, requestPermission],
   );
 
   return (
