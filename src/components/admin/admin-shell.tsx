@@ -45,7 +45,7 @@ export function AdminShell({ user, children }: { user: PublicUser; children: Rea
 
   return (
     <SiteViewport>
-      <aside className="fixed inset-y-3 start-3 z-40 hidden w-80 flex-col overflow-hidden rounded-[1.6rem] bg-navy-deep text-white shadow-xl lg:flex">
+      <aside className="fixed inset-y-3 start-3 z-40 hidden w-80 flex-col overflow-hidden rounded-[1.6rem] bg-gold text-navy-deep shadow-xl lg:flex">
         <AdminSidebar
           user={user}
           pathname={pathname}
@@ -60,7 +60,7 @@ export function AdminShell({ user, children }: { user: PublicUser; children: Rea
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         hideFromClassName="lg:hidden"
-        className="bg-navy-deep text-white"
+        className="bg-gold text-navy-deep"
       >
         <AdminSidebar
           user={user}
@@ -73,10 +73,10 @@ export function AdminShell({ user, children }: { user: PublicUser; children: Rea
       </PanelMobileDrawer>
 
       <div className="flex h-full min-w-0 flex-col overflow-hidden lg:ps-[calc(20rem+0.75rem)]">
-        <header className="mb-2.5 flex shrink-0 items-center justify-between rounded-[1.4rem] bg-navy-deep px-3 py-2.5 text-white md:px-4 md:py-3 lg:hidden">
+        <header className="mb-2.5 flex shrink-0 items-center justify-between rounded-[1.4rem] bg-gold px-3 py-2.5 text-navy-deep md:px-4 md:py-3 lg:hidden">
           <button
             type="button"
-            className="flex size-10 items-center justify-center rounded-xl bg-white/10"
+            className="flex size-10 items-center justify-center rounded-xl bg-navy/10"
             aria-label="باز کردن منو"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(true)}
@@ -84,11 +84,14 @@ export function AdminShell({ user, children }: { user: PublicUser; children: Rea
             <MenuIcon className="size-5" />
           </button>
           <p className="text-sm font-medium">{title}</p>
-          <span className="flex size-10 items-center justify-center rounded-full bg-gold text-sm font-bold text-navy-deep">
+          <span className="flex size-10 items-center justify-center rounded-full bg-navy-deep text-sm font-bold text-gold">
             {initials(user.fullName)}
           </span>
         </header>
-        <GoldCanvas className="px-4 pb-7 pt-8 sm:px-6 sm:pb-9 sm:pt-10 md:px-8 lg:px-10 lg:pt-12">
+        <GoldCanvas
+          tone="navy"
+          className="px-4 pb-7 pt-8 sm:px-6 sm:pb-9 sm:pt-10 md:px-8 lg:px-10 lg:pt-12"
+        >
           <div className="mx-auto min-w-0 max-w-6xl">{children}</div>
         </GoldCanvas>
       </div>
@@ -113,16 +116,16 @@ function AdminSidebar({
 }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className={cn("border-b border-white/10", mobile ? "px-5 pb-4 pt-5" : "px-6 pb-5 pt-6")}>
+      <div className={cn("border-b border-navy/10", mobile ? "px-5 pb-4 pt-5" : "px-6 pb-5 pt-6")}>
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-[10px] font-medium tracking-[0.18em] text-white/40">قبل از امضا</p>
-            {mobile ? <p className="mt-1 text-xs text-white/45">منوی مدیریت</p> : null}
+            <p className="text-[10px] font-medium tracking-[0.18em] text-navy/45">قبل از امضا</p>
+            {mobile ? <p className="mt-1 text-xs text-navy/50">منوی مدیریت</p> : null}
           </div>
           {mobile ? (
             <button
               type="button"
-              className="flex size-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/15"
+              className="flex size-9 items-center justify-center rounded-xl bg-navy/10 text-navy-deep transition hover:bg-navy/15"
               aria-label="بستن منو"
               onClick={onClose}
             >
@@ -134,17 +137,17 @@ function AdminSidebar({
         <div className={cn("flex flex-col items-center text-center", mobile ? "mt-4" : "mt-5")}>
           <span
             className={cn(
-              "flex items-center justify-center rounded-full bg-gold text-navy-deep ring-[3px] ring-white/15",
+              "flex items-center justify-center rounded-full bg-navy-deep text-gold ring-[3px] ring-navy/15",
               mobile ? "size-20" : "size-24",
             )}
           >
             <ShieldIcon className={mobile ? "size-8" : "size-9"} />
           </span>
-          <p className="mt-3 rounded-full border border-gold/40 px-3 py-1 text-[11px] font-medium text-gold">
+          <p className="mt-3 rounded-full border border-navy/20 bg-navy/5 px-3 py-1 text-[11px] font-medium text-navy">
             {user.role === "manager" ? "مدیر سیستم" : "ادمین"}
           </p>
-          <h2 className="mt-2 font-heading text-base font-semibold leading-7">{user.fullName}</h2>
-          <p className="mt-0.5 text-xs leading-6 text-white/55" dir="ltr">
+          <h2 className="mt-2 font-heading text-base font-semibold leading-7 text-navy-deep">{user.fullName}</h2>
+          <p className="mt-0.5 text-xs leading-6 text-navy/55" dir="ltr">
             {user.phone}
           </p>
         </div>
@@ -165,8 +168,8 @@ function AdminSidebar({
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
                     active
-                      ? "bg-white/10 font-medium text-white"
-                      : "text-white/55 hover:bg-white/5 hover:text-white",
+                      ? "bg-navy-deep font-medium text-gold"
+                      : "text-navy/65 hover:bg-navy/8 hover:text-navy-deep",
                   )}
                 >
                   <Icon className="size-4 shrink-0" />
@@ -178,18 +181,18 @@ function AdminSidebar({
         </ul>
       </nav>
 
-      <div className="border-t border-white/10 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="border-t border-navy/10 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <Link
           href="/"
           onClick={onClose}
-          className="block rounded-xl px-3 py-2 text-sm text-white/45 hover:bg-white/5 hover:text-white"
+          className="block rounded-xl px-3 py-2 text-sm text-navy/50 hover:bg-navy/8 hover:text-navy-deep"
         >
           بازگشت به سایت
         </Link>
         <button
           type="button"
           onClick={onLogout}
-          className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-white/45 hover:bg-white/5 hover:text-white"
+          className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-navy/50 hover:bg-navy/8 hover:text-navy-deep"
         >
           <LogOutIcon className="size-4" />
           خروج
