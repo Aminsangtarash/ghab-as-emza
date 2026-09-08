@@ -352,8 +352,7 @@ function timeline(status: ConsultationStatus) {
   }
   const reviewDone = status === "in-progress" || status === "closed";
   const consultDone = status === "closed";
-  const reviewCurrent =
-    status === "awaiting-operator" || status === "awaiting-lawyer" || status === "awaiting-reselect";
+  const reviewCurrent = status === "awaiting-operator" || status === "awaiting-lawyer";
 
   return [
     { label: "انجام شده", title: "ثبت درخواست", state: "done" as const },

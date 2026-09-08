@@ -135,9 +135,10 @@ export function CooperateForm() {
     setDraft(parsed.data);
 
     const phoneVerifiedBySession =
-      status === "authenticated" &&
-      user?.active !== false &&
-      user.phone === parsed.data.phone;
+      status === "user" &&
+      Boolean(user) &&
+      user!.active !== false &&
+      user!.phone === parsed.data.phone;
 
     if (phoneVerifiedBySession) {
       await submitApplication(parsed.data);
@@ -259,7 +260,7 @@ export function CooperateForm() {
           required
           dir="ltr"
           placeholder="09xxxxxxxxx"
-          defaultValue={draft?.phone ?? (status === "authenticated" ? user?.phone : undefined)}
+          defaultValue={draft?.phone ?? (status === "user" ? user?.phone : undefined)}
         />
         <Field label="ایمیل (اختیاری)" name="email" error={fieldErrors.email} type="email" defaultValue={draft?.email} />
         <Field

@@ -185,11 +185,11 @@ export async function reselectConsultationLawyer(input: {
   const row = await prisma.consultation.findUnique({ where: { trackingCode: input.trackingCode } });
   if (!row) return { error: "درخواست پیدا نشد." as const };
   if (row.userId !== input.userId) return { error: "اجازه تغییر این درخواست را ندارید." as const };
-  if (row.status !== "awaiting-reselect" && row.status !== "awaiting-operator") {
-    return { error: "الان امکان انتخاب مجدد وکیل برای این درخواست نیست." as const };
-  }
   if (row.status === "cancel-requested") {
     return { error: "تا تعیین تکلیف انصراف، انتخاب وکیل ممکن نیست." as const };
+  }
+  if (row.status !== "awaiting-reselect" && row.status !== "awaiting-operator") {
+    return { error: "الان امکان انتخاب مجدد وکیل برای این درخواست نیست." as const };
   }
 
   const rejected = consultationRejectedSlugs(row);
