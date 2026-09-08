@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { ConsultDocumentList } from "@/components/consult/document-list";
-import { RequestActions } from "@/components/account/request-actions";
+import { RequestActions, RequestReselectPanel } from "@/components/account/request-actions";
 import { StatusBadge } from "@/components/account/status-badge";
 import { LawyerAvatar } from "@/components/lawyers/lawyer-avatar";
 import {
@@ -66,11 +66,30 @@ export function RequestDetail({ item }: { item: ClientConsultation }) {
         <RequestActions
           trackingCode={item.trackingCode}
           conversationId={item.conversationId}
-          cancellable={item.status === "awaiting-operator" || item.status === "awaiting-lawyer"}
+          cancellable={
+            item.status === "awaiting-operator" ||
+            item.status === "awaiting-lawyer" ||
+            item.status === "awaiting-reselect"
+          }
           deletable={item.status === "cancelled"}
           feeToman={item.paymentStatus === "stub-paid" ? item.feeToman : 0}
         />
       </section>
+
+      {item.status === "awaiting-reselect" ? (
+        <RequestReselectPanel
+          trackingCode={item.trackingCode}
+          rejectedLawyerSlugs={item.rejectedLawyerSlugs}
+          lastRejectReason={item.lastRejectReason}
+        />
+      ) : null}
+
+      {item.status === "cancel-requested" ? (
+        <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-950">
+          درخواست انصراف شما ثبت شد و منتظر تأیید مدیر سیستم است. پس از تأیید، مبلغ به کیف پول برمی‌گردد؛ تا آن زمان
+          پول محفوظ می‌ماند.
+        </p>
+      ) : null}
 
       <p className="mt-5 rounded-2xl border border-gold/20 bg-white/85 px-4 py-3 text-sm leading-7 text-navy/70 shadow-sm">
         {item.cancelReason ? `${status.hint} دلیل: ${item.cancelReason}` : status.hint}
@@ -315,9 +334,26 @@ function timeline(status: ConsultationStatus) {
       { label: "بعدی", title: "انجام مشاوره", state: "next" as const },
     ];
   }
+  if (status === "cancel-requested") {
+    return [
+      { label: "انجام شده", title: "ثبت درخواست", state: "done" as const },
+      { label: "انجام شده", title: "پرداخت", state: "done" as const },
+      { label: "فعلی", title: "درخواست انصراف", state: "current" as const },
+      { label: "بعدی", title: "تأیید مدیر / استرداد", state: "next" as const },
+    ];
+  }
+  if (status === "awaiting-reselect") {
+    return [
+      { label: "انجام شده", title: "ثبت درخواست", state: "done" as const },
+      { label: "انجام شده", title: "پرداخت", state: "done" as const },
+      { label: "فعلی", title: "انتخاب وکیل دیگر", state: "current" as const },
+      { label: "بعدی", title: "انجام مشاوره", state: "next" as const },
+    ];
+  }
   const reviewDone = status === "in-progress" || status === "closed";
   const consultDone = status === "closed";
-  const reviewCurrent = status === "awaiting-operator" || status === "awaiting-lawyer";
+  const reviewCurrent =
+    status === "awaiting-operator" || status === "awaiting-lawyer" || status === "awaiting-reselect";
 
   return [
     { label: "انجام شده", title: "ثبت درخواست", state: "done" as const },

@@ -28,5 +28,9 @@ export async function POST(
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 422 });
   }
-  return NextResponse.json(result);
+  return NextResponse.json({
+    ok: true,
+    refunded: 0,
+    message: "درخواست انصراف ثبت شد و پس از تأیید مدیر، مبلغ به کیف پول برمی‌گردد.",
+  });
 }

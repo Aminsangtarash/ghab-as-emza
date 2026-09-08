@@ -7,6 +7,9 @@ import {
   assignConsultationLawyer,
   createLawyerAccount,
   createStaffAccount,
+  deleteClientAccount,
+  deleteLawyerAccount,
+  deleteStaffAccount,
   getAdminDashboard,
   getAdminLawyerDetail,
   getAdminUserDetail,
@@ -19,12 +22,16 @@ import {
   listStaffAccounts,
   refreshAdminCaches,
   resetClientPassword,
+  resetLawyerPassword,
   resetStaffPassword,
   setLawyerAccepting,
   setLawyerActive,
   setPromoActive,
   setServiceFee,
   setUserActive,
+  updateClientAccount,
+  updateLawyerAccount,
+  updateStaffAccount,
   upsertPromo,
 } from "@/lib/admin-ops";
 import { canStaff } from "@/lib/admin-permissions";
@@ -42,6 +49,25 @@ export async function GET(request: NextRequest) {
     const gate = await requireStaff(request, "manageQueue");
     if ("error" in gate) return gate.error;
     return NextResponse.json({ items: await listOpsQueue() });
+  }
+  if (view === "payouts") {
+    const gate = await requireStaff(request, "viewRequestSecrets");
+    if ("error" in gate) return gate.error;
+    const { listPendingPayoutRequests } = await import("@/lib/wallet-payout");
+    const items = await listPendingPayoutRequests();
+    return NextResponse.json({
+      items: items.map((item) => ({
+        id: item.id,
+        amountToman: item.amountToman,
+        status: item.status,
+        bankIban: item.bankIban,
+        bankAccountName: item.bankAccountName,
+        userNote: item.userNote,
+        staffNote: item.staffNote,
+        createdAt: item.createdAt.toISOString(),
+        user: item.user,
+      })),
+    });
   }
   if (view === "users") {
     const gate = await requireStaff(request, "manageUsers");
@@ -146,6 +172,43 @@ export async function POST(request: NextRequest) {
       String(body.trackingCode ?? ""),
       typeof body.reason === "string" ? body.reason : undefined,
     );
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "approve-cancel") {
+    const auth = await requireStaff(request, "viewRequestSecrets");
+    if ("error" in auth) return auth.error;
+    const { approveConsultationCancel } = await import("@/lib/consultation-lifecycle");
+    const result = await approveConsultationCancel(
+      String(body.trackingCode ?? ""),
+      typeof body.reason === "string" ? body.reason : undefined,
+    );
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "deny-cancel") {
+    const auth = await requireStaff(request, "viewRequestSecrets");
+    if ("error" in auth) return auth.error;
+    const { denyConsultationCancel } = await import("@/lib/consultation-lifecycle");
+    const result = await denyConsultationCancel(
+      String(body.trackingCode ?? ""),
+      typeof body.reason === "string" ? body.reason : undefined,
+    );
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "review-payout") {
+    const auth = await requireStaff(request, "viewRequestSecrets");
+    if ("error" in auth) return auth.error;
+    const { reviewWalletPayout } = await import("@/lib/wallet-payout");
+    const result = await reviewWalletPayout({
+      id: String(body.id ?? ""),
+      action: body.decision === "reject" ? "reject" : body.decision === "mark-paid" ? "mark-paid" : "approve",
+      staffNote: typeof body.staffNote === "string" ? body.staffNote : undefined,
+    });
     if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
     return NextResponse.json(result);
   }
@@ -298,6 +361,93 @@ export async function POST(request: NextRequest) {
     const auth = await requireStaff(request, "manageUsers");
     if ("error" in auth) return auth.error;
     const result = await resetClientPassword(String(body.userId ?? ""), String(body.password ?? ""));
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "update-user") {
+    const auth = await requireStaff(request, "manageUsers");
+    if ("error" in auth) return auth.error;
+    const result = await updateClientAccount(String(body.userId ?? ""), {
+      fullName: String(body.fullName ?? ""),
+      phone: String(body.phone ?? ""),
+      email: typeof body.email === "string" ? body.email : undefined,
+      address: typeof body.address === "string" ? body.address : undefined,
+    });
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "delete-user") {
+    const auth = await requireStaff(request, "manageUsers");
+    if ("error" in auth) return auth.error;
+    const result = await deleteClientAccount(String(body.userId ?? ""));
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "update-staff") {
+    const auth = await requireStaff(request, "manageStaff");
+    if ("error" in auth) return auth.error;
+    const role = body.role === "manager" ? "manager" : "admin";
+    const result = await updateStaffAccount(
+      String(body.userId ?? ""),
+      {
+        fullName: String(body.fullName ?? ""),
+        phone: String(body.phone ?? ""),
+        role,
+      },
+      auth.user.id,
+    );
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "delete-staff") {
+    const auth = await requireStaff(request, "manageStaff");
+    if ("error" in auth) return auth.error;
+    const result = await deleteStaffAccount(String(body.userId ?? ""), auth.user.id);
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "update-lawyer") {
+    const auth = await requireStaff(request, "manageLawyers");
+    if ("error" in auth) return auth.error;
+    const yearsRaw = body.years;
+    const years =
+      typeof yearsRaw === "number"
+        ? yearsRaw
+        : typeof yearsRaw === "string" && yearsRaw.trim()
+          ? Number(yearsRaw)
+          : undefined;
+    const result = await updateLawyerAccount(String(body.slug ?? ""), {
+      fullName: String(body.fullName ?? ""),
+      phone: String(body.phone ?? ""),
+      city: String(body.city ?? ""),
+      specialty: String(body.specialty ?? ""),
+      title: typeof body.title === "string" ? body.title : undefined,
+      bio: typeof body.bio === "string" ? body.bio : undefined,
+      experience: typeof body.experience === "string" ? body.experience : undefined,
+      years: years !== undefined && Number.isFinite(years) ? years : undefined,
+      acceptingNew: typeof body.acceptingNew === "boolean" ? body.acceptingNew : undefined,
+    });
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "reset-lawyer-password") {
+    const auth = await requireStaff(request, "manageLawyers");
+    if ("error" in auth) return auth.error;
+    const result = await resetLawyerPassword(String(body.slug ?? ""), String(body.password ?? ""));
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "delete-lawyer") {
+    const auth = await requireStaff(request, "manageLawyers");
+    if ("error" in auth) return auth.error;
+    const result = await deleteLawyerAccount(String(body.slug ?? ""));
     if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
     return NextResponse.json(result);
   }

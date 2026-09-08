@@ -2,8 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { adminFetch } from "@/components/admin/admin-ui";
+import {
+  AdminErrorNote,
+  AdminHeading,
+  AdminOkNote,
+  AdminSectionCard,
+  adminFetch,
+  adminInputClass,
+  panelCard,
+} from "@/components/admin/admin-ui";
 import { formatTomanAmount, toFaDigits } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 type Promo = { code: string; percent: number; title: string; active: boolean };
 type Fee = { serviceSlug: string; title: string; feeToman: number };
@@ -89,24 +98,24 @@ export function AdminPricingPanel() {
   }
 
   return (
-    <div>
-      <p className="text-xs font-semibold tracking-wide text-gold-deep">مالی</p>
-      <h1 className="mt-3 font-heading text-2xl font-bold text-navy">تعرفه و تخفیف</h1>
-      <p className="mt-2 max-w-2xl text-sm leading-7 text-navy/60">
-        مدیریت کدهای تخفیف و مبلغ پایه سرویس‌ها.
-      </p>
+    <div className="min-w-0 space-y-4 md:space-y-5">
+      <AdminHeading
+        kicker="مالی"
+        title="تعرفه و تخفیف"
+        description="مدیریت کدهای تخفیف و مبلغ پایه سرویس‌ها."
+      />
 
-      {error ? <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
-      {message ? <p className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</p> : null}
+      <AdminErrorNote>{error}</AdminErrorNote>
+      <AdminOkNote>{message}</AdminOkNote>
 
-      <form onSubmit={savePromo} className="mt-8 grid gap-3 rounded-xl border border-navy/10 bg-white p-5 sm:grid-cols-3">
+      <form onSubmit={savePromo} className={cn(panelCard, "grid gap-3 p-5 sm:grid-cols-3")}>
         <h2 className="sm:col-span-3 font-heading text-lg font-semibold">کد تخفیف</h2>
         <input
           required
           placeholder="کد"
           value={promoForm.code}
           onChange={(e) => setPromoForm((p) => ({ ...p, code: e.target.value }))}
-          className="rounded-xl border border-navy/15 px-3 py-2 text-sm"
+          className={cn(adminInputClass(), "mt-0")}
           dir="ltr"
         />
         <input
@@ -114,14 +123,14 @@ export function AdminPricingPanel() {
           placeholder="درصد"
           value={promoForm.percent}
           onChange={(e) => setPromoForm((p) => ({ ...p, percent: e.target.value }))}
-          className="rounded-xl border border-navy/15 px-3 py-2 text-sm"
+          className={cn(adminInputClass(), "mt-0")}
           dir="ltr"
         />
         <input
           placeholder="عنوان"
           value={promoForm.title}
           onChange={(e) => setPromoForm((p) => ({ ...p, title: e.target.value }))}
-          className="rounded-xl border border-navy/15 px-3 py-2 text-sm"
+          className={cn(adminInputClass(), "mt-0")}
         />
         <button
           type="submit"
@@ -132,7 +141,7 @@ export function AdminPricingPanel() {
         </button>
       </form>
 
-      <ul className="mt-4 divide-y divide-navy/8 overflow-hidden rounded-xl border border-navy/10 bg-white">
+      <ul className={cn(panelCard, "divide-y divide-navy/8 overflow-hidden p-0")}>
         {promos.map((promo) => (
           <li key={promo.code} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
             <div>
@@ -155,33 +164,34 @@ export function AdminPricingPanel() {
         ))}
       </ul>
 
-      <h2 className="mt-10 font-heading text-lg font-semibold">تعرفه سرویس‌ها</h2>
-      <ul className="mt-4 divide-y divide-navy/8 overflow-hidden rounded-xl border border-navy/10 bg-white">
-        {fees.map((fee) => (
-          <li key={fee.serviceSlug} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
-            <div>
-              <p className="font-medium">{fee.title}</p>
-              <p className="text-xs text-navy/45">{formatTomanAmount(fee.feeToman)}</p>
-            </div>
-            <div className="flex gap-2">
-              <input
-                value={feeDraft[fee.serviceSlug] ?? ""}
-                onChange={(e) => setFeeDraft((p) => ({ ...p, [fee.serviceSlug]: e.target.value }))}
-                className="w-32 rounded-xl border border-navy/15 px-2 py-1.5 text-xs"
-                dir="ltr"
-              />
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => void saveFee(fee.serviceSlug)}
-                className="rounded-xl bg-navy px-3 py-1.5 text-xs text-gold disabled:opacity-60"
-              >
-                ذخیره
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <AdminSectionCard title="تعرفه سرویس‌ها">
+        <ul className="divide-y divide-navy/8">
+          {fees.map((fee) => (
+            <li key={fee.serviceSlug} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm first:pt-0 last:pb-0">
+              <div>
+                <p className="font-medium">{fee.title}</p>
+                <p className="text-xs text-navy/45">{formatTomanAmount(fee.feeToman)}</p>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={feeDraft[fee.serviceSlug] ?? ""}
+                  onChange={(e) => setFeeDraft((p) => ({ ...p, [fee.serviceSlug]: e.target.value }))}
+                  className={cn(adminInputClass(), "mt-0 w-32 py-1.5 text-xs")}
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => void saveFee(fee.serviceSlug)}
+                  className="rounded-xl bg-navy px-3 py-1.5 text-xs text-gold disabled:opacity-60"
+                >
+                  ذخیره
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </AdminSectionCard>
     </div>
   );
 }

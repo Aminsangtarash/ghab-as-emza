@@ -203,7 +203,7 @@ export function LawyerOverview({ lawyerName }: { lawyerName: string }) {
       <div className="grid min-w-0 gap-4 lg:grid-cols-2">
         <SectionCard
           title="درخواست‌های در انتظار"
-          hint="پذیرش، گفتگو را باز می‌کند. رد کردن، مبلغ را به کیف پول موکل برمی‌گرداند."
+          hint="پذیرش، گفتگو را باز می‌کند. رد کردن مبلغ را فوراً برنمی‌گرداند؛ موکل یا اپراتور وکیل دیگری انتخاب می‌کنند."
           action={
             <Link href="/lawyer/requests" className="text-xs text-navy/50 hover:text-navy">
               همه

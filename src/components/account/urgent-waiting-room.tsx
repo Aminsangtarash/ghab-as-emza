@@ -125,7 +125,9 @@ export function UrgentWaitingRoom({ trackingCode }: { trackingCode: string }) {
                 trackingCode={status.trackingCode}
                 conversationId={status.conversationId}
                 cancellable={
-                  status.status === "awaiting-lawyer" || status.status === "awaiting-operator"
+                  status.status === "awaiting-lawyer" ||
+                  status.status === "awaiting-operator" ||
+                  status.status === "awaiting-reselect"
                 }
                 feeToman={status.feeToman}
               />

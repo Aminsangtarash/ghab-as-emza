@@ -63,6 +63,14 @@ function mapRow(row: Row): CooperationItem {
   };
 }
 
+export async function hasPendingCooperation(phone: string) {
+  const pending = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    `SELECT id FROM CooperationApplication WHERE phone = ? AND status = 'pending' LIMIT 1`,
+    phone,
+  );
+  return Boolean(pending[0]);
+}
+
 export async function createCooperationApplication(input: {
   fullName: string;
   phone: string;
@@ -79,11 +87,7 @@ export async function createCooperationApplication(input: {
     return { error: "این شماره قبلاً در سامانه ثبت شده است." as const };
   }
 
-  const pending = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
-    `SELECT id FROM CooperationApplication WHERE phone = ? AND status = 'pending' LIMIT 1`,
-    input.phone,
-  );
-  if (pending[0]) {
+  if (await hasPendingCooperation(input.phone)) {
     return { error: "درخواست همکاری باز با این شماره از قبل ثبت شده است." as const };
   }
 

@@ -151,6 +151,8 @@ export function isFreeService(slug: string) {
 export const consultationStatuses = [
   "awaiting-operator",
   "awaiting-lawyer",
+  "awaiting-reselect",
+  "cancel-requested",
   "in-progress",
   "closed",
   "cancelled",
@@ -163,11 +165,19 @@ export const consultationStatusMeta: Record<
 > = {
   "awaiting-operator": {
     title: "در انتظار معرفی وکیل",
-    hint: "اپراتور موضوع را می‌بیند و متخصص مناسب را مشخص می‌کند.",
+    hint: "اپراتور موضوع را می‌بیند و متخصص مناسب را مشخص می‌کند. مبلغ پرداخت‌شده تا تعیین وکیل محفوظ می‌ماند.",
   },
   "awaiting-lawyer": {
     title: "در انتظار تأیید وکیل",
-    hint: "وکیل انتخابی باید پذیرش درخواست را تأیید کند. در صورت رد، مبلغ به کیف پول برمی‌گردد.",
+    hint: "وکیل باید پذیرش را تأیید کند. در صورت رد، مبلغ فوراً برنمی‌گردد و می‌توانید وکیل دیگری انتخاب کنید یا منتظر اپراتور بمانید.",
+  },
+  "awaiting-reselect": {
+    title: "نیاز به انتخاب وکیل دیگر",
+    hint: "وکیل موردنظر پرونده را نپذیرفت. وکیل دیگری انتخاب کنید یا بخواهید اپراتور برایتان انتخاب کند. مبلغ تا تعیین تکلیف محفوظ است.",
+  },
+  "cancel-requested": {
+    title: "درخواست انصراف",
+    hint: "درخواست انصراف شما ثبت شد و پس از تأیید مدیر سیستم، مبلغ پرداخت‌شده به کیف پول برمی‌گردد.",
   },
   "in-progress": {
     title: "گفتگو فعال",
@@ -179,7 +189,7 @@ export const consultationStatusMeta: Record<
   },
   cancelled: {
     title: "لغو شده",
-    hint: "درخواست لغو شد. اگر پرداختی انجام شده بود، به کیف پول شما برگشت.",
+    hint: "درخواست لغو شد. در صورت تأیید استرداد، مبلغ به کیف پول شما برگشته است.",
   },
 };
 

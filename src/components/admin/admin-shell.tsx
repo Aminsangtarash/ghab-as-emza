@@ -45,8 +45,7 @@ export function AdminShell({ user, children }: { user: PublicUser; children: Rea
 
   return (
     <SiteViewport>
-      <aside className="fixed inset-y-3 start-3 z-40 hidden w-72 flex-col overflow-hidden rounded-[1.6rem] border border-navy-deep/10 bg-gradient-to-b from-gold via-gold to-[#c9a227] text-navy-deep shadow-[0_20px_50px_-24px_rgba(20,30,60,0.55)] lg:flex">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_55%)]" />
+      <aside className="fixed inset-y-3 start-3 z-40 hidden w-80 flex-col overflow-hidden rounded-[1.6rem] bg-navy-deep text-white shadow-xl lg:flex">
         <AdminSidebar
           user={user}
           pathname={pathname}
@@ -61,9 +60,8 @@ export function AdminShell({ user, children }: { user: PublicUser; children: Rea
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         hideFromClassName="lg:hidden"
-        className="border-s border-navy-deep/10 bg-gradient-to-b from-gold via-gold to-[#c9a227] text-navy-deep"
+        className="bg-navy-deep text-white"
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_55%)]" />
         <AdminSidebar
           user={user}
           pathname={pathname}
@@ -74,24 +72,24 @@ export function AdminShell({ user, children }: { user: PublicUser; children: Rea
         />
       </PanelMobileDrawer>
 
-      <div className="flex h-full min-w-0 flex-col overflow-hidden lg:ps-[calc(18rem+0.75rem)]">
-        <header className="mb-2.5 flex shrink-0 items-center justify-between rounded-[1.4rem] border border-navy-deep/10 bg-gradient-to-l from-gold to-[#d4af37] px-3 py-2.5 text-navy-deep shadow-sm md:px-4 md:py-3 lg:hidden">
+      <div className="flex h-full min-w-0 flex-col overflow-hidden lg:ps-[calc(20rem+0.75rem)]">
+        <header className="mb-2.5 flex shrink-0 items-center justify-between rounded-[1.4rem] bg-navy-deep px-3 py-2.5 text-white md:px-4 md:py-3 lg:hidden">
           <button
             type="button"
-            className="flex size-10 items-center justify-center rounded-xl bg-navy/10"
+            className="flex size-10 items-center justify-center rounded-xl bg-white/10"
             aria-label="باز کردن منو"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(true)}
           >
             <MenuIcon className="size-5" />
           </button>
-          <p className="text-sm font-semibold">{title}</p>
-          <span className="flex size-10 items-center justify-center rounded-full bg-navy text-sm font-bold text-gold">
+          <p className="text-sm font-medium">{title}</p>
+          <span className="flex size-10 items-center justify-center rounded-full bg-gold text-sm font-bold text-navy-deep">
             {initials(user.fullName)}
           </span>
         </header>
-        <GoldCanvas tone="navy" className="px-5 pb-8 pt-8 sm:px-8 sm:pt-10 lg:px-12 lg:pt-12">
-          <div className="mx-auto max-w-5xl">{children}</div>
+        <GoldCanvas className="px-4 pb-7 pt-8 sm:px-6 sm:pb-9 sm:pt-10 md:px-8 lg:px-10 lg:pt-12">
+          <div className="mx-auto min-w-0 max-w-6xl">{children}</div>
         </GoldCanvas>
       </div>
     </SiteViewport>
@@ -114,17 +112,17 @@ function AdminSidebar({
   mobile: boolean;
 }) {
   return (
-    <div className="relative flex h-full min-h-0 flex-col">
-      <div className={cn("px-5", mobile ? "pt-5" : "pt-7")}>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className={cn("border-b border-white/10", mobile ? "px-5 pb-4 pt-5" : "px-6 pb-5 pt-6")}>
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-[10px] font-semibold tracking-[0.16em] text-navy/55">قبل از امضا</p>
-            {mobile ? <p className="mt-1 text-xs text-navy/45">منوی مدیریت</p> : null}
+            <p className="text-[10px] font-medium tracking-[0.18em] text-white/40">قبل از امضا</p>
+            {mobile ? <p className="mt-1 text-xs text-white/45">منوی مدیریت</p> : null}
           </div>
           {mobile ? (
             <button
               type="button"
-              className="flex size-9 items-center justify-center rounded-xl bg-navy/10 text-navy-deep transition hover:bg-navy/15"
+              className="flex size-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/15"
               aria-label="بستن منو"
               onClick={onClose}
             >
@@ -132,21 +130,27 @@ function AdminSidebar({
             </button>
           ) : null}
         </div>
-        <div className={cn("rounded-2xl bg-navy px-4 py-4 text-white shadow-lg shadow-navy/20", mobile ? "mt-4" : "mt-6")}>
-          <span className="flex size-11 items-center justify-center rounded-xl bg-gold text-navy-deep">
-            <ShieldIcon className="size-5" />
+
+        <div className={cn("flex flex-col items-center text-center", mobile ? "mt-4" : "mt-5")}>
+          <span
+            className={cn(
+              "flex items-center justify-center rounded-full bg-gold text-navy-deep ring-[3px] ring-white/15",
+              mobile ? "size-20" : "size-24",
+            )}
+          >
+            <ShieldIcon className={mobile ? "size-8" : "size-9"} />
           </span>
-          <p className="mt-3 text-xs font-medium text-gold">
-            {user.role === "manager" ? "مدیر" : "ادمین"}
+          <p className="mt-3 rounded-full border border-gold/40 px-3 py-1 text-[11px] font-medium text-gold">
+            {user.role === "manager" ? "مدیر سیستم" : "ادمین"}
           </p>
-          <p className="mt-1 font-heading text-base font-semibold">{user.fullName}</p>
-          <p className="mt-1 text-[11px] text-white/50" dir="ltr">
+          <h2 className="mt-2 font-heading text-base font-semibold leading-7">{user.fullName}</h2>
+          <p className="mt-0.5 text-xs leading-6 text-white/55" dir="ltr">
             {user.phone}
           </p>
         </div>
       </div>
 
-      <nav className="mt-5 min-h-0 flex-1 overflow-y-auto px-3 pb-2" aria-label="منوی مدیریت">
+      <nav className="no-scrollbar mt-3 min-h-0 flex-1 overflow-y-auto px-4 pb-3" aria-label="منوی مدیریت">
         <ul className="space-y-1">
           {nav.map((item) => {
             const active = item.exact
@@ -161,8 +165,8 @@ function AdminSidebar({
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
                     active
-                      ? "bg-navy font-medium text-gold shadow-md shadow-navy/15"
-                      : "text-navy-deep/80 hover:bg-navy/10 hover:text-navy-deep",
+                      ? "bg-white/10 font-medium text-white"
+                      : "text-white/55 hover:bg-white/5 hover:text-white",
                   )}
                 >
                   <Icon className="size-4 shrink-0" />
@@ -174,18 +178,18 @@ function AdminSidebar({
         </ul>
       </nav>
 
-      <div className="border-t border-navy/15 bg-navy/[0.04] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="border-t border-white/10 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <Link
           href="/"
           onClick={onClose}
-          className="block rounded-xl px-3 py-2.5 text-sm text-navy-deep/70 hover:bg-navy/10 hover:text-navy-deep"
+          className="block rounded-xl px-3 py-2 text-sm text-white/45 hover:bg-white/5 hover:text-white"
         >
           بازگشت به سایت
         </Link>
         <button
           type="button"
           onClick={onLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-navy-deep/70 hover:bg-navy/10 hover:text-navy-deep"
+          className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-white/45 hover:bg-white/5 hover:text-white"
         >
           <LogOutIcon className="size-4" />
           خروج

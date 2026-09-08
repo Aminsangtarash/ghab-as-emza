@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AdminEmptyRow, AdminHeading, panelCard } from "@/components/admin/admin-ui";
 import { consultChannelMeta, consultationStatusMeta, type ConsultChannel, type ConsultationStatus } from "@/lib/consult";
 import { prisma } from "@/lib/db";
 import { formatFaDateTime, toFaDigits } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "درخواست‌های مدیریت",
@@ -28,16 +30,16 @@ export default async function AdminRequestsPage() {
   });
 
   return (
-    <div>
-      <p className="text-xs font-semibold tracking-wide text-gold-deep">عملیات</p>
-      <h1 className="mt-3 font-heading text-2xl font-bold text-navy">درخواست‌ها</h1>
-      <p className="mt-2 max-w-2xl text-sm leading-7 text-navy/60">
-        فهرست عملیاتی. متن کامل مشاوره و پیام‌ها فقط برای مدیر در جزئیات قابل مشاهده است.
-      </p>
-      <div className="mt-8 overflow-hidden rounded-xl border border-navy/10 bg-white">
-        {items.length === 0 ? (
-          <p className="px-4 py-8 text-sm text-navy/50">موردی نیست.</p>
-        ) : (
+    <div className="min-w-0 space-y-4 md:space-y-5">
+      <AdminHeading
+        kicker="عملیات"
+        title="درخواست‌ها"
+        description="فهرست عملیاتی. متن کامل مشاوره و پیام‌ها فقط برای مدیر در جزئیات قابل مشاهده است."
+      />
+      {items.length === 0 ? (
+        <AdminEmptyRow>موردی نیست.</AdminEmptyRow>
+      ) : (
+        <div className={cn(panelCard, "overflow-hidden p-0")}>
           <table className="w-full text-sm">
             <thead className="bg-navy/[0.03] text-start text-xs text-navy/50">
               <tr>
@@ -68,8 +70,8 @@ export default async function AdminRequestsPage() {
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

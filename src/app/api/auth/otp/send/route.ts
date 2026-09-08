@@ -57,11 +57,29 @@ export async function POST(request: NextRequest) {
         { status: 404 },
       );
     }
-    if (purpose === "register" && existing) {
-      return NextResponse.json({ error: "این شماره قبلاً ثبت شده است." }, { status: 409 });
+    if ((purpose === "register" || purpose === "cooperate") && existing) {
+      return NextResponse.json(
+        {
+          error:
+            purpose === "cooperate"
+              ? "این شماره قبلاً در سامانه ثبت شده است. برای همکاری از حساب وکیل/کاربری موجود استفاده کنید یا با پشتیبانی تماس بگیرید."
+              : "این شماره قبلاً ثبت شده است.",
+        },
+        { status: 409 },
+      );
     }
     if (existing?.active === false) {
       return NextResponse.json({ error: "حساب شما غیرفعال شده است." }, { status: 403 });
+    }
+
+    if (purpose === "cooperate") {
+      const { hasPendingCooperation } = await import("@/lib/cooperation");
+      if (await hasPendingCooperation(phone)) {
+        return NextResponse.json(
+          { error: "درخواست همکاری باز با این شماره از قبل ثبت شده است." },
+          { status: 409 },
+        );
+      }
     }
 
     const code = generateOtpCode();

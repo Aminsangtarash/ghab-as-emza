@@ -3,8 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
-import { adminFetch } from "@/components/admin/admin-ui";
+import {
+  AdminErrorNote,
+  AdminHeading,
+  AdminOkNote,
+  adminFetch,
+  adminInputClass,
+  panelCard,
+} from "@/components/admin/admin-ui";
 import { formatFaDateTime, toFaDigits } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 type Item = {
   id: string;
@@ -109,14 +117,14 @@ export function AdminCooperatePanel() {
   }
 
   return (
-    <div>
-      <p className="text-xs font-semibold tracking-wide text-gold-deep">جذب وکیل</p>
-      <h1 className="mt-3 font-heading text-2xl font-bold text-navy">درخواست‌های همکاری</h1>
-      <p className="mt-2 max-w-2xl text-sm leading-7 text-navy/60">
-        درخواست‌های ارسال‌شده از صفحه عمومی همکاری. با تأیید، حساب میز وکیل به‌صورت خودکار ساخته می‌شود.
-      </p>
+    <div className="min-w-0 space-y-4 md:space-y-5">
+      <AdminHeading
+        kicker="جذب وکیل"
+        title="درخواست‌های همکاری"
+        description="درخواست‌های ارسال‌شده از صفحه عمومی همکاری. با تأیید، حساب میز وکیل به‌صورت خودکار ساخته می‌شود."
+      />
 
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {(
           [
             ["pending", "در انتظار"],
@@ -138,10 +146,10 @@ export function AdminCooperatePanel() {
         ))}
       </div>
 
-      {error ? <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
-      {message ? <p className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</p> : null}
+      <AdminErrorNote>{error}</AdminErrorNote>
+      <AdminOkNote>{message}</AdminOkNote>
       {approvedCreds ? (
-        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
           <p className="font-medium">اطلاعات ورود وکیل تازه‌ساخته</p>
           <p className="mt-1" dir="ltr">
             موبایل/رمز: {toFaDigits(approvedCreds.phone)}
@@ -155,8 +163,8 @@ export function AdminCooperatePanel() {
         </div>
       ) : null}
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-        <ul className="divide-y divide-navy/8 overflow-hidden rounded-xl border border-navy/10 bg-white">
+      <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <ul className={cn(panelCard, "divide-y divide-navy/8 overflow-hidden p-0")}>
           {items.length === 0 ? (
             <li className="px-4 py-10 text-center text-sm text-navy/50">درخواستی نیست.</li>
           ) : (
@@ -179,7 +187,7 @@ export function AdminCooperatePanel() {
           )}
         </ul>
 
-        <div className="rounded-xl border border-navy/10 bg-white p-5">
+        <div className={cn(panelCard, "p-5")}>
           {!selected ? (
             <p className="text-sm text-navy/50">یک درخواست را برای بررسی انتخاب کنید.</p>
           ) : (
@@ -230,7 +238,7 @@ export function AdminCooperatePanel() {
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                       rows={3}
-                      className="mt-1 w-full rounded-xl border border-navy/15 px-3 py-2 text-sm"
+                      className={adminInputClass()}
                     />
                   </label>
                   <div className="mt-4 flex flex-wrap gap-2">

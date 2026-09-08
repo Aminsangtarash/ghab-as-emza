@@ -42,6 +42,8 @@ export type StoredConsultation = ConsultationInput & {
   conversationId?: string;
   refundedToman: number;
   cancelReason?: string;
+  lastRejectReason?: string;
+  rejectedLawyerSlugs?: string[];
   documents: { id: string; originalName: string; size: number }[];
 };
 
@@ -76,5 +78,7 @@ export type ClientConsultation = {
   conversationId?: string;
   refundedToman: number;
   cancelReason?: string;
+  lastRejectReason?: string;
+  rejectedLawyerSlugs?: string[];
   documents: { id: string; originalName: string; size: number }[];
 };

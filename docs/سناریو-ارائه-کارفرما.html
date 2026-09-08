@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>سناریوی ارائه محصول — قبل از امضا</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #0b1f33;
+      --navy-mid: #16324d;
+      --gold: #c9a227;
+      --gold-soft: #f7efd6;
+      --paper: #faf9f7;
+      --ink: #1a2430;
+      --muted: #5a6675;
+      --line: #e4e0d8;
+      --card: #ffffff;
+      --ok: #1f6b4a;
+      --warn: #9a5b00;
+      --blue: #0f4c81;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(ellipse 80% 50% at 100% 0%, rgba(201, 162, 39, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 0% 100%, rgba(11, 31, 51, 0.06), transparent 50%),
+        var(--paper);
+      color: var(--ink);
+      line-height: 1.85;
+      font-size: 15.5px;
+    }
+
+    .shell {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 6.5rem;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      color: #fff;
+      border-radius: 1.5rem;
+      padding: 2rem 1.75rem;
+      box-shadow: 0 18px 40px rgba(11, 31, 51, 0.18);
+      margin-bottom: 1.25rem;
+    }
+
+    .hero .eyebrow {
+      color: var(--gold);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .hero h1 {
+      margin: 0.75rem 0 0.5rem;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      line-height: 1.4;
+    }
+
+    .hero p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.78);
+      max-width: 42rem;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin: 1rem 0 1.5rem;
+      position: sticky;
+      top: 0.6rem;
+      z-index: 20;
+      background: rgba(250, 249, 247, 0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      padding: 0.65rem;
+      box-shadow: 0 8px 24px rgba(11, 31, 51, 0.06);
+    }
+
+    .toolbar button {
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      border-radius: 999px;
+      padding: 0.45rem 0.95rem;
+      background: #fff;
+      color: var(--navy);
+      border: 1px solid var(--line);
+      transition: 0.15s ease;
+    }
+
+    .toolbar button:hover { border-color: var(--gold); }
+    .toolbar button.active {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy);
+    }
+
+    .progress-wrap {
+      margin: 0 0 1.25rem;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      padding: 0.85rem 1rem;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+    }
+
+    .bar {
+      height: 8px;
+      background: #efeae1;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--gold), #e0c36a);
+      transition: width 0.25s ease;
+    }
+
+    .deck { display: none; }
+    .deck.active { display: block; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 1.25rem;
+      padding: 1.35rem 1.3rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 10px 28px rgba(11, 31, 51, 0.04);
+    }
+
+    .card h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.2rem;
+      color: var(--navy);
+    }
+
+    .card .lead {
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .step {
+      display: none;
+      animation: fade 0.22s ease;
+    }
+
+    .step.active { display: block; }
+
+    @keyframes fade {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .step-head {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .badge {
+      flex: 0 0 auto;
+      width: 2.4rem;
+      height: 2.4rem;
+      border-radius: 999px;
+      background: var(--gold-soft);
+      color: var(--navy);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      border: 1px solid #ead9a4;
+    }
+
+    .step-head h3 {
+      margin: 0;
+      font-size: 1.15rem;
+      color: var(--navy);
+      line-height: 1.5;
+    }
+
+    .role-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.25rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: #eef3f8;
+      color: var(--blue);
+    }
+
+    .role-chip.lawyer { background: #f3efe4; color: #7a5a10; }
+    .role-chip.admin { background: #ece8f5; color: #4b3a7a; }
+    .role-chip.tip { background: #e8f4ee; color: var(--ok); }
+
+    .say, .do, .url, .note {
+      border-radius: 0.9rem;
+      padding: 0.85rem 1rem;
+      margin: 0.65rem 0;
+    }
+
+    .say {
+      background: #f4f7fb;
+      border: 1px solid #d9e4f0;
+    }
+
+    .do {
+      background: #fffaf0;
+      border: 1px solid #f0e1b8;
+    }
+
+    .url {
+      background: #f7f7f5;
+      border: 1px dashed var(--line);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.86rem;
+      direction: ltr;
+      text-align: left;
+      overflow-wrap: anywhere;
+    }
+
+    .note {
+      background: #f3faf6;
+      border: 1px solid #cfe5d9;
+      color: #255842;
+      font-size: 0.92rem;
+    }
+
+    .label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      color: var(--muted);
+    }
+
+    ul.points {
+      margin: 0.4rem 0 0;
+      padding-right: 1.15rem;
+    }
+
+    ul.points li { margin: 0.25rem 0; }
+
+    .nav-actions {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-top: 1.1rem;
+    }
+
+    .nav-actions button {
+      font: inherit;
+      border: 0;
+      border-radius: 0.8rem;
+      padding: 0.7rem 1.1rem;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .btn-ghost {
+      background: #fff;
+      border: 1px solid var(--line) !important;
+      color: var(--navy);
+    }
+
+    .overview-grid {
+      display: grid;
+      gap: 0.85rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .mini {
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      padding: 1rem;
+      background: #fff;
+    }
+
+    .mini strong {
+      display: block;
+      color: var(--navy);
+      margin-bottom: 0.35rem;
+    }
+
+    .mini span {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .footer-hint {
+      margin-top: 1.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 640px) {
+      .shell { padding-bottom: 7.5rem; }
+      .hero { padding: 1.5rem 1.15rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div class="eyebrow">راهنمای ارائه زنده به کارفرما</div>
+      <h1>سناریوی کامل محصول «قبل از امضا»</h1>
+      <p>
+        این فایل مسیر ارائه را مرحله‌به‌مرحله هدایت می‌کند: از ورود کاربر و ثبت درخواست تا پذیرش وکیل،
+        گفتگو، پرونده، نوبت حضوری، بستن گفتگو و امتیازدهی — به‌همراه سناریوی جداگانه پنل مدیر.
+      </p>
+    </header>
+
+    <nav class="toolbar" aria-label="انتخاب سناریو">
+      <button type="button" class="active" data-deck="overview">نمای کلی</button>
+      <button type="button" data-deck="client">سناریو ۱: کاربر + وکیل</button>
+      <button type="button" data-deck="admin">سناریو ۲: مدیر</button>
+      <button type="button" data-deck="notes">نکات دمو و محدودیت‌ها</button>
+    </nav>
+
+    <div class="progress-wrap" id="progressWrap" hidden>
+      <div class="progress-meta">
+        <span id="progressLabel">مرحله ۱</span>
+        <span id="progressCount">۱ / ۱</span>
+      </div>
+      <div class="bar"><span id="progressBar"></span></div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section class="deck active" data-deck-panel="overview">
+      <div class="card">
+        <h2>چطور ارائه بدهید</h2>
+        <p class="lead">دو سناریوی اصلی را پشت‌سرهم اجرا کنید. بین نقش‌ها با دو مرورگر یا پنجره ناشناس جابه‌جا شوید.</p>
+        <div class="overview-grid">
+          <div class="mini">
+            <strong>۱) سفر موکل و وکیل</strong>
+            <span>ورود OTP → ثبت درخواست → پذیرش وکیل → گفتگو → درخواست مدرک → تشکیل پرونده → نوبت حضوری → بستن گفتگو → امتیاز</span>
+          </div>
+          <div class="mini">
+            <strong>۲) سفر مدیر</strong>
+            <span>ورود با رمز → داشبورد → صف عملیات → تخصیص وکیل → کاربران/کیف پول → وکلا و همکاری → تعرفه → کارکنان</span>
+          </div>
+          <div class="mini">
+            <strong>ابزار ارائه</strong>
+            <span>کلیدهای ← → برای مرحله بعد/قبل. هر مرحله: «چه بگویید»، «چه بزنید»، «آدرس».</span>
+          </div>
+          <div class="mini">
+            <strong>حساب‌های پیشنهادی</strong>
+            <span>موکل: ثبت‌نام OTP · وکیل: /login?next=/lawyer · مدیر: /login?next=/admin</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>خط داستانی پیشنهادی (یک جمله برای کارفرما)</h2>
+        <p class="lead" style="margin:0">
+          «کاربر قبل از امضا موضوعش را ثبت می‌کند، وکیل می‌پذیرد، در گفتگو مدارک و نوبت هماهنگ می‌شود،
+          در صورت نیاز پرونده تشکیل می‌شود، و در نهایت گفتگو بسته و امتیاز ثبت می‌گردد — مدیر هم روی صف،
+          تخصیص، تعرفه‌ها و کیفیت وکلا نظارت دارد.»
+        </p>
+      </div>
+    </section>
+
+    <!-- CLIENT + LAWYER SCENARIO -->
+    <section class="deck" data-deck-panel="client">
+      <div class="card">
+        <h2>سناریو ۱ — از ورود کاربر تا بستن گفتگو</h2>
+        <p class="lead">۱۸ مرحله. نقش فعال هر مرحله با برچسب مشخص است. هنگام تعویض نقش، پنجره را عوض کنید.</p>
+
+        <article class="step active" data-step="0">
+          <div class="step-head">
+            <div class="badge">۱</div>
+            <div>
+              <h3>شروع از صفحه اصلی و مسیر مشاوره</h3>
+              <span class="role-chip">نقش: کارفرما می‌بیند / راوی</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>محصول یک مسیر حقوقی «قبل از امضا» است: کاربر موضوع را ثبت می‌کند و تا گفتگو با وکیل هدایت می‌شود.</div>
+          <div class="do"><span class="label">چه بزنید</span>صفحه اصلی یا خدمات را باز کنید و روی ثبت مشاوره / رزرو کلیک کنید.</div>
+          <div class="url">http://localhost:43145/</div>
+        </article>
+
+        <article class="step" data-step="1">
+          <div class="step-head">
+            <div class="badge">۲</div>
+            <div>
+              <h3>ورود / ثبت‌نام کاربر با OTP</h3>
+              <span class="role-chip">نقش: کاربر (موکل)</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>ورود موکل فقط با شماره موبایل و کد پیامکی است؛ برای کاربر نهایی رمز عبور نداریم.</div>
+          <div class="do"><span class="label">چه بزنید</span>ثبت‌نام با نام و موبایل → ارسال کد → تأیید ۵ رقمی. یا اگر حساب دارید فقط ورود OTP.</div>
+          <div class="url">/login   یا   /register</div>
+          <div class="note"><span class="label">یادداشت دمو</span>اگر SMS فعال نباشد، در محیط توسعه کد در لاگ سرور دیده می‌شود.</div>
+        </article>
+
+        <article class="step" data-step="2">
+          <div class="step-head">
+            <div class="badge">۳</div>
+            <div>
+              <h3>ورود به پنل کاربری</h3>
+              <span class="role-chip">نقش: کاربر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>پنل کاربر مرکز پیگیری است: درخواست‌ها، گفتگوها، پرونده‌ها، کیف پول و پشتیبانی.</div>
+          <div class="do"><span class="label">چه بزنید</span>منوی کناری را سریع نشان دهید: داشبورد، درخواست‌ها، ثبت درخواست، گفتگوها، پرونده‌ها.</div>
+          <div class="url">/account</div>
+        </article>
+
+        <article class="step" data-step="3">
+          <div class="step-head">
+            <div class="badge">۴</div>
+            <div>
+              <h3>شروع ثبت درخواست مشاوره</h3>
+              <span class="role-chip">نقش: کاربر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>ویزارد چندمرحله‌ای موضوع را ساخت‌یافته می‌گیرد تا وکیل با اطلاعات کافی تصمیم بگیرد.</div>
+          <div class="do"><span class="label">چه بزنید</span>از «ثبت درخواست» وارد ویزارد شوید.</div>
+          <div class="url">/account/consult   یا   /consult</div>
+        </article>
+
+        <article class="step" data-step="4">
+          <div class="step-head">
+            <div class="badge">۵</div>
+            <div>
+              <h3>مرحله ۱ و ۲ ویزارد: کانال، خدمت، وکیل</h3>
+              <span class="role-chip">نقش: کاربر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>کاربر نحوه ارتباط را انتخاب می‌کند (متنی / تلفنی / تصویری)، خدمت را مشخص می‌کند و وکیل را خودش انتخاب می‌کند یا به اپراتور می‌سپارد.</div>
+          <div class="do"><span class="label">چه بزنید</span>
+            <ul class="points">
+              <li>نحوه مشاوره: ترجیحاً «مشاوره متنی» برای دمو روان</li>
+              <li>خدمت: مثلاً مشاوره آنلاین یا بررسی قرارداد</li>
+              <li>وکیل: «انتخاب خودم» و یک وکیل مشخص — یا «معرفی توسط اپراتور» برای سناریو مدیر</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="step" data-step="5">
+          <div class="step-head">
+            <div class="badge">۶</div>
+            <div>
+              <h3>مرحله ۳ و ۴: شرح موضوع، مدارک، تماس</h3>
+              <span class="role-chip">نقش: کاربر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>موضوع، شرح، فوریت، شهر و امکان پیوست مدرک ثبت می‌شود؛ بعد مشخصات تماس تکمیل می‌گردد.</div>
+          <div class="do"><span class="label">چه بزنید</span>
+            <ul class="points">
+              <li>موضوع کوتاه + شرح حداقل ۲۰ نویسه</li>
+              <li>فوریت را نشان دهید (تأثیر روی تعرفه)</li>
+              <li>اختیاری: یک فایل نمونه پیوست کنید</li>
+              <li>نام و موبایل را تأیید کنید</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="step" data-step="6">
+          <div class="step-head">
+            <div class="badge">۷</div>
+            <div>
+              <h3>بازبینی، موافقت محرمانگی و پرداخت</h3>
+              <span class="role-chip">نقش: کاربر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>کاربر خلاصه را می‌بیند، شرایط را می‌پذیرد و پرداخت را انجام می‌دهد. در نسخه فعلی درگاه بانکی به‌صورت آزمایشی (stub) است.</div>
+          <div class="do"><span class="label">چه بزنید</span>بازبینی → تیک موافقت → پرداخت آزمایشی → ثبت نهایی. کد پیگیری را بلند بخوانید.</div>
+          <div class="note"><span class="label">صریح به کارفرما بگویید</span>پرداخت بانکی واقعی هنوز وصل نیست؛ وضعیت پرداخت آزمایشی ثبت می‌شود. امکان کد تخفیف هم هست.</div>
+        </article>
+
+        <article class="step" data-step="7">
+          <div class="step-head">
+            <div class="badge">۸</div>
+            <div>
+              <h3>پیگیری درخواست در پنل کاربر</h3>
+              <span class="role-chip">نقش: کاربر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>درخواست با وضعیت «در انتظار تأیید وکیل» (یا معرفی اپراتور) قابل پیگیری، لغو و مشاهده جزئیات است.</div>
+          <div class="do"><span class="label">چه بزنید</span>به جزئیات درخواست بروید و وضعیت را نشان دهید.</div>
+          <div class="url">/account/requests/{کدپیگیری}</div>
+        </article>
+
+        <article class="step" data-step="8">
+          <div class="step-head">
+            <div class="badge">۹</div>
+            <div>
+              <h3>ورود وکیل به میز کار</h3>
+              <span class="role-chip lawyer">نقش: وکیل</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>وکیل با باز کردن مستقیم آدرس پنل، امکان ورود با رمز عبور دارد (علاوه بر OTP).</div>
+          <div class="do"><span class="label">چه بزنید</span>در پنجره دوم به آدرس زیر بروید و با تب «ورود با رمز» وارد شوید.</div>
+          <div class="url">/login?next=/lawyer</div>
+        </article>
+
+        <article class="step" data-step="9">
+          <div class="step-head">
+            <div class="badge">۱۰</div>
+            <div>
+              <h3>دیدن صف درخواست و پذیرش</h3>
+              <span class="role-chip lawyer">نقش: وکیل</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>وکیل موضوع، مدارک و جزئیات را می‌بیند و می‌تواند بپذیرد یا رد کند. با پذیرش، گفتگو ساخته می‌شود.</div>
+          <div class="do"><span class="label">چه بزنید</span>از «درخواست‌های جدید» درخواست را باز کنید → پذیرش. (اختیاری: پیام اول)</div>
+          <div class="url">/lawyer/requests</div>
+          <div class="note"><span class="label">اگر رد کند</span>در پرداخت آزمایشی، مبلغ به کیف پول موکل برمی‌گردد.</div>
+        </article>
+
+        <article class="step" data-step="10">
+          <div class="step-head">
+            <div class="badge">۱۱</div>
+            <div>
+              <h3>شروع گفتگو — سمت کاربر</h3>
+              <span class="role-chip">نقش: کاربر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>پس از پذیرش، گفتگو فعال است؛ کاربر پیام سیستم پذیرش را می‌بیند و می‌تواند گفتگو را ادامه دهد. سایدبار اطلاعات وکیل و پرونده را نشان می‌دهد.</div>
+          <div class="do"><span class="label">چه بزنید</span>در پنجره کاربر به گفتگوها بروید، پیام بفرستید، کارت وکیل را نشان دهید.</div>
+          <div class="url">/account/chats/{id}</div>
+        </article>
+
+        <article class="step" data-step="11">
+          <div class="step-head">
+            <div class="badge">۱۲</div>
+            <div>
+              <h3>ابزارهای وکیل در گفتگو: یادداشت و درخواست مدرک</h3>
+              <span class="role-chip lawyer">نقش: وکیل</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>وکیل یادداشت خصوصی می‌نویسد و می‌تواند از موکل مدرک مشخص بخواهد.</div>
+          <div class="do"><span class="label">چه بزنید</span>
+            <ul class="points">
+              <li>یک یادداشت داخلی ثبت کنید</li>
+              <li>درخواست مدرک بسازید (مثلاً تصویر قرارداد)</li>
+            </ul>
+          </div>
+          <div class="url">/lawyer/chats/{id}</div>
+        </article>
+
+        <article class="step" data-step="12">
+          <div class="step-head">
+            <div class="badge">۱۳</div>
+            <div>
+              <h3>آپلود مدرک توسط کاربر</h3>
+              <span class="role-chip">نقش: کاربر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>درخواست مدرک داخل گفتگو ظاهر می‌شود؛ کاربر فایل را بارگذاری می‌کند و وکیل می‌تواند تأیید یا رد کند.</div>
+          <div class="do"><span class="label">چه بزنید</span>در پنجره کاربر مدرک را آپلود کنید؛ در پنجره وکیل وضعیت را بررسی/تأیید کنید.</div>
+        </article>
+
+        <article class="step" data-step="13">
+          <div class="step-head">
+            <div class="badge">۱۴</div>
+            <div>
+              <h3>پیشنهاد تشکیل پرونده و پذیرش موکل</h3>
+              <span class="role-chip lawyer">نقش: وکیل → سپس کاربر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>اگر موضوع نیاز به پیگیری پرونده‌ای دارد، وکیل پیشنهاد تشکیل پرونده می‌دهد. موکل باید بپذیرد. هزینه پرونده در این نسخه برای تسویه حضوری/دفتر در نظر گرفته شده است.</div>
+          <div class="do"><span class="label">چه بزنید</span>
+            <ul class="points">
+              <li>وکیل: فرم پیشنهاد پرونده را پر و ارسال کند</li>
+              <li>کاربر: /account/cases → جزئیات → «پذیرش تشکیل پرونده»</li>
+            </ul>
+          </div>
+          <div class="url">وکیل: داخل گفتگو / پرونده‌ها · کاربر: /account/cases/{id}</div>
+        </article>
+
+        <article class="step" data-step="14">
+          <div class="step-head">
+            <div class="badge">۱۵</div>
+            <div>
+              <h3>ثبت نوبت حضوری</h3>
+              <span class="role-chip lawyer">نقش: وکیل</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>وکیل نوبت جلسه حضوری/تلفنی/تصویری ثبت می‌کند. نوبت در گفتگوی موکل به‌صورت پیام سیستمی دیده می‌شود. امکان ثبت موکل خارج از سامانه هم در صفحه نوبت‌ها هست.</div>
+          <div class="do"><span class="label">چه بزنید</span>
+            <ul class="points">
+              <li>از ابزار گفتگو یا از /lawyer/schedule نوبت بسازید</li>
+              <li>نوع جلسه را «جلسه حضوری» بگذارید (پیش‌فرض همین است)</li>
+              <li>زمان شمسی و مدت را تنظیم کنید</li>
+              <li>در پنجره کاربر پیام نوبت را نشان دهید</li>
+            </ul>
+          </div>
+          <div class="url">/lawyer/schedule   یا ابزار «ثبت نوبت» داخل گفتگو</div>
+        </article>
+
+        <article class="step" data-step="15">
+          <div class="step-head">
+            <div class="badge">۱۶</div>
+            <div>
+              <h3>کانال تلفنی / تصویری (در صورت نیاز)</h3>
+              <span class="role-chip tip">اختیاری برای دمو</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>تماس تلفنی خارج از برنامه هماهنگ می‌شود و وکیل «انجام تماس» را ثبت می‌کند. تماس تصویری پیش‌نمایش دوربین داخل پنل دارد (کنفرانس کامل هنوز توسعه بعدی است).</div>
+          <div class="do"><span class="label">چه بزنید</span>اگر درخواست تلفنی ساخته‌اید: وکیل دکمه «تماس تلفنی انجام شد» را بزند.</div>
+        </article>
+
+        <article class="step" data-step="16">
+          <div class="step-head">
+            <div class="badge">۱۷</div>
+            <div>
+              <h3>بستن گفتگو توسط وکیل</h3>
+              <span class="role-chip lawyer">نقش: وکیل</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>وقتی مشاوره تمام شد، وکیل گفتگو را با خلاصه اختیاری می‌بندد. وضعیت درخواست به بسته تغییر می‌کند.</div>
+          <div class="do"><span class="label">چه بزنید</span>در ابزارهای گفتگو، بستن گفتگو را اجرا کنید.</div>
+        </article>
+
+        <article class="step" data-step="17">
+          <div class="step-head">
+            <div class="badge">۱۸</div>
+            <div>
+              <h3>امتیازدهی کاربر و جمع‌بندی</h3>
+              <span class="role-chip">نقش: کاربر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>پس از بستن، از موکل امتیاز و نظر خواسته می‌شود. این امتیاز در پنل وکیل و گزارش‌های مدیر دیده می‌شود.</div>
+          <div class="do"><span class="label">چه بزنید</span>در پنجره کاربر دیالوگ امتیاز را تکمیل کنید. سپس کیف پول/درخواست‌ها را برای جمع‌بندی نشان دهید.</div>
+          <div class="url">/account/chats/{id} · /account/wallet · /account/requests</div>
+          <div class="note"><span class="label">پایان سناریو ۱</span>مسیر کامل ارزش محصول را پوشش دادید: جذب → درخواست → پذیرش → تعامل → پرونده/نوبت → خاتمه و بازخورد.</div>
+        </article>
+
+        <div class="nav-actions">
+          <button type="button" class="btn-ghost" data-prev>مرحله قبل</button>
+          <button type="button" class="btn-primary" data-next>مرحله بعد</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>مسیرهای جایگزین (اگر وقت شد)</h2>
+        <ul class="points">
+          <li><strong>مشاوره فوری:</strong> <span class="url" style="display:inline;padding:0.1rem 0.4rem">/consult?service=urgent-consult</span> → اتاق انتظار → پذیرش اولین وکیل</li>
+          <li><strong>انتخاب وکیل از فهرست:</strong> /lawyers/{slug} → ثبت مشاوره با همان وکیل</li>
+          <li><strong>موکل خارج از سامانه:</strong> در /lawyer/schedule تب «ورود دستی»</li>
+          <li><strong>لغو درخواست قبل از پذیرش:</strong> جزئیات درخواست → لغو → برگشت به کیف پول</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ADMIN SCENARIO -->
+    <section class="deck" data-deck-panel="admin">
+      <div class="card">
+        <h2>سناریو ۲ — پنل مدیر / ادمین</h2>
+        <p class="lead">۱۲ مرحله. نشان می‌دهد اپراتور/مدیر چطور صف را کنترل می‌کند، کیفیت را می‌بیند و تنظیمات را مدیریت می‌کند.</p>
+
+        <article class="step active" data-step="0">
+          <div class="step-head">
+            <div class="badge">۱</div>
+            <div>
+              <h3>ورود مستقیم به پنل مدیریت با رمز</h3>
+              <span class="role-chip admin">نقش: مدیر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>دسترسی کارکنان با باز کردن آدرس پنل ادمین و ورود با رمز انجام می‌شود.</div>
+          <div class="do"><span class="label">چه بزنید</span>آدرس زیر را باز کنید و با رمز وارد شوید.</div>
+          <div class="url">/login?next=/admin</div>
+        </article>
+
+        <article class="step" data-step="1">
+          <div class="step-head">
+            <div class="badge">۲</div>
+            <div>
+              <h3>نمای کلی داشبورد</h3>
+              <span class="role-chip admin">نقش: مدیر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>داشبورد وضعیت لحظه‌ای را نشان می‌دهد: کاربران، وکلا، درخواست‌ها، گفتگوهای باز، هشدارها و بازپرداخت‌ها.</div>
+          <div class="do"><span class="label">چه بزنید</span>کارت‌های آماری و بخش هشدارها را مرور کنید.</div>
+          <div class="url">/admin</div>
+        </article>
+
+        <article class="step" data-step="2">
+          <div class="step-head">
+            <div class="badge">۳</div>
+            <div>
+              <h3>آماده‌سازی: درخواست با معرفی اپراتور</h3>
+              <span class="role-chip tip">پیش‌نیاز دمو</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>برای نمایش صف عملیات، یک درخواست با حالت «معرفی توسط اپراتور» از پنل کاربر ثبت کنید (یا از قبل داشته باشید).</div>
+          <div class="do"><span class="label">چه بزنید</span>در پنجره موکل یک درخواست با lawyerMode اپراتور بسازید تا وارد صف مدیر شود.</div>
+        </article>
+
+        <article class="step" data-step="3">
+          <div class="step-head">
+            <div class="badge">۴</div>
+            <div>
+              <h3>صف عملیات — تخصیص وکیل</h3>
+              <span class="role-chip admin">نقش: مدیر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>درخواست‌های منتظر معرفی اینجا جمع می‌شوند. مدیر وکیل مناسب را تخصیص می‌دهد یا در صورت نیاز لغو/بازپرداخت می‌کند.</div>
+          <div class="do"><span class="label">چه بزنید</span>درخواست را انتخاب → وکیل را assign کنید.</div>
+          <div class="url">/admin/queue</div>
+        </article>
+
+        <article class="step" data-step="4">
+          <div class="step-head">
+            <div class="badge">۵</div>
+            <div>
+              <h3>فهرست و جزئیات درخواست‌ها</h3>
+              <span class="role-chip admin">نقش: مدیر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>همه درخواست‌ها قابل جست‌وجو و بررسی هستند. در نقش مدیر، متن کامل درخواست و پیام‌های گفتگو هم قابل مشاهده است (ادمین عادی محدودیت محرمانگی دارد).</div>
+          <div class="do"><span class="label">چه بزنید</span>یک درخواست را باز کنید و متادیتا/وضعیت را نشان دهید.</div>
+          <div class="url">/admin/requests   و   /admin/requests/{code}</div>
+        </article>
+
+        <article class="step" data-step="5">
+          <div class="step-head">
+            <div class="badge">۶</div>
+            <div>
+              <h3>مدیریت کاربران و کیف پول</h3>
+              <span class="role-chip admin">نقش: مدیر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>مدیر می‌تواند کاربر را ببیند، فعال/غیرفعال کند و موجودی کیف پول را تنظیم کند (مثلاً جبران یا اصلاح).</div>
+          <div class="do"><span class="label">چه بزنید</span>یک کاربر را باز کنید؛ تاریخچه درخواست/گفتگو/پرونده و تنظیم کیف پول را نشان دهید.</div>
+          <div class="url">/admin/users   ·   /admin/users/{id}</div>
+        </article>
+
+        <article class="step" data-step="6">
+          <div class="step-head">
+            <div class="badge">۷</div>
+            <div>
+              <h3>مدیریت وکلا</h3>
+              <span class="role-chip admin">نقش: مدیر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>وضعیت پذیرش درخواست، فعال بودن، شاخص‌های پذیرش/رد و امتیاز وکلا اینجا کنترل می‌شود. امکان ایجاد حساب وکیل هم وجود دارد.</div>
+          <div class="do"><span class="label">چه بزنید</span>فهرست وکلا، جزئیات یک وکیل و تغییر «پذیرش درخواست جدید» را نشان دهید.</div>
+          <div class="url">/admin/lawyers   ·   /admin/lawyers/{slug}</div>
+        </article>
+
+        <article class="step" data-step="7">
+          <div class="step-head">
+            <div class="badge">۸</div>
+            <div>
+              <h3>درخواست‌های همکاری</h3>
+              <span class="role-chip admin">نقش: مدیر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>وکلای متقاضی همکاری از مسیر عمومی ثبت می‌شوند؛ مدیر تأیید یا رد می‌کند و در تأیید، حساب وکیل ساخته می‌شود.</div>
+          <div class="do"><span class="label">چه بزنید</span>صفحه همکاری را باز کنید و جریان تأیید را توضیح دهید.</div>
+          <div class="url">/admin/cooperate</div>
+        </article>
+
+        <article class="step" data-step="8">
+          <div class="step-head">
+            <div class="badge">۹</div>
+            <div>
+              <h3>تعرفه خدمات و کد تخفیف</h3>
+              <span class="role-chip admin">نقش: مدیر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>مبالغ خدمات و پرومو کدها از پنل قابل تنظیم است و در ویزارد درخواست کاربر اعمال می‌شود.</div>
+          <div class="do"><span class="label">چه بزنید</span>یک تعرفه یا کد تخفیف را نشان دهید / ویرایش آزمایشی کنید.</div>
+          <div class="url">/admin/pricing</div>
+        </article>
+
+        <article class="step" data-step="9">
+          <div class="step-head">
+            <div class="badge">۱۰</div>
+            <div>
+              <h3>پشتیبانی و تیکت‌های تماس</h3>
+              <span class="role-chip admin">نقش: مدیر</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>پیام‌های پشتیبانی/تماس سایت در میز پشتیبانی کارکنان دیده و پیگیری می‌شود (جدا از گفتگوی حقوقی).</div>
+          <div class="do"><span class="label">چه بزنید</span>صفحه پشتیبانی ادمین را باز کنید.</div>
+          <div class="url">/admin/support</div>
+        </article>
+
+        <article class="step" data-step="10">
+          <div class="step-head">
+            <div class="badge">۱۱</div>
+            <div>
+              <h3>مدیریت کارکنان (فقط مدیر)</h3>
+              <span class="role-chip admin">نقش: مدیر سیستم</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>ساخت حساب ادمین/مدیر، بازنشانی رمز و فعال/غیرفعال کردن کارکنان فقط برای نقش مدیر است. ادمین عادی این منو را نمی‌بیند.</div>
+          <div class="do"><span class="label">چه بزنید</span>صفحه کارکنان را نشان دهید و تفاوت سطح دسترسی را توضیح دهید.</div>
+          <div class="url">/admin/staff</div>
+        </article>
+
+        <article class="step" data-step="11">
+          <div class="step-head">
+            <div class="badge">۱۲</div>
+            <div>
+              <h3>جمع‌بندی ارزش پنل مدیریت</h3>
+              <span class="role-chip tip">پایان سناریو ۲</span>
+            </div>
+          </div>
+          <div class="say"><span class="label">چه بگویید</span>مدیر روی عملیات روزمره (صف و تخصیص)، کیفیت (درخواست‌ها و امتیازها)، شبکه وکلا، تعرفه‌ها و تیم داخلی کنترل دارد — بدون دخالت در جریان اصلی مشاوره کاربر.</div>
+          <div class="do"><span class="label">چه بزنید</span>به داشبورد برگردید و جمع‌بندی یک‌دقیقه‌ای بدهید.</div>
+          <div class="url">/admin</div>
+        </article>
+
+        <div class="nav-actions">
+          <button type="button" class="btn-ghost" data-prev>مرحله قبل</button>
+          <button type="button" class="btn-primary" data-next>مرحله بعد</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- NOTES -->
+    <section class="deck" data-deck-panel="notes">
+      <div class="card">
+        <h2>نکات صریح برای گفتن به کارفرما</h2>
+        <ul class="points">
+          <li><strong>پرداخت:</strong> درگاه بانکی هنوز وصل نیست؛ پرداخت مشاوره آزمایشی است.</li>
+          <li><strong>شارژ کیف پول:</strong> فعلاً غیرفعال؛ موجودی بیشتر از مسیر بازپرداخت/تنظیم مدیر می‌آید.</li>
+          <li><strong>هزینه پرونده:</strong> پذیرش آنلاین است؛ تسویه مبلغ پرونده برای مسیر دفتر/حضوری در نظر گرفته شده.</li>
+          <li><strong>نوبت حضوری عمومی:</strong> صفحه رزرو عمومی هنوز stub است؛ نوبت واقعی را وکیل ثبت می‌کند.</li>
+          <li><strong>تماس تصویری:</strong> پیش‌نمایش داخل پنل؛ کنفرانس کامل بعدی است.</li>
+          <li><strong>OTP:</strong> وابسته به تنظیمات SMS؛ در توسعه ممکن است کد در لاگ باشد.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>چک‌لیست قبل از ارائه</h2>
+        <ul class="points">
+          <li>سرور محلی روشن باشد و دیتابیس در دسترس باشد</li>
+          <li>حداقل یک وکیل فعال با رمز مشخص داشته باشید</li>
+          <li>یک حساب مدیر با رمز مشخص</li>
+          <li>دو پنجره مرورگر (موکل / وکیل+مدیر)</li>
+          <li>یک فایل نمونه برای آپلود مدرک آماده باشد</li>
+          <li>این HTML را روی مانیتور دوم یا تبلت باز نگه دارید</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>ترتیب پیشنهادی زمان‌بندی (حدود ۲۵–۳۵ دقیقه)</h2>
+        <ul class="points">
+          <li>۵ دقیقه: معرفی محصول و پنل‌ها</li>
+          <li>۱۵–۲۰ دقیقه: سناریو کاربر + وکیل تا بستن گفتگو</li>
+          <li>۸–۱۰ دقیقه: سناریو مدیر</li>
+          <li>۲ دقیقه: محدودیت‌های فعلی و فاز بعدی</li>
+        </ul>
+      </div>
+    </section>
+
+    <p class="footer-hint">کلیدهای جهت‌نما: مرحله قبل / بعد · Tabهای بالا: تعویض سناریو</p>
+  </div>
+
+  <script>
+    const decks = [...document.querySelectorAll("[data-deck-panel]")];
+    const tabs = [...document.querySelectorAll(".toolbar [data-deck]")];
+    const progressWrap = document.getElementById("progressWrap");
+    const progressLabel = document.getElementById("progressLabel");
+    const progressCount = document.getElementById("progressCount");
+    const progressBar = document.getElementById("progressBar");
+
+    let currentDeck = "overview";
+    let currentStep = 0;
+
+    function activePanel() {
+      return document.querySelector(`[data-deck-panel="${currentDeck}"]`);
+    }
+
+    function steps() {
+      const panel = activePanel();
+      return panel ? [...panel.querySelectorAll(".step")] : [];
+    }
+
+    function showDeck(name) {
+      currentDeck = name;
+      currentStep = 0;
+      tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.deck === name));
+      decks.forEach((deck) => deck.classList.toggle("active", deck.dataset.deckPanel === name));
+      renderSteps();
+    }
+
+    function renderSteps() {
+      const list = steps();
+      const hasSteps = list.length > 0;
+      progressWrap.hidden = !hasSteps;
+
+      list.forEach((step, index) => {
+        step.classList.toggle("active", index === currentStep);
+      });
+
+      if (!hasSteps) return;
+
+      const title = list[currentStep]?.querySelector("h3")?.textContent?.trim() || "مرحله";
+      progressLabel.textContent = title;
+      progressCount.textContent = `${currentStep + 1} / ${list.length}`;
+      progressBar.style.width = `${((currentStep + 1) / list.length) * 100}%`;
+    }
+
+    function nextStep() {
+      const list = steps();
+      if (!list.length) return;
+      currentStep = Math.min(currentStep + 1, list.length - 1);
+      renderSteps();
+      list[currentStep].scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function prevStep() {
+      const list = steps();
+      if (!list.length) return;
+      currentStep = Math.max(currentStep - 1, 0);
+      renderSteps();
+      list[currentStep].scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => showDeck(tab.dataset.deck));
+    });
+
+    document.querySelectorAll("[data-next]").forEach((btn) => btn.addEventListener("click", nextStep));
+    document.querySelectorAll("[data-prev]").forEach((btn) => btn.addEventListener("click", prevStep));
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") nextStep();
+      if (event.key === "ArrowRight") prevStep();
+    });
+
+    renderSteps();
+  </script>
+</body>
+</html>

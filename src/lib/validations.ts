@@ -100,13 +100,26 @@ export const contactSchema = z.object({
 
 export type ContactInput = z.infer<typeof contactSchema>;
 
+const phoneField = z
+  .string()
+  .trim()
+  .transform(normalizePhone)
+  .refine((value) => /^09\d{9}$/.test(value), "شماره موبایل معتبر وارد کنید.");
+
+const otpCodeField = z
+  .string()
+  .trim()
+  .transform((value) =>
+    value
+      .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+      .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+      .replace(/\D/g, ""),
+  )
+  .refine((value) => /^\d{5}$/.test(value), "کد تأیید باید ۵ رقم باشد.");
+
 export const cooperationSchema = z.object({
   fullName: z.string().trim().min(3, "نام باید حداقل سه نویسه باشد.").max(80),
-  phone: z
-    .string()
-    .trim()
-    .transform(normalizePhone)
-    .refine((value) => /^09\d{9}$/.test(value), "شماره موبایل معتبر وارد کنید."),
+  phone: phoneField,
   email: z
     .string()
     .trim()
@@ -135,13 +148,12 @@ export const cooperationSchema = z.object({
   message: z.string().trim().min(20, "توضیح همکاری باید حداقل ۲۰ نویسه باشد.").max(3000),
 });
 
-export type CooperationInput = z.infer<typeof cooperationSchema>;
+export const cooperationSubmitSchema = cooperationSchema.extend({
+  otpCode: otpCodeField,
+});
 
-const phoneField = z
-  .string()
-  .trim()
-  .transform(normalizePhone)
-  .refine((value) => /^09\d{9}$/.test(value), "شماره موبایل معتبر وارد کنید.");
+export type CooperationInput = z.infer<typeof cooperationSchema>;
+export type CooperationSubmitInput = z.infer<typeof cooperationSubmitSchema>;
 
 export const loginSchema = z.object({
   phone: phoneField,
@@ -155,7 +167,7 @@ export const registerSchema = z.object({
 });
 
 export const otpSendSchema = z.object({
-  purpose: z.enum(["login", "register"]),
+  purpose: z.enum(["login", "register", "cooperate"]),
   phone: phoneField,
   fullName: z
     .string()
@@ -176,16 +188,7 @@ export const otpSendSchema = z.object({
 export const otpVerifySchema = z.object({
   purpose: z.enum(["login", "register"]),
   phone: phoneField,
-  code: z
-    .string()
-    .trim()
-    .transform((value) =>
-      value
-        .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
-        .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
-        .replace(/\D/g, ""),
-    )
-    .refine((value) => /^\d{5}$/.test(value), "کد تأیید باید ۵ رقم باشد."),
+  code: otpCodeField,
   fullName: z
     .string()
     .trim()

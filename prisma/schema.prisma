@@ -20,6 +20,8 @@ model User {
   email          String?
   address        String?         @db.VarChar(160)
   avatarName     String?
+  bankIban       String?         @db.VarChar(34)
+  bankAccountName String?        @db.VarChar(120)
   lastLoginAt    DateTime?
   createdAt      DateTime        @default(now())
   sessions       Session[]
@@ -27,6 +29,7 @@ model User {
   draft          ConsultDraft?
   conversations  Conversation[]
   walletEntries  WalletEntry[]
+  payoutRequests WalletPayoutRequest[]
   messages       Message[]
   ratings        Rating[]
   documents      ConsultationDocument[]
@@ -74,6 +77,10 @@ model Consultation {
   status           String
   cancelledAt      DateTime?
   cancelReason     String?
+  cancelRequestedAt DateTime?
+  statusBeforeCancel String?
+  lastRejectReason String?
+  rejectedLawyerSlugs Json?
   refundedToman    Int            @default(0)
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversation     Conversation?
@@ -83,6 +90,7 @@ model Consultation {
 
   @@index([userId])
   @@index([lawyerSlug, status])
+  @@index([status, createdAt])
 }
 
 model ConsultationDocument {
@@ -323,6 +331,25 @@ model WalletEntry {
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+model WalletPayoutRequest {
+  id              String    @id @default(uuid())
+  userId          String
+  amountToman     Int
+  status          String    @default("pending")
+  bankIban        String    @db.VarChar(34)
+  bankAccountName String    @db.VarChar(120)
+  userNote        String?   @db.VarChar(500)
+  staffNote       String?   @db.Text
+  reviewedAt      DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }
 
 model SupportTicket {

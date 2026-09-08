@@ -3,8 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
-import { adminFetch } from "@/components/admin/admin-ui";
+import {
+  AdminErrorNote,
+  AdminHeading,
+  AdminOkNote,
+  adminFetch,
+  adminInputClass,
+  panelCard,
+} from "@/components/admin/admin-ui";
 import { formatTomanAmount, toFaDigits } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 type LawyerRow = {
   id: string;
@@ -109,14 +117,14 @@ export function AdminLawyersPanel() {
   }
 
   return (
-    <div>
-      <p className="text-xs font-semibold tracking-wide text-gold-deep">تیم حقوقی</p>
-      <h1 className="mt-3 font-heading text-2xl font-bold text-navy">وکلا</h1>
-      <p className="mt-2 max-w-2xl text-sm leading-7 text-navy/60">
-        عملکرد، ظرفیت پذیرش، امتیاز و درآمد تقریبی هر وکیل. برای جزئیات کامل وارد پروفایل شوید.
-      </p>
+    <div className="min-w-0 space-y-4 md:space-y-5">
+      <AdminHeading
+        kicker="تیم حقوقی"
+        title="وکلا"
+        description="عملکرد، ظرفیت پذیرش، امتیاز و درآمد تقریبی هر وکیل. برای جزئیات کامل وارد پروفایل شوید."
+      />
 
-      <form onSubmit={createLawyer} className="mt-8 grid gap-3 rounded-xl border border-navy/10 bg-white p-5 sm:grid-cols-2">
+      <form onSubmit={createLawyer} className={cn(panelCard, "grid gap-3 p-5 sm:grid-cols-2")}>
         <h2 className="sm:col-span-2 font-heading text-lg font-semibold text-navy">افزودن وکیل</h2>
         {(
           [
@@ -135,7 +143,7 @@ export function AdminLawyersPanel() {
               type={key === "password" ? "password" : "text"}
               value={form[key]}
               onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-navy/15 px-3 py-2"
+              className={adminInputClass()}
               dir={key === "phone" || key === "password" ? "ltr" : undefined}
             />
           </label>
@@ -151,10 +159,10 @@ export function AdminLawyersPanel() {
         </div>
       </form>
 
-      {error ? <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
-      {message ? <p className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</p> : null}
+      <AdminErrorNote>{error}</AdminErrorNote>
+      <AdminOkNote>{message}</AdminOkNote>
 
-      <div className="mt-8 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {(
           [
             ["week", "رتبه هفته"],
@@ -175,9 +183,9 @@ export function AdminLawyersPanel() {
         ))}
       </div>
 
-      <ul className="mt-4 space-y-3">
+      <ul className="space-y-3">
         {sorted.map((item, index) => (
-          <li key={item.id} className="rounded-xl border border-navy/10 bg-white p-4 sm:p-5">
+          <li key={item.id} className={cn(panelCard, "p-4 sm:p-5")}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-[11px] text-navy/40">رتبه {toFaDigits(index + 1)}</p>

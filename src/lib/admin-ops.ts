@@ -14,6 +14,7 @@ import {
 } from "@/lib/consult";
 import { lawyers, services, type Lawyer } from "@/lib/data";
 import { prisma } from "@/lib/db";
+import { normalizePhone } from "@/lib/format";
 import { promoCodes as defaultPromos } from "@/lib/promos";
 import {
   getCustomLawyerCache,
@@ -243,8 +244,12 @@ export async function getAdminDashboard() {
 export async function listOpsQueue() {
   const rows = await prisma.consultation.findMany({
     where: {
-      status: { in: ["awaiting-operator", "awaiting-lawyer"] },
-      OR: [{ lawyerSlug: null }, { status: "awaiting-operator" }],
+      OR: [
+        { status: "awaiting-operator" },
+        { status: "awaiting-reselect" },
+        { status: "cancel-requested" },
+        { status: "awaiting-lawyer", lawyerSlug: null },
+      ],
     },
     orderBy: { createdAt: "asc" },
     take: 100,
@@ -263,6 +268,9 @@ export async function listOpsQueue() {
       urgency: true,
       fullName: true,
       phone: true,
+      lastRejectReason: true,
+      cancelReason: true,
+      cancelRequestedAt: true,
     },
   });
 
@@ -278,13 +286,15 @@ export async function listOpsQueue() {
     city: row.city,
     lawyerMode: row.lawyerMode,
     lawyerSlug: row.lawyerSlug,
-    lawyerName: lawyerLabel(row.lawyerSlug ?? undefined) ?? getLawyerFromDirectory(row.lawyerSlug ?? "")?.name,
     feeToman: row.feeToman,
     paymentStatus: row.paymentStatus,
     createdAt: row.createdAt.toISOString(),
     urgency: row.urgency,
     clientName: row.fullName,
     clientPhone: row.phone,
+    lastRejectReason: row.lastRejectReason,
+    cancelReason: row.cancelReason,
+    cancelRequestedAt: row.cancelRequestedAt?.toISOString() ?? null,
   }));
 }
 
@@ -310,7 +320,7 @@ export async function assignConsultationLawyer(trackingCode: string, lawyerSlug:
 
   const row = await prisma.consultation.findUnique({ where: { trackingCode } });
   if (!row) return { error: "درخواست پیدا نشد." as const };
-  if (row.status === "cancelled" || row.status === "closed" || row.status === "in-progress") {
+  if (row.status === "cancelled" || row.status === "closed" || row.status === "in-progress" || row.status === "cancel-requested") {
     return { error: "این درخواست قابل انتساب نیست." as const };
   }
 
@@ -806,6 +816,114 @@ export async function resetStaffPassword(userId: string, password: string) {
   return { ok: true as const };
 }
 
+export async function updateClientAccount(
+  userId: string,
+  input: { fullName: string; phone: string; email?: string; address?: string },
+) {
+  const user = await prisma.user.findFirst({ where: { id: userId, role: "client" } });
+  if (!user) return { error: "کاربر پیدا نشد." as const };
+
+  const fullName = input.fullName.trim();
+  const phone = normalizePhone(input.phone.trim());
+  if (fullName.length < 3) return { error: "نام باید حداقل سه نویسه باشد." as const };
+  if (!/^09\d{9}$/.test(phone)) return { error: "شماره موبایل معتبر نیست." as const };
+
+  const emailRaw = input.email?.trim() ?? "";
+  const email = emailRaw || null;
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: "ایمیل معتبر نیست." as const };
+  }
+  const address = input.address?.trim()?.slice(0, 160) || null;
+
+  if (phone !== user.phone) {
+    const taken = await prisma.user.findUnique({ where: { phone } });
+    if (taken) return { error: "این شماره قبلاً ثبت شده است." as const };
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { fullName, phone, email, address },
+  });
+  if (phone !== user.phone) {
+    await prisma.session.deleteMany({ where: { userId } });
+  }
+  return { ok: true as const };
+}
+
+export async function deleteClientAccount(userId: string) {
+  const user = await prisma.user.findFirst({ where: { id: userId, role: "client" } });
+  if (!user) return { error: "کاربر پیدا نشد." as const };
+
+  const [consults, conversations, cases] = await Promise.all([
+    prisma.consultation.count({ where: { userId } }),
+    prisma.conversation.count({ where: { userId } }),
+    prisma.case.count({ where: { userId } }),
+  ]);
+  if (consults > 0 || conversations > 0 || cases > 0) {
+    return {
+      error:
+        "این کاربر سابقه درخواست، گفتگو یا پرونده دارد و قابل حذف نیست. در صورت نیاز حساب را غیرفعال کنید." as const,
+    };
+  }
+
+  await prisma.session.deleteMany({ where: { userId } });
+  await prisma.user.delete({ where: { id: userId } });
+  return { ok: true as const };
+}
+
+export async function updateStaffAccount(
+  userId: string,
+  input: { fullName: string; phone: string; role: "admin" | "manager" },
+  actorId: string,
+) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || (user.role !== "admin" && user.role !== "manager")) {
+    return { error: "حساب کارکنان پیدا نشد." as const };
+  }
+  if (user.phone === PRIMARY_MANAGER_PHONE) {
+    return { error: "مشخصات مدیر اول قابل ویرایش نیست." as const };
+  }
+
+  const fullName = input.fullName.trim();
+  const phone = normalizePhone(input.phone.trim());
+  if (fullName.length < 3) return { error: "نام معتبر نیست." as const };
+  if (!/^09\d{9}$/.test(phone)) return { error: "شماره موبایل معتبر نیست." as const };
+  if (input.role !== "admin" && input.role !== "manager") {
+    return { error: "نقش نامعتبر است." as const };
+  }
+
+  if (phone !== user.phone) {
+    const taken = await prisma.user.findUnique({ where: { phone } });
+    if (taken) return { error: "این شماره قبلاً ثبت شده است." as const };
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { fullName, phone, role: input.role },
+  });
+  if (phone !== user.phone || userId === actorId) {
+    await prisma.session.deleteMany({ where: { userId } });
+  }
+  return { ok: true as const };
+}
+
+export async function deleteStaffAccount(userId: string, actorId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || (user.role !== "admin" && user.role !== "manager")) {
+    return { error: "حساب کارکنان پیدا نشد." as const };
+  }
+  if (user.phone === PRIMARY_MANAGER_PHONE) {
+    return { error: "مدیر اول قابل حذف نیست." as const };
+  }
+  if (userId === actorId) {
+    return { error: "نمی‌توانید حساب خودتان را حذف کنید." as const };
+  }
+
+  await prisma.session.deleteMany({ where: { userId } });
+  await prisma.user.delete({ where: { id: userId } });
+  return { ok: true as const };
+}
+
 function slugifyLawyerName(name: string) {
   const base = name
     .trim()
@@ -897,6 +1015,125 @@ export async function setLawyerAccepting(slug: string, acceptingNew: boolean) {
     create: { slug, acceptingNew, isCustom: false },
     update: { acceptingNew },
   });
+  return { ok: true as const };
+}
+
+export async function updateLawyerAccount(
+  slug: string,
+  input: {
+    fullName: string;
+    phone: string;
+    city: string;
+    specialty: string;
+    title?: string;
+    bio?: string;
+    experience?: string;
+    years?: number;
+    acceptingNew?: boolean;
+  },
+) {
+  const user = await prisma.user.findFirst({ where: { lawyerSlug: slug, role: "lawyer" } });
+  if (!user) return { error: "وکیل پیدا نشد." as const };
+
+  const fullName = input.fullName.trim();
+  const phone = normalizePhone(input.phone.trim());
+  const city = input.city.trim();
+  const specialty = input.specialty.trim();
+  if (fullName.length < 3) return { error: "نام وکیل معتبر نیست." as const };
+  if (!/^09\d{9}$/.test(phone)) return { error: "شماره موبایل معتبر نیست." as const };
+  if (!city) return { error: "شهر الزامی است." as const };
+  if (!specialty) return { error: "تخصص الزامی است." as const };
+
+  if (phone !== user.phone) {
+    const taken = await prisma.user.findUnique({ where: { phone } });
+    if (taken) return { error: "این شماره قبلاً ثبت شده است." as const };
+  }
+
+  const title = input.title?.trim()?.slice(0, 120) || "وکیل پایه یک دادگستری";
+  const bio = input.bio?.trim()?.slice(0, 1500) || null;
+  const experience = input.experience?.trim()?.slice(0, 80) || null;
+  const years =
+    input.years !== undefined && Number.isFinite(input.years)
+      ? Math.max(0, Math.min(60, Math.round(input.years)))
+      : undefined;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: user.id },
+      data: { fullName, phone },
+    });
+    await tx.lawyerProfile.upsert({
+      where: { slug },
+      create: {
+        slug,
+        isCustom: true,
+        active: true,
+        displayName: fullName,
+        title,
+        specialty,
+        city,
+        bio,
+        experience: experience || "—",
+        years: years ?? 1,
+        acceptingNew: input.acceptingNew ?? true,
+        focusJson: JSON.stringify([specialty]),
+      },
+      update: {
+        displayName: fullName,
+        title,
+        specialty,
+        city,
+        bio,
+        ...(experience !== null ? { experience } : {}),
+        ...(years !== undefined ? { years } : {}),
+        ...(input.acceptingNew === undefined ? {} : { acceptingNew: input.acceptingNew }),
+      },
+    });
+  });
+
+  if (phone !== user.phone) {
+    await prisma.session.deleteMany({ where: { userId: user.id } });
+  }
+  await refreshAdminCaches();
+  return { ok: true as const };
+}
+
+export async function resetLawyerPassword(slug: string, password: string) {
+  if (password.length < 6) return { error: "رمز عبور حداقل ۶ کاراکتر باشد." as const };
+  const user = await prisma.user.findFirst({ where: { lawyerSlug: slug, role: "lawyer" } });
+  if (!user) return { error: "وکیل پیدا نشد." as const };
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: hashPassword(password) },
+  });
+  await prisma.session.deleteMany({ where: { userId: user.id } });
+  return { ok: true as const };
+}
+
+export async function deleteLawyerAccount(slug: string) {
+  const user = await prisma.user.findFirst({ where: { lawyerSlug: slug, role: "lawyer" } });
+  if (!user) return { error: "وکیل پیدا نشد." as const };
+
+  const [consults, conversations, cases, appointments] = await Promise.all([
+    prisma.consultation.count({ where: { lawyerSlug: slug } }),
+    prisma.conversation.count({ where: { lawyerSlug: slug } }),
+    prisma.case.count({ where: { lawyerSlug: slug } }),
+    prisma.appointment.count({ where: { lawyerSlug: slug } }),
+  ]);
+  if (consults > 0 || conversations > 0 || cases > 0 || appointments > 0) {
+    return {
+      error:
+        "این وکیل سابقه درخواست، گفتگو، پرونده یا نوبت دارد و قابل حذف نیست. در صورت نیاز حساب را غیرفعال کنید." as const,
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.session.deleteMany({ where: { userId: user.id } });
+    await tx.lawyerNote.deleteMany({ where: { lawyerSlug: slug } });
+    await tx.lawyerProfile.deleteMany({ where: { slug } });
+    await tx.user.delete({ where: { id: user.id } });
+  });
+  await refreshAdminCaches();
   return { ok: true as const };
 }
 
@@ -1094,6 +1331,8 @@ export async function getAdminLawyerDetail(slug: string) {
     specialty: profile?.specialty ?? dir?.specialty,
     title: profile?.title ?? dir?.title,
     bio: profile?.bio ?? dir?.bio,
+    experience: profile?.experience ?? dir?.experience,
+    years: profile?.years ?? dir?.years,
     isCustom: profile?.isCustom ?? false,
     createdAt: account.createdAt.toISOString(),
     lastLoginAt: account.lastLoginAt?.toISOString(),

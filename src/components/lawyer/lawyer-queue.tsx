@@ -151,7 +151,7 @@ export function LawyerQueue() {
       <LawyerHeading
         kicker="صف کار"
         title="درخواست‌های جدید"
-        description="شرح موضوع و مدارک را ببینید، سپس بپذیرید یا رد کنید. با پذیرش گفتگو باز می‌شود؛ با رد، مبلغ به کیف پول موکل برمی‌گردد."
+        description="شرح موضوع و مدارک را ببینید، سپس بپذیرید یا رد کنید. با پذیرش گفتگو باز می‌شود؛ با رد، مبلغ فوراً برنمی‌گردد و موکل یا اپراتور وکیل دیگری انتخاب می‌کنند."
         actions={
           items && items.length > 0 ? (
             <p className="rounded-full bg-navy/5 px-3 py-1.5 text-xs font-medium text-navy/60">
@@ -533,7 +533,7 @@ function ActionDialog({
             <Dialog.Description className="mt-3 text-sm leading-7 text-navy/65">
               {isAccept
                 ? "با تأیید، گفتگو با موکل باز می‌شود. می‌توانید پیام نخست را همین‌جا بنویسید."
-                : "با رد کردن، مبلغ به کیف پول موکل برمی‌گردد. ذکر دلیل اختیاری است."}
+                : "با رد کردن، مبلغ فوراً استرداد نمی‌شود؛ موکل می‌تواند وکیل دیگری انتخاب کند یا منتظر اپراتور بماند."}
             </Dialog.Description>
 
             {item ? (

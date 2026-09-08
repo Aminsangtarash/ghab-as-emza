@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { getRequestUser } from "@/lib/auth";
 import { createCooperationApplication } from "@/lib/cooperation";
+import { verifyOtpChallenge } from "@/lib/otp";
 import { isRateLimited } from "@/lib/rate-limit";
-import { cooperationSchema } from "@/lib/validations";
+import { cooperationSchema, cooperationSubmitSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   const ip =
@@ -22,19 +24,48 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "ساختار درخواست نامعتبر است." }, { status: 400 });
   }
 
-  const parsed = cooperationSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: parsed.error.issues[0]?.message ?? "داده‌های ارسالی ناقص است.",
-        fields: parsed.error.flatten().fieldErrors,
-      },
-      { status: 422 },
-    );
-  }
-
   try {
-    const result = await createCooperationApplication(parsed.data);
+    const sessionUser = await getRequestUser(request);
+    const draft = cooperationSchema.safeParse(body);
+    if (!draft.success) {
+      return NextResponse.json(
+        {
+          error: draft.error.issues[0]?.message ?? "داده‌های ارسالی ناقص است.",
+          fields: draft.error.flatten().fieldErrors,
+        },
+        { status: 422 },
+      );
+    }
+
+    const application = draft.data;
+    const phoneAlreadyVerified =
+      Boolean(sessionUser) &&
+      sessionUser!.active !== false &&
+      sessionUser!.phone === application.phone;
+
+    if (!phoneAlreadyVerified) {
+      const withOtp = cooperationSubmitSchema.safeParse(body);
+      if (!withOtp.success) {
+        return NextResponse.json(
+          {
+            error: withOtp.error.issues[0]?.message ?? "کد تأیید موبایل الزامی است.",
+            fields: withOtp.error.flatten().fieldErrors,
+          },
+          { status: 422 },
+        );
+      }
+
+      const challenge = verifyOtpChallenge({
+        phone: application.phone,
+        purpose: "cooperate",
+        code: withOtp.data.otpCode,
+      });
+      if ("error" in challenge) {
+        return NextResponse.json({ error: challenge.error }, { status: 401 });
+      }
+    }
+
+    const result = await createCooperationApplication(application);
     if ("error" in result) {
       return NextResponse.json({ error: result.error }, { status: 409 });
     }

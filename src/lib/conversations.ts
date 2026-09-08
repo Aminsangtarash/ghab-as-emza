@@ -147,7 +147,7 @@ export async function acceptConsultation(
   const locked = await prisma.consultation.updateMany({
     where: {
       id: row.id,
-      status: { in: ["awaiting-lawyer", "awaiting-operator"] },
+      status: { in: ["awaiting-lawyer", "awaiting-operator", "awaiting-reselect"] },
       OR: [{ lawyerSlug: null }, { lawyerSlug }],
     },
     data: {
@@ -218,41 +218,8 @@ export async function rejectOrCancelConsultation(input: {
   userId?: string;
   reason?: string;
 }) {
-  const row = await prisma.consultation.findUnique({ where: { trackingCode: input.trackingCode } });
-  if (!row) return { error: "درخواست پیدا نشد." as const };
-  if (row.status === "cancelled" || row.status === "closed") {
-    return { error: "این درخواست قبلاً بسته یا لغو شده است." as const };
-  }
-  if (row.status === "in-progress") {
-    return { error: "گفتگوی فعال را فقط وکیل می‌تواند ببندد؛ لغو از این مرحله ممکن نیست." as const };
-  }
-  if (input.actor === "user" && row.userId !== input.userId) {
-    return { error: "اجازه لغو این درخواست را ندارید." as const };
-  }
-  if (
-    input.actor === "lawyer" &&
-    row.status === "awaiting-lawyer" &&
-    row.lawyerSlug &&
-    row.lawyerSlug !== input.lawyerSlug
-  ) {
-    return { error: "این درخواست برای وکیل دیگری است." as const };
-  }
-
-  const reason =
-    input.reason?.trim() ||
-    (input.actor === "lawyer" ? "عدم پذیرش توسط وکیل" : "لغو توسط کاربر");
-
-  await prisma.consultation.update({
-    where: { id: row.id },
-    data: {
-      status: "cancelled",
-      cancelledAt: new Date(),
-      cancelReason: reason,
-    },
-  });
-
-  const refunded = await refundConsultation(row.id, row.userId, row.feeToman, row.paymentStatus);
-  return { ok: true as const, refunded };
+  const { rejectOrCancelConsultation: run } = await import("@/lib/consultation-lifecycle");
+  return run(input);
 }
 
 const conversationInclude = {
@@ -300,7 +267,7 @@ export async function listLawyerConversations(
 }
 
 export async function listLawyerQueue(lawyerSlug: string) {
-  return prisma.consultation.findMany({
+  const rows = await prisma.consultation.findMany({
     where: {
       status: { in: ["awaiting-lawyer", "awaiting-operator"] },
       OR: [{ lawyerSlug }, { lawyerSlug: null, lawyerMode: "assign" }],
@@ -311,6 +278,9 @@ export async function listLawyerQueue(lawyerSlug: string) {
     },
     orderBy: { createdAt: "asc" },
   });
+
+  const { consultationRejectedSlugs } = await import("@/lib/consultation-lifecycle");
+  return rows.filter((row) => !consultationRejectedSlugs(row).includes(lawyerSlug));
 }
 
 export type LawyerQueueItem = {

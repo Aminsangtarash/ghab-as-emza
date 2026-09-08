@@ -73,6 +73,8 @@ export function toClientConsultation(item: StoredConsultation): ClientConsultati
     conversationId: item.conversationId,
     refundedToman: item.refundedToman,
     cancelReason: item.cancelReason,
+    lastRejectReason: item.lastRejectReason,
+    rejectedLawyerSlugs: item.rejectedLawyerSlugs,
     documents: item.documents ?? [],
   };
 }
@@ -113,6 +115,10 @@ function toStoredConsultation(
     conversationId: row.conversation?.id,
     refundedToman: row.refundedToman,
     cancelReason: row.cancelReason ?? undefined,
+    lastRejectReason: row.lastRejectReason ?? undefined,
+    rejectedLawyerSlugs: Array.isArray(row.rejectedLawyerSlugs)
+      ? row.rejectedLawyerSlugs.filter((item): item is string => typeof item === "string")
+      : undefined,
     documents: row.documents ?? [],
   };
 }
