@@ -59,6 +59,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const { getCatalogItem, getCatalogCategory } = await import("@/lib/legal-catalog");
+  if (!getCatalogItem(parsed.data.service) && !getCatalogCategory(parsed.data.service)) {
+    return NextResponse.json({ error: "خدمت انتخاب‌شده معتبر نیست." }, { status: 422 });
+  }
+
   const documentIds = Array.isArray((body as { documentIds?: unknown }).documentIds)
     ? ((body as { documentIds: unknown[] }).documentIds.filter(
         (item): item is string => typeof item === "string" && /^[0-9a-f-]{36}$/i.test(item),

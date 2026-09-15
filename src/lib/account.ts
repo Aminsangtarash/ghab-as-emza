@@ -33,7 +33,7 @@ export const accountNav = [
 
 export const lawyerNav = [
   { href: "/lawyer", label: "میز کار", exact: true, icon: LayoutDashboardIcon },
-  { href: "/lawyer/requests", label: "درخواست‌های جدید", exact: false, icon: ClipboardListIcon },
+  { href: "/lawyer/requests", label: "کارهای منتسب", exact: false, icon: ClipboardListIcon },
   { href: "/lawyer/chats", label: "گفتگوها", exact: false, icon: MessageCircleIcon },
   { href: "/lawyer/cases", label: "پرونده‌ها", exact: false, icon: FolderOpenIcon },
   { href: "/lawyer/schedule", label: "نوبت‌ها", exact: false, icon: CalendarClockIcon },

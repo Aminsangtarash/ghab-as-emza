@@ -3,7 +3,7 @@ import { Clock3Icon, MailIcon, MapPinIcon, PhoneIcon } from "lucide-react";
 
 import { Logo } from "@/components/logo";
 import { navItems, site } from "@/lib/site";
-import { services } from "@/lib/data";
+import { catalogCategories } from "@/lib/legal-catalog";
 
 function EnamadBadge() {
   return (
@@ -76,9 +76,9 @@ export function SiteFooter() {
         <div>
           <h2 className="font-heading text-base font-semibold">خدمات</h2>
           <ul className="mt-4 space-y-2 text-sm text-white/75">
-            {services.map((service) => (
+            {catalogCategories.map((service) => (
               <li key={service.slug}>
-                <Link href={`/services/${service.slug}`} className="hover:text-gold">
+                <Link href={service.href} className="hover:text-gold">
                   {service.title}
                 </Link>
               </li>

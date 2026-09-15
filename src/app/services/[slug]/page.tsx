@@ -1,81 +1,78 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ChevronLeftIcon } from "lucide-react";
 
-import { ServiceIcon } from "@/components/services/service-icon";
 import { PageHero } from "@/components/page-hero";
+import { ServiceIcon } from "@/components/services/service-icon";
 import { buttonVariants } from "@/components/ui/button";
-import { isInPersonService, isUrgentConsultService } from "@/lib/consult";
-import { getService, services } from "@/lib/data";
-import { formatToman } from "@/lib/format";
+import { catalogCategories, getCatalogCategory } from "@/lib/legal-catalog";
 import { cn } from "@/lib/utils";
 
 export function generateStaticParams() {
-  return services.map((service) => ({ slug: service.slug }));
+  return catalogCategories.map((category) => ({ slug: category.slug }));
 }
 
 export async function generateMetadata({
   params,
 }: PageProps<"/services/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const service = getService(slug);
-  if (!service) return { title: "خدمت یافت نشد" };
-  return { title: service.title, description: service.short };
+  const category = getCatalogCategory(slug);
+  if (!category) return { title: "خدمت یافت نشد" };
+  return { title: category.title, description: category.short };
 }
 
-export default async function ServiceDetailPage({
+export default async function ServiceCategoryPage({
   params,
 }: PageProps<"/services/[slug]">) {
   const { slug } = await params;
-  const service = getService(slug);
-  if (!service) notFound();
-
-  const urgent = isUrgentConsultService(service.slug);
-  const inPerson = isInPersonService(service.slug);
+  const category = getCatalogCategory(slug);
+  if (!category) {
+    return (
+      <>
+        <PageHero title="خدمت یافت نشد" description="این دسته در فهرست خدمات نیست." />
+        <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+          <Link href="/services" className="text-sm text-gold-deep hover:underline">
+            بازگشت به خدمات
+          </Link>
+        </section>
+      </>
+    );
+  }
 
   return (
     <>
-      <PageHero title={service.title} description={service.short} />
-      <section className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 pt-10 sm:px-6 sm:pt-12 lg:grid-cols-[1.15fr_0.85fr]">
-        <div>
-          <span className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-navy text-gold">
-            <ServiceIcon name={service.icon} className="size-6" />
-          </span>
-          <p className="text-sm leading-8 text-navy/80">{service.description}</p>
-          <h2 className="mt-8 font-heading text-xl font-semibold text-navy">خروجی این خدمت</h2>
-          <ul className="mt-3 list-disc space-y-2 pr-5 text-sm leading-7 text-navy/75">
-            {service.outcomes.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-        <aside className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-navy/10 sm:p-8">
-          <span className="mb-3 block h-1 w-10 rounded-full bg-gold" />
-          <h2 className="font-heading text-xl font-semibold text-navy">
-            {urgent ? "شروع فوری" : inPerson ? "رزرو نوبت" : "ثبت درخواست"}
-          </h2>
-          <p className="mt-3 text-sm leading-7 text-navy/70">
-            {urgent
-              ? "پس از ورود، فقط شرح کوتاه بنویسید و پرداخت کنید تا یافتن وکیل شروع شود."
-              : inPerson
-                ? "رزرو تقویمی دفتر به‌زودی کامل می‌شود؛ از این مسیر وضعیت فعلی و گزینه‌های جایگزین را ببینید."
-                : "نوع خدمت از قبل انتخاب شده است. نحوه مشاوره، وکیل و شرح موضوع را در چند مرحله کوتاه تکمیل کنید."}
-          </p>
-          {service.feeToman > 0 ? (
-            <p className="mt-4 text-sm font-medium text-navy">تعرفه: {formatToman(service.feeToman)}</p>
-          ) : null}
-          <Link
-            href={`/consult?service=${service.slug}`}
-            className={cn(
-              buttonVariants({ size: "lg" }),
-              "mt-6 inline-flex h-11 gap-1 bg-gold px-6 text-navy-deep hover:bg-gold-bright",
-            )}
-          >
-            {urgent ? "درخواست مشاوره فوری" : inPerson ? "ادامه رزرو نوبت" : "ادامه ثبت درخواست"}
-            <ChevronLeftIcon className="size-4" />
-          </Link>
-        </aside>
+      <PageHero title={category.title} description={category.description} />
+      <section className="mx-auto w-full max-w-6xl px-4 py-12 pt-10 sm:px-6 sm:pt-12">
+        {category.groups.map((group) => (
+          <div key={group.title} className="mb-12 last:mb-0">
+            <h2 className="font-heading text-xl font-semibold text-navy">{group.title}</h2>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {group.items.map((item) => (
+                <Link
+                  key={item.slug}
+                  href={`/services/${category.slug}/${item.slug}`}
+                  className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-navy/8 transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <span className="mb-3 flex size-10 items-center justify-center rounded-xl bg-navy/5 text-navy">
+                    <ServiceIcon name={category.icon} className="size-5" />
+                  </span>
+                  <h3 className="font-heading text-base font-bold text-navy">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-7 text-navy/65">{item.short}</p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-gold-deep">
+                    ثبت درخواست
+                    <ChevronLeftIcon className="size-4" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+        <Link
+          href="/learn"
+          className={cn(buttonVariants({ variant: "outline" }), "mt-4 border-navy/15")}
+        >
+          مطالعه در مرکز آموزش
+        </Link>
       </section>
     </>
   );

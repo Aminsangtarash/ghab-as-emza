@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 
 import { ConsultDocumentList } from "@/components/consult/document-list";
-import { RequestActions, RequestReselectPanel } from "@/components/account/request-actions";
+import { PrivacyPromise } from "@/components/privacy-promise";
+import { RequestActions } from "@/components/account/request-actions";
 import { StatusBadge } from "@/components/account/status-badge";
 import { LawyerAvatar } from "@/components/lawyers/lawyer-avatar";
 import {
@@ -76,13 +77,20 @@ export function RequestDetail({ item }: { item: ClientConsultation }) {
         />
       </section>
 
-      {item.status === "awaiting-reselect" ? (
-        <RequestReselectPanel
-          trackingCode={item.trackingCode}
-          rejectedLawyerSlugs={item.rejectedLawyerSlugs}
-          lastRejectReason={item.lastRejectReason}
-        />
+      {item.clientVisibleResult ? (
+        <section className="mt-5 rounded-2xl border border-gold/25 bg-white px-5 py-4 shadow-sm">
+          <h2 className="font-heading text-base font-semibold text-navy">نتیجه تأییدشده مدیر</h2>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-navy/75">{item.clientVisibleResult}</p>
+        </section>
       ) : null}
+
+      {item.documentsPurgedAt ? (
+        <p className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-7 text-emerald-950">
+          مدارک این پرونده پس از پایان کار از سامانه حذف شد.
+        </p>
+      ) : (
+        <PrivacyPromise className="mt-5" />
+      )}
 
       {item.status === "cancel-requested" ? (
         <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-950">
@@ -105,7 +113,7 @@ export function RequestDetail({ item }: { item: ClientConsultation }) {
           detail={
             item.conversationId
               ? "ورود به همان گفتگوی این درخواست"
-              : "پس از تأیید وکیل، گفتگو اینجا لینک می‌شود"
+              : "پس از تأیید مدیر، گفتگو اینجا لینک می‌شود"
           }
           tone={item.conversationId ? "ready" : "wait"}
         />
@@ -114,7 +122,7 @@ export function RequestDetail({ item }: { item: ClientConsultation }) {
           icon={FolderOpenIcon}
           kicker="پرونده مربوط"
           title="هنوز تشکیل نشده"
-          detail="پرونده فقط بعد از پیشنهاد وکیل، موافقت شما و پرداخت در محل ساخته می‌شود"
+          detail="پرونده فقط بعد از پیشنهاد وکیل و تأیید مدیر تشکیل می‌شود"
           tone="off"
         />
         <RelationCard
@@ -329,43 +337,39 @@ function timeline(status: ConsultationStatus) {
   if (status === "cancelled") {
     return [
       { label: "انجام شده", title: "ثبت درخواست", state: "done" as const },
-      { label: "انجام شده", title: "پرداخت", state: "done" as const },
       { label: "فعلی", title: "لغو شده", state: "current" as const },
-      { label: "بعدی", title: "انجام مشاوره", state: "next" as const },
+      { label: "بعدی", title: "پیگیری", state: "next" as const },
+      { label: "بعدی", title: "پایان کار", state: "next" as const },
     ];
   }
   if (status === "cancel-requested") {
     return [
       { label: "انجام شده", title: "ثبت درخواست", state: "done" as const },
-      { label: "انجام شده", title: "پرداخت", state: "done" as const },
       { label: "فعلی", title: "درخواست انصراف", state: "current" as const },
-      { label: "بعدی", title: "تأیید مدیر / استرداد", state: "next" as const },
+      { label: "بعدی", title: "تأیید مدیر", state: "next" as const },
+      { label: "بعدی", title: "پایان کار", state: "next" as const },
     ];
   }
-  if (status === "awaiting-reselect") {
-    return [
-      { label: "انجام شده", title: "ثبت درخواست", state: "done" as const },
-      { label: "انجام شده", title: "پرداخت", state: "done" as const },
-      { label: "فعلی", title: "انتخاب وکیل دیگر", state: "current" as const },
-      { label: "بعدی", title: "انجام مشاوره", state: "next" as const },
-    ];
-  }
-  const reviewDone = status === "in-progress" || status === "closed";
-  const consultDone = status === "closed";
-  const reviewCurrent = status === "awaiting-operator" || status === "awaiting-lawyer";
+  const assigned = status === "assigned" || status === "in-progress" || status === "closed";
+  const inProgress = status === "in-progress" || status === "closed";
+  const closed = status === "closed";
 
   return [
     { label: "انجام شده", title: "ثبت درخواست", state: "done" as const },
-    { label: "انجام شده", title: "پرداخت", state: "done" as const },
     {
-      label: reviewDone ? "انجام شده" : reviewCurrent ? "فعلی" : "بعدی",
-      title: status === "awaiting-operator" ? "معرفی وکیل" : "تأیید وکیل",
-      state: reviewDone ? ("done" as const) : reviewCurrent ? ("current" as const) : ("next" as const),
+      label: assigned ? "انجام شده" : "فعلی",
+      title: "بررسی مدیر",
+      state: assigned ? ("done" as const) : ("current" as const),
     },
     {
-      label: consultDone ? "انجام شده" : reviewDone ? "فعلی" : "بعدی",
-      title: "انجام مشاوره",
-      state: consultDone ? ("done" as const) : reviewDone ? ("current" as const) : ("next" as const),
+      label: inProgress ? "انجام شده" : assigned ? "فعلی" : "بعدی",
+      title: "بررسی وکیل",
+      state: inProgress ? ("done" as const) : assigned ? ("current" as const) : ("next" as const),
+    },
+    {
+      label: closed ? "انجام شده" : inProgress ? "فعلی" : "بعدی",
+      title: "تأیید پایان توسط مدیر",
+      state: closed ? ("done" as const) : inProgress ? ("current" as const) : ("next" as const),
     },
   ];
 }

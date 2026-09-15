@@ -19,21 +19,21 @@ export function ConsultationCta() {
       <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-6 px-4 py-10 sm:flex-row sm:px-6 sm:py-12">
         <div className="text-center sm:text-start">
           <h2 className="font-heading text-xl font-bold text-white sm:text-2xl">
-            نیاز به مشاوره دارید؟
+            موضوع خود را پیدا کنید
           </h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-white/75 sm:text-base">
-            همین حالا با وکلای متخصص ما گفتگو کنید و بهترین راه‌حل حقوقی را دریافت کنید.
+            دسته را انتخاب کنید و درخواست بگذارید. مدیر آن را به وکیل مناسب می‌سپارد.
           </p>
         </div>
         <Link
-          href="/consult?service=urgent-consult"
+          href="/services"
           className={cn(
             buttonVariants({ size: "lg" }),
             "h-12 shrink-0 gap-2 bg-gold px-7 text-base text-navy-deep hover:bg-gold-bright",
           )}
         >
           <HeadsetIcon className="size-5" />
-          مشاوره فوری
+          مشاهده خدمات
         </Link>
       </div>
     </section>

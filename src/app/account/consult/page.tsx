@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
-import { ConsultationWizard } from "@/components/consult/consultation-wizard";
-import { InPersonConsultStub } from "@/components/consult/in-person-consult-stub";
-import { UrgentConsultWizard } from "@/components/consult/urgent-consult-wizard";
+import { QuickRequestForm } from "@/components/request/quick-request-form";
 import { getServerUser } from "@/lib/auth";
-import { isInPersonService, isUrgentConsultService } from "@/lib/consult";
-import { getLawyer, getService } from "@/lib/data";
+import { getCatalogItem } from "@/lib/legal-catalog";
 
 export const metadata: Metadata = {
   title: "ثبت درخواست",
@@ -16,41 +14,31 @@ export default async function AccountConsultPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const user = await getServerUser();
+  await getServerUser();
   const params = await searchParams;
-  const lawyerSlug = typeof params.lawyer === "string" ? params.lawyer : undefined;
   const serviceSlug = typeof params.service === "string" ? params.service : undefined;
-  const lawyer = lawyerSlug ? getLawyer(lawyerSlug) : undefined;
-  const service = serviceSlug ? getService(serviceSlug) : undefined;
-  const initialService = service && service.slug !== "lawyers" ? service.slug : undefined;
-  const urgent = initialService ? isUrgentConsultService(initialService) : false;
-  const inPerson = initialService ? isInPersonService(initialService) : false;
+  const item = serviceSlug ? getCatalogItem(serviceSlug) : undefined;
 
   return (
     <div>
-      <p className="mb-1 text-sm font-medium text-gold-deep">مشاوره</p>
+      <p className="mb-1 text-sm font-medium text-gold-deep">درخواست</p>
       <span className="mb-4 mt-3 block h-1 w-12 rounded-full bg-gold" />
       <h1 className="font-heading text-2xl font-bold text-navy">
-        {urgent ? "مشاوره فوری" : inPerson ? "رزرو نوبت حضوری" : "ثبت درخواست"}
+        {item ? item.title : "ثبت درخواست حقوقی"}
       </h1>
       <p className="mt-2 mb-6 max-w-2xl text-sm leading-7 text-navy/65">
-        {urgent
-          ? "فقط شرح کوتاه و پرداخت؛ بعد از اتصال، مدارک را در گفتگو می‌فرستید."
-          : inPerson
-            ? "رزرو تقویمی دفتر به‌زودی کامل می‌شود."
-            : "همان مراحل سایت؛ پس از پرداخت آزمایشی، درخواست در فهرست پنل شما ثبت می‌شود."}
+        درخواست شما اول به مدیر می‌رسد. وکیل تا تخصیص مدیر آن را نمی‌بیند و مبلغ را مدیر اعلام می‌کند.
       </p>
-      {urgent ? (
-        <UrgentConsultWizard user={user} />
-      ) : inPerson ? (
-        <InPersonConsultStub />
+      {item ? (
+        <QuickRequestForm serviceSlug={item.slug} categoryTitle={item.categoryTitle} embedded />
       ) : (
-        <ConsultationWizard
-          initialLawyer={lawyer}
-          initialService={initialService}
-          user={user}
-          embedded
-        />
+        <p className="text-sm text-navy/60">
+          برای ثبت سریع، ابتدا از{" "}
+          <Link href="/services" className="text-gold-deep hover:underline">
+            فهرست خدمات
+          </Link>{" "}
+          زیرشاخه را انتخاب کنید.
+        </p>
       )}
     </div>
   );

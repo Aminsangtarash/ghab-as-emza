@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   CalendarClockIcon,
   ClipboardListIcon,
@@ -28,15 +27,18 @@ import { buttonVariants } from "@/components/ui/button";
 import { appointmentKindMeta, type ClientAppointment } from "@/lib/appointment-model";
 import { panelGreeting } from "@/lib/account";
 import { caseStatusMeta, type ClientCase } from "@/lib/case-model";
-import { consultChannelMeta, urgencyMeta } from "@/lib/consult";
-import type { LawyerQueueItem } from "@/lib/conversations";
 import type { LawyerRating, LawyerStats, ReplyNeeded } from "@/lib/lawyer-desk";
 import { formatFaDateTime, formatFaLongDate, formatFaRelative, formatTomanAmount, toFaDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Overview = {
   stats: LawyerStats;
-  queue: LawyerQueueItem[];
+  queue: Array<{
+    trackingCode: string;
+    subject: string;
+    serviceTitle: string;
+    clientName: string;
+  }>;
   needsReply: ReplyNeeded[];
   appointments: ClientAppointment[];
   caseActions: ClientCase[];
@@ -45,10 +47,8 @@ type Overview = {
 };
 
 export function LawyerOverview({ lawyerName }: { lawyerName: string }) {
-  const router = useRouter();
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const result = await panelFetch<Overview>("/api/lawyer/overview");
@@ -65,24 +65,6 @@ export function LawyerOverview({ lawyerName }: { lawyerName: string }) {
     const timer = window.setInterval(() => void load(), 10000);
     return () => window.clearInterval(timer);
   }, [load]);
-
-  async function decide(action: "accept" | "reject", trackingCode: string) {
-    setPending(trackingCode);
-    const result = await panelFetch<{ conversationId?: string }>("/api/lawyer/queue", {
-      method: "POST",
-      body: JSON.stringify({ action, trackingCode }),
-    });
-    setPending(null);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    if (action === "accept" && result.data.conversationId) {
-      router.push(`/lawyer/chats/${result.data.conversationId}`);
-      return;
-    }
-    await load();
-  }
 
   if (!data) {
     return (
@@ -202,8 +184,8 @@ export function LawyerOverview({ lawyerName }: { lawyerName: string }) {
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-2">
         <SectionCard
-          title="درخواست‌های در انتظار"
-          hint="پذیرش، گفتگو را باز می‌کند. رد کردن مبلغ را فوراً برنمی‌گرداند؛ موکل یا اپراتور وکیل دیگری انتخاب می‌کنند."
+          title="کارهای منتسب"
+          hint="فقط مواردی که مدیر به شما سپرده. پذیرش یا رد وجود ندارد."
           action={
             <Link href="/lawyer/requests" className="text-xs text-navy/50 hover:text-navy">
               همه
@@ -211,49 +193,21 @@ export function LawyerOverview({ lawyerName }: { lawyerName: string }) {
           }
         >
           {data.queue.length === 0 ? (
-            <EmptyRow>درخواستی در صف شما نیست.</EmptyRow>
+            <EmptyRow>کاری منتسب نشده است.</EmptyRow>
           ) : (
             <ul className="space-y-3">
               {data.queue.map((item) => (
                 <li key={item.trackingCode} className="rounded-2xl border border-navy/8 bg-paper/50 p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-heading text-sm font-semibold text-navy">{item.subject}</p>
-                      <p className="mt-1 text-xs text-navy/55">
-                        {item.serviceTitle} · {consultChannelMeta[item.channel].title} · {item.clientName}
-                      </p>
-                      <p className="mt-1 text-[11px] text-navy/40">
-                        {toFaDigits(item.trackingCode)} · {formatFaRelative(item.createdAt)}
-                      </p>
-                    </div>
-                    <Tone tone={item.urgency === "urgent" ? "bg-red-50 text-red-700" : "bg-navy/5 text-navy/55"}>
-                      {urgencyMeta[item.urgency as "normal" | "soon" | "urgent"]?.title ?? "عادی"}
-                    </Tone>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={pending === item.trackingCode}
-                      onClick={() => void decide("accept", item.trackingCode)}
-                      className={cn(buttonVariants(), "h-9 bg-navy px-4 text-white hover:bg-navy-mid")}
-                    >
-                      پذیرش
-                    </button>
-                    <button
-                      type="button"
-                      disabled={pending === item.trackingCode}
-                      onClick={() => void decide("reject", item.trackingCode)}
-                      className={cn(buttonVariants({ variant: "outline" }), "h-9 border-navy/15 px-4")}
-                    >
-                      رد
-                    </button>
-                    <Link
-                      href="/lawyer/requests"
-                      className={cn(buttonVariants({ variant: "ghost" }), "h-9 px-3 text-navy/60")}
-                    >
-                      جزئیات
-                    </Link>
-                  </div>
+                  <p className="font-heading text-sm font-semibold text-navy">{item.subject}</p>
+                  <p className="mt-1 text-xs text-navy/55">
+                    {item.serviceTitle} · {item.clientName}
+                  </p>
+                  <Link
+                    href="/lawyer/requests"
+                    className={cn(buttonVariants({ variant: "outline" }), "mt-3 h-9 border-navy/15 px-4")}
+                  >
+                    ثبت نتیجه برای مدیر
+                  </Link>
                 </li>
               ))}
             </ul>

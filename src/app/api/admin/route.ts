@@ -4,7 +4,6 @@ import { requireStaff } from "@/lib/admin-guard";
 import {
   adjustUserWallet,
   adminCancelConsultation,
-  assignConsultationLawyer,
   createLawyerAccount,
   createStaffAccount,
   deleteClientAccount,
@@ -141,7 +140,19 @@ export async function GET(request: NextRequest) {
     const includeSecrets = canStaff(auth.user.role, "viewRequestSecrets");
     const item = await getConsultationForStaff(code, includeSecrets);
     if (!item) return NextResponse.json({ error: "درخواست پیدا نشد." }, { status: 404 });
-    return NextResponse.json({ item });
+    const { listConsultationProposals } = await import("@/lib/desk-workflow");
+    const row = await (await import("@/lib/db")).prisma.consultation.findUnique({
+      where: { trackingCode: code },
+      select: { id: true },
+    });
+    const proposals = row ? await listConsultationProposals(row.id) : [];
+    return NextResponse.json({ item, proposals });
+  }
+  if (view === "proposals") {
+    const gate = await requireStaff(request, "manageQueue");
+    if ("error" in gate) return gate.error;
+    const { listPendingProposals } = await import("@/lib/desk-workflow");
+    return NextResponse.json({ items: await listPendingProposals() });
   }
 
   return NextResponse.json({ error: "نمای نامعتبر است." }, { status: 400 });
@@ -160,7 +171,62 @@ export async function POST(request: NextRequest) {
   if (action === "assign") {
     const auth = await requireStaff(request, "manageQueue");
     if ("error" in auth) return auth.error;
-    const result = await assignConsultationLawyer(String(body.trackingCode ?? ""), String(body.lawyerSlug ?? ""));
+    const { assignAndOptionallyStart } = await import("@/lib/desk-workflow");
+    const result = await assignAndOptionallyStart({
+      trackingCode: String(body.trackingCode ?? ""),
+      lawyerSlug: String(body.lawyerSlug ?? ""),
+      startChat: Boolean(body.startChat),
+      staffUserId: auth.user.id,
+    });
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "set-payment") {
+    const auth = await requireStaff(request, "manageRequests");
+    if ("error" in auth) return auth.error;
+    const { staffSetPayment } = await import("@/lib/desk-workflow");
+    const status = body.paymentStatus;
+    const result = await staffSetPayment({
+      trackingCode: String(body.trackingCode ?? ""),
+      feeToman: typeof body.feeToman === "number" ? body.feeToman : Number(body.feeToman ?? 0),
+      paymentStatus:
+        status === "unpaid" ||
+        status === "requested" ||
+        status === "paid" ||
+        status === "waived" ||
+        status === "free"
+          ? status
+          : undefined,
+      note: typeof body.note === "string" ? body.note : undefined,
+    });
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "review-proposal") {
+    const auth = await requireStaff(request, "manageQueue");
+    if ("error" in auth) return auth.error;
+    const { reviewProposal } = await import("@/lib/desk-workflow");
+    const result = await reviewProposal({
+      proposalId: String(body.proposalId ?? ""),
+      staffUserId: auth.user.id,
+      decision: body.decision === "reject" ? "reject" : "approve",
+      note: typeof body.note === "string" ? body.note : undefined,
+    });
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
+    return NextResponse.json(result);
+  }
+
+  if (action === "close-purge") {
+    const auth = await requireStaff(request, "manageRequests");
+    if ("error" in auth) return auth.error;
+    const { staffCloseAndPurge } = await import("@/lib/desk-workflow");
+    const result = await staffCloseAndPurge({
+      trackingCode: String(body.trackingCode ?? ""),
+      note: typeof body.note === "string" ? body.note : undefined,
+      staffUserId: auth.user.id,
+    });
     if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
     return NextResponse.json(result);
   }

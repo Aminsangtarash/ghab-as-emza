@@ -56,26 +56,37 @@ const consultationFields = z.object({
     .transform((value) => (value ? value : undefined)),
 });
 
-export const consultationSchema = consultationFields
-  .refine((data) => data.lawyerMode !== "chosen" || Boolean(data.lawyerSlug), {
-    message: "وکیل را انتخاب کنید یا معرفی را به اپراتور بسپارید.",
-    path: ["lawyerSlug"],
-  })
-  .refine(
-    (data) =>
-      data.service === "urgent-consult" ||
-      data.service === "in-person" ||
-      data.channel === "text" ||
-      Boolean(data.preferredSlot),
-    {
-      message: "بازه زمانی ترجیحی را انتخاب کنید.",
-      path: ["preferredSlot"],
-    },
-  );
+export const consultationSchema = consultationFields;
 
 export { consultationFields };
 
 export type ConsultationInput = z.infer<typeof consultationSchema>;
+
+export const quickRequestSchema = z.object({
+  service: z.string().min(1, "نوع خدمت را انتخاب کنید."),
+  channel: z.enum(["text", "phone", "video"]).default("text"),
+  subject: z.string().trim().min(5, "موضوع را کمی دقیق‌تر بنویسید.").max(120),
+  message: z
+    .string()
+    .trim()
+    .min(12, "شرح موضوع باید حداقل ۱۲ نویسه باشد.")
+    .max(3000, "شرح موضوع بیش از حد طولانی است."),
+  city: z
+    .string()
+    .trim()
+    .max(40)
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  fullName: z.string().trim().min(3, "نام باید حداقل سه نویسه باشد.").max(80),
+  phone: z
+    .string()
+    .trim()
+    .transform(normalizePhone)
+    .refine((value) => /^09\d{9}$/.test(value), "شماره موبایل معتبر وارد کنید."),
+  consent: z.literal(true, { error: "برای ثبت درخواست باید شرایط محرمانگی را بپذیرید." }),
+});
+
+export type QuickRequestInput = z.infer<typeof quickRequestSchema>;
 
 export const contactSchema = z.object({
   fullName: z.string().trim().min(3, "نام باید حداقل سه نویسه باشد.").max(80),

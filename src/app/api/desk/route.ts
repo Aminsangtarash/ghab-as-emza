@@ -63,24 +63,11 @@ export async function POST(request: NextRequest) {
   const trackingCode = typeof body.trackingCode === "string" ? body.trackingCode : "";
   const conversationId = typeof body.conversationId === "string" ? body.conversationId : "";
 
-  if (action === "accept") {
-    const result = await acceptConsultation(
-      user.lawyerSlug,
-      trackingCode,
-      typeof body.firstMessage === "string" ? body.firstMessage : undefined,
+  if (action === "accept" || action === "reject") {
+    return NextResponse.json(
+      { error: "پذیرش یا رد توسط وکیل مجاز نیست. تخصیص فقط با مدیر سیستم است." },
+      { status: 403 },
     );
-    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
-    return NextResponse.json(result);
-  }
-  if (action === "reject") {
-    const result = await rejectOrCancelConsultation({
-      trackingCode,
-      actor: "lawyer",
-      lawyerSlug: user.lawyerSlug,
-      reason: typeof body.reason === "string" ? body.reason : undefined,
-    });
-    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
-    return NextResponse.json(result);
   }
   if (action === "phone-done") {
     const result = await markPhoneCallDone(user.lawyerSlug, conversationId);
@@ -88,13 +75,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   }
   if (action === "close") {
-    const result = await closeConversation(
-      user.lawyerSlug,
-      conversationId,
-      typeof body.summary === "string" ? body.summary : undefined,
-    );
+    const conversation = await (await import("@/lib/db")).prisma.conversation.findFirst({
+      where: { id: conversationId, lawyerSlug: user.lawyerSlug },
+      select: { consultation: { select: { trackingCode: true } } },
+    });
+    if (!conversation) return NextResponse.json({ error: "گفتگو پیدا نشد." }, { status: 422 });
+    const { createLawyerProposal } = await import("@/lib/desk-workflow");
+    const result = await createLawyerProposal({
+      trackingCode: conversation.consultation.trackingCode,
+      lawyerSlug: user.lawyerSlug,
+      kind: "close",
+      title: "پیشنهاد پایان کار",
+      body: typeof body.summary === "string" && body.summary.trim() ? body.summary : "درخواست بستن پرونده",
+    });
     if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
-    return NextResponse.json(result);
+    return NextResponse.json({
+      ok: true,
+      pendingApproval: true,
+      message: "پایان کار برای تأیید مدیر ارسال شد.",
+    });
   }
   if (action === "reopen") {
     const result = await reopenConversation(user.lawyerSlug, conversationId);

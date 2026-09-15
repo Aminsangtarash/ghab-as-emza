@@ -147,7 +147,7 @@ export async function acceptConsultation(
   const locked = await prisma.consultation.updateMany({
     where: {
       id: row.id,
-      status: { in: ["awaiting-lawyer", "awaiting-operator", "awaiting-reselect"] },
+      status: { in: ["awaiting-lawyer", "awaiting-operator", "awaiting-reselect", "assigned"] },
       OR: [{ lawyerSlug: null }, { lawyerSlug }],
     },
     data: {
@@ -269,8 +269,8 @@ export async function listLawyerConversations(
 export async function listLawyerQueue(lawyerSlug: string) {
   const rows = await prisma.consultation.findMany({
     where: {
-      status: { in: ["awaiting-lawyer", "awaiting-operator"] },
-      OR: [{ lawyerSlug }, { lawyerSlug: null, lawyerMode: "assign" }],
+      lawyerSlug,
+      status: { in: ["assigned", "in-progress"] },
     },
     include: {
       user: { select: { fullName: true, phone: true } },

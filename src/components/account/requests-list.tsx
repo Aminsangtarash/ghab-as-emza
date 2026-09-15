@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 const statusTone: Record<ConsultationStatus, string> = {
   "awaiting-operator": "bg-sky-50 text-sky-800",
+  assigned: "bg-indigo-50 text-indigo-800",
   "awaiting-lawyer": "bg-amber-50 text-amber-800",
   "awaiting-reselect": "bg-orange-50 text-orange-900",
   "cancel-requested": "bg-amber-50 text-amber-900",

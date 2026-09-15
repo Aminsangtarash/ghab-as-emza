@@ -1,5 +1,6 @@
 import { resolveLawyer, resolveServiceFee } from "@/lib/catalog-cache";
 import { getService, type Lawyer } from "@/lib/data";
+import { catalogItemTitle } from "@/lib/legal-catalog";
 
 export const consultChannels = ["text", "phone", "video"] as const;
 export type ConsultChannel = (typeof consultChannels)[number];
@@ -137,7 +138,7 @@ export function lawyerLabel(slug: string | undefined, fallback?: Lawyer) {
 }
 
 export function serviceTitle(slug: string) {
-  return getService(slug)?.title ?? slug;
+  return catalogItemTitle(slug) || getService(slug)?.title || slug;
 }
 
 export function serviceFeeToman(slug: string) {
@@ -150,6 +151,7 @@ export function isFreeService(slug: string) {
 
 export const consultationStatuses = [
   "awaiting-operator",
+  "assigned",
   "awaiting-lawyer",
   "awaiting-reselect",
   "cancel-requested",
@@ -164,48 +166,61 @@ export const consultationStatusMeta: Record<
   { title: string; hint: string }
 > = {
   "awaiting-operator": {
-    title: "در انتظار معرفی وکیل",
-    hint: "اپراتور موضوع را می‌بیند و متخصص مناسب را مشخص می‌کند. مبلغ پرداخت‌شده تا تعیین وکیل محفوظ می‌ماند.",
+    title: "در انتظار بررسی مدیر",
+    hint: "درخواست ثبت شد. همکاران ما آن را می‌بینند و وکیل مناسب را مشخص می‌کنند. هنوز مبلغی دریافت نشده است.",
+  },
+  assigned: {
+    title: "در حال بررسی وکیل",
+    hint: "مدیر پرونده را به وکیل سپرده است. نتیجه و هر تغییر پس از تأیید مدیر به شما اعلام می‌شود.",
   },
   "awaiting-lawyer": {
-    title: "در انتظار تأیید وکیل",
-    hint: "وکیل باید پذیرش را تأیید کند. در صورت رد، مبلغ فوراً برنمی‌گردد و می‌توانید وکیل دیگری انتخاب کنید یا منتظر اپراتور بمانید.",
+    title: "در انتظار بررسی مدیر",
+    hint: "درخواست در صف مدیر است و به وکیل نمایش داده نمی‌شود تا تخصیص شود.",
   },
   "awaiting-reselect": {
-    title: "نیاز به انتخاب وکیل دیگر",
-    hint: "وکیل موردنظر پرونده را نپذیرفت. وکیل دیگری انتخاب کنید یا بخواهید اپراتور برایتان انتخاب کند. مبلغ تا تعیین تکلیف محفوظ است.",
+    title: "در انتظار تخصیص مجدد",
+    hint: "مدیر باید وکیل دیگری را برای ادامه کار مشخص کند.",
   },
   "cancel-requested": {
     title: "درخواست انصراف",
-    hint: "درخواست انصراف شما ثبت شد و پس از تأیید مدیر سیستم، مبلغ پرداخت‌شده به کیف پول برمی‌گردد.",
+    hint: "انصراف شما ثبت شد و پس از تأیید مدیر انجام می‌شود.",
   },
   "in-progress": {
-    title: "گفتگو فعال",
-    hint: "وکیل درخواست را پذیرفته است. گفتگو، تماس تصویری یا هماهنگی تماس تلفنی از بخش گفتگوها انجام می‌شود.",
+    title: "در حال پیگیری",
+    hint: "گفتگو یا اقدام پرونده با تأیید مدیر آغاز شده است.",
   },
   closed: {
-    title: "بسته شده",
-    hint: "وکیل این مورد را بسته است. می‌توانید به جلسه امتیاز بدهید.",
+    title: "پایان‌یافته",
+    hint: "مدیر پایان کار را تأیید کرده است. مدارک این پرونده از سامانه حذف می‌شود.",
   },
   cancelled: {
     title: "لغو شده",
-    hint: "درخواست لغو شد. در صورت تأیید استرداد، مبلغ به کیف پول شما برگشته است.",
+    hint: "درخواست با تأیید مدیر لغو شد.",
   },
 };
 
 export function initialConsultationStatus(
-  lawyerMode: LawyerMode,
-  service?: string,
+  _lawyerMode?: LawyerMode,
+  _service?: string,
 ): ConsultationStatus {
-  // فوری: پخش به همه وکلا (صف awaiting-lawyer با lawyerSlug خالی)
-  if (service && isUrgentConsultService(service)) return "awaiting-lawyer";
-  return lawyerMode === "assign" ? "awaiting-operator" : "awaiting-lawyer";
+  return "awaiting-operator";
 }
 
-export type PaymentStatus = "free" | "stub-paid" | "refunded-wallet";
+export type PaymentStatus =
+  | "unpaid"
+  | "requested"
+  | "paid"
+  | "waived"
+  | "free"
+  | "stub-paid"
+  | "refunded-wallet";
 
 export const paymentStatusMeta: Record<PaymentStatus, string> = {
+  unpaid: "تعیین مبلغ با مدیر",
+  requested: "در انتظار پرداخت (طبق اعلام مدیر)",
+  paid: "پرداخت‌شده",
+  waived: "معاف از پرداخت",
   free: "رایگان",
-  "stub-paid": "پرداخت‌شده (آزمایشی)",
+  "stub-paid": "پرداخت‌شده",
   "refunded-wallet": "برگشت به کیف پول",
 };

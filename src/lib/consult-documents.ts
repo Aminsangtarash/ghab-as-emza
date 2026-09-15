@@ -162,7 +162,8 @@ export async function getReadableDocument(input: {
     input.role === "lawyer" &&
     Boolean(input.lawyerSlug) &&
     row.consultation.lawyerSlug === input.lawyerSlug;
-  if (!owner && !assignedLawyer) return null;
+  const staff = input.role === "admin" || input.role === "manager";
+  if (!owner && !assignedLawyer && !staff) return null;
 
   return {
     path: filePath(row.storedName),

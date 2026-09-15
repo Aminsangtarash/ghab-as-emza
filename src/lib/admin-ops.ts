@@ -320,21 +320,16 @@ export async function assignConsultationLawyer(trackingCode: string, lawyerSlug:
 
   const row = await prisma.consultation.findUnique({ where: { trackingCode } });
   if (!row) return { error: "درخواست پیدا نشد." as const };
-  if (row.status === "cancelled" || row.status === "closed" || row.status === "in-progress" || row.status === "cancel-requested") {
+  if (row.status === "cancelled" || row.status === "closed") {
     return { error: "این درخواست قابل انتساب نیست." as const };
   }
 
-  await prisma.consultation.update({
-    where: { id: row.id },
-    data: {
-      lawyerSlug,
-      lawyerMode: "chosen",
-      lawyerVisible: false,
-      status: "awaiting-lawyer",
-    },
+  const { assignAndOptionallyStart } = await import("@/lib/desk-workflow");
+  return assignAndOptionallyStart({
+    trackingCode,
+    lawyerSlug,
+    startChat: false,
   });
-
-  return { ok: true as const };
 }
 
 export async function adminCancelConsultation(trackingCode: string, reason?: string) {

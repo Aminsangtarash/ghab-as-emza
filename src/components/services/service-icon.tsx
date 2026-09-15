@@ -1,30 +1,53 @@
 import {
+  BriefcaseIcon,
+  Building2Icon,
   CalendarDaysIcon,
   FileSearchIcon,
+  FileTextIcon,
+  GavelIcon,
+  HandshakeIcon,
   HeadsetIcon,
+  HomeIcon,
+  ScaleIcon,
+  ScrollTextIcon,
   ShieldIcon,
-  UserRoundIcon,
-  ZapIcon,
+  UsersIcon,
 } from "lucide-react";
 
-import type { Service } from "@/lib/data";
+import type { CatalogIcon } from "@/lib/legal-catalog";
 
-const icons = {
-  urgent: ZapIcon,
-  review: FileSearchIcon,
+const icons: Record<CatalogIcon, typeof HeadsetIcon> = {
   consult: HeadsetIcon,
-  inperson: CalendarDaysIcon,
+  petitions: FileTextIcon,
+  contracts: FileSearchIcon,
+  family: UsersIcon,
+  property: HomeIcon,
+  criminal: GavelIcon,
+  inheritance: ScrollTextIcon,
+  companies: BriefcaseIcon,
+  labor: Building2Icon,
+  registry: ScaleIcon,
+  arbitration: HandshakeIcon,
   cases: ShieldIcon,
-  lawyers: UserRoundIcon,
-} as const;
+};
 
 export function ServiceIcon({
   name,
   className,
 }: {
-  name: Service["icon"];
+  name: CatalogIcon | "urgent" | "review" | "inperson" | "lawyers" | "consult" | "cases";
   className?: string;
 }) {
-  const Icon = icons[name];
+  const mapped: CatalogIcon =
+    name === "urgent" || name === "consult"
+      ? "consult"
+      : name === "review"
+        ? "contracts"
+        : name === "inperson"
+          ? "consult"
+          : name === "lawyers"
+            ? "consult"
+            : name;
+  const Icon = icons[mapped] ?? CalendarDaysIcon;
   return <Icon className={className} strokeWidth={1.5} />;
 }

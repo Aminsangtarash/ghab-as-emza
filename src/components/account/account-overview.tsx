@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 
 const tableStatusTone: Record<ConsultationStatus, string> = {
   "awaiting-operator": "bg-sky-50 text-sky-800",
+  assigned: "bg-indigo-50 text-indigo-800",
   "awaiting-lawyer": "bg-amber-50 text-amber-800",
   "awaiting-reselect": "bg-orange-50 text-orange-900",
   "cancel-requested": "bg-amber-50 text-amber-900",
@@ -41,37 +42,37 @@ const card = "rounded-[1.35rem] border border-navy/10 bg-white text-navy shadow-
 
 const quickServices = [
   {
-    href: "/account/consult?service=urgent-consult",
-    title: "مشاوره فوری",
-    hint: "قبل از امضا، همین الان",
+    href: "/services/consultation",
+    title: "مشاوره حقوقی",
+    hint: "تلفنی، متنی، تصویری یا فوری",
     icon: ZapIcon,
     tone: "bg-red-50 text-red-700",
   },
   {
-    href: "/account/consult?service=consultation",
-    title: "مشاوره آنلاین",
-    hint: "سؤال حقوقی را ثبت کنید",
+    href: "/services/family",
+    title: "خدمات خانواده",
+    hint: "مهریه، طلاق، حضانت",
     icon: HeadsetIcon,
     tone: "bg-gold/15 text-gold-deep",
   },
   {
-    href: "/account/consult?service=documents",
-    title: "بررسی قرارداد",
-    hint: "متن را قبل از امضا بفرستید",
+    href: "/services/contracts",
+    title: "قراردادها",
+    hint: "تنظیم و بررسی قبل از امضا",
     icon: FilePenIcon,
     tone: "bg-navy/8 text-navy",
   },
   {
     href: "/account/cases",
     title: "پرونده‌ها",
-    hint: "کارشناسی پس از پیشنهاد وکیل",
+    hint: "پس از تأیید مدیر",
     icon: FolderOpenIcon,
     tone: "bg-emerald-50 text-emerald-800",
   },
   {
-    href: "/account/lawyers",
-    title: "وکلا و متخصصان",
-    hint: "پروفایل و ثبت مشاوره",
+    href: "/learn",
+    title: "مرکز آموزش",
+    hint: "سوالات پرتکرار به زبان ساده",
     icon: ScaleIcon,
     tone: "bg-sky-50 text-sky-800",
   },

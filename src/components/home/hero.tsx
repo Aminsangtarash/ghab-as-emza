@@ -104,7 +104,7 @@ export function Hero() {
               className="hero-animate mt-4 max-w-xl text-sm leading-7 text-white/82 sm:text-base sm:leading-8"
               style={{ animationDelay: "420ms" }}
             >
-              مشاوره حقوقی تخصصی برای قراردادها، اسناد و پرونده‌ها؛ با همراهی وکلای مجرب و مسیر امن برای تبادل اطلاعات.
+              مشاوره حقوقی تخصصی در خانواده، ملک، قرارداد، کیفری و سایر امور؛ با مسیر ساده ثبت درخواست و بررسی توسط مدیر سیستم.
             </p>
 
             <div
@@ -112,13 +112,13 @@ export function Hero() {
               style={{ animationDelay: "580ms" }}
             >
               <Link
-                href="/consult"
+                href="/services"
                 className={cn(
                   buttonVariants({ size: "lg" }),
                   "h-11 bg-gold px-6 text-sm text-navy-deep hover:bg-gold sm:h-12 sm:px-7 sm:text-base",
                 )}
               >
-                مشاوره آنلاین
+                ثبت درخواست
               </Link>
               <a
                 href="#services"

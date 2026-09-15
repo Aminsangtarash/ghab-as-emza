@@ -7,12 +7,12 @@ export function ServiceGrid() {
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
         <ScrollReveal>
           <div className="mb-10 text-center">
-            <p className="text-sm font-medium text-gold-deep">خدمات اصلی</p>
+            <p className="text-sm font-medium text-gold-deep">خدمات حقوقی</p>
             <h2 className="mt-2 font-heading text-2xl font-bold text-navy sm:text-3xl">
-              خدمات حقوقی
+              دسته را انتخاب کنید
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-navy/70">
-              خدمات حقوقی تخصصی و هوشمند برای افراد و کسب‌وکارها
+              روی دسته کلی بزنید، زیرشاخه را ببینید و خیلی سریع درخواست ثبت کنید. تخصیص وکیل فقط با مدیر است.
             </p>
           </div>
         </ScrollReveal>

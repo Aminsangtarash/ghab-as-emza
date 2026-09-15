@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { listLawyerAppointments } from "@/lib/appointments";
 import { listUpcomingCaseActions } from "@/lib/cases";
-import { listLawyerQueueItems } from "@/lib/conversations";
+import { listLawyerAssignments } from "@/lib/desk-workflow";
 import { getLawyerStats, listConversationsNeedingReply, listLawyerRatings } from "@/lib/lawyer-desk";
 import { getLawyerProfile } from "@/lib/lawyer-profile";
 import { requireLawyer } from "@/lib/lawyer-guard";
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   const [stats, queue, needsReply, appointments, caseActions, ratings, profile] = await Promise.all([
     getLawyerStats(lawyerSlug),
-    listLawyerQueueItems(lawyerSlug),
+    listLawyerAssignments(lawyerSlug),
     listConversationsNeedingReply(lawyerSlug, 6),
     listLawyerAppointments(lawyerSlug, { status: "scheduled", from: new Date(), take: 6 }),
     listUpcomingCaseActions(lawyerSlug, 5),

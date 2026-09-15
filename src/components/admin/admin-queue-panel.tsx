@@ -44,8 +44,19 @@ type PayoutItem = {
   user: { id: string; fullName: string; phone: string; walletBalance: number };
 };
 
+type ProposalItem = {
+  id: string;
+  trackingCode: string;
+  kindLabel: string;
+  title: string;
+  body: string;
+  clientName: string;
+  subject: string;
+};
+
 export function AdminQueuePanel() {
   const [items, setItems] = useState<QueueItem[]>([]);
+  const [proposals, setProposals] = useState<ProposalItem[]>([]);
   const [payouts, setPayouts] = useState<PayoutItem[]>([]);
   const [lawyers, setLawyers] = useState<LawyerOption[]>([]);
   const [pending, setPending] = useState<string | null>(null);
@@ -54,16 +65,19 @@ export function AdminQueuePanel() {
   const [assignSlug, setAssignSlug] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    const [queue, lawyerList, payoutList] = await Promise.all([
+    const [queue, lawyerList, payoutList, proposalList] = await Promise.all([
       adminFetch<{ items: QueueItem[] }>("/api/admin?view=queue"),
       adminFetch<{ items: LawyerOption[] }>("/api/admin?view=lawyers"),
       adminFetch<{ items: PayoutItem[] }>("/api/admin?view=payouts"),
+      adminFetch<{ items: ProposalItem[] }>("/api/admin?view=proposals"),
     ]);
     if (queue.ok) setItems(queue.data.items);
     else setError(queue.error);
     if (lawyerList.ok) setLawyers(lawyerList.data.items.filter((l) => l.active && l.slug));
     if (payoutList.ok) setPayouts(payoutList.data.items);
     else setPayouts([]);
+    if (proposalList.ok) setProposals(proposalList.data.items);
+    else setProposals([]);
   }, []);
 
   useEffect(() => {
@@ -149,6 +163,23 @@ export function AdminQueuePanel() {
     await load();
   }
 
+  async function reviewProposal(id: string, decision: "approve" | "reject") {
+    setPending(id);
+    setError("");
+    setMessage("");
+    const result = await adminFetch("/api/admin", {
+      method: "POST",
+      body: JSON.stringify({ action: "review-proposal", proposalId: id, decision }),
+    });
+    setPending(null);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setMessage(decision === "approve" ? "اقدام تأیید شد." : "اقدام رد شد.");
+    await load();
+  }
+
   return (
     <div className="min-w-0 space-y-4 md:space-y-5">
       <AdminHeading
@@ -159,6 +190,40 @@ export function AdminQueuePanel() {
 
       <AdminErrorNote>{error}</AdminErrorNote>
       <AdminOkNote>{message}</AdminOkNote>
+
+      {proposals.length > 0 ? (
+        <section className={cn(panelCard, "space-y-3 p-5")}>
+          <h2 className="font-heading text-base font-semibold text-navy">در انتظار تأیید مدیر</h2>
+          {proposals.map((item) => (
+            <div key={item.id} className="rounded-xl border border-navy/10 px-4 py-3">
+              <p className="text-xs text-gold-deep">{item.kindLabel}</p>
+              <Link href={`/admin/requests/${item.trackingCode}`} className="font-medium text-navy hover:underline">
+                {item.subject} · {item.title}
+              </Link>
+              <p className="mt-1 text-sm text-navy/60">{item.clientName}</p>
+              <p className="mt-1 line-clamp-2 text-sm text-navy/55">{item.body}</p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  disabled={pending === item.id}
+                  onClick={() => void reviewProposal(item.id, "approve")}
+                  className="rounded-xl bg-navy px-3 py-2 text-sm text-gold disabled:opacity-60"
+                >
+                  تأیید
+                </button>
+                <button
+                  type="button"
+                  disabled={pending === item.id}
+                  onClick={() => void reviewProposal(item.id, "reject")}
+                  className="rounded-xl border border-navy/15 px-3 py-2 text-sm disabled:opacity-60"
+                >
+                  رد
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      ) : null}
 
       <div className="space-y-3">
         {items.length === 0 ? (

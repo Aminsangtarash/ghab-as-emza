@@ -3,9 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AdminHeading, AdminSectionCard, panelCard } from "@/components/admin/admin-ui";
+import { AdminRequestDesk } from "@/components/admin/admin-request-desk";
 import { canStaff } from "@/lib/admin-permissions";
-import { getConsultationForStaff, refreshAdminCaches } from "@/lib/admin-ops";
+import { getConsultationForStaff, listAdminLawyers, refreshAdminCaches } from "@/lib/admin-ops";
 import { getServerUser } from "@/lib/auth";
+import { listConsultationProposals } from "@/lib/desk-workflow";
+import { prisma } from "@/lib/db";
 import { formatFaDateTime, formatTomanAmount, toFaDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +27,9 @@ export default async function AdminRequestDetailPage({
   const includeSecrets = canStaff(user?.role, "viewRequestSecrets");
   const item = await getConsultationForStaff(code, includeSecrets);
   if (!item) notFound();
+  const lawyers = await listAdminLawyers();
+  const row = await prisma.consultation.findUnique({ where: { trackingCode: code }, select: { id: true } });
+  const proposals = row ? await listConsultationProposals(row.id) : [];
 
   return (
     <div className="min-w-0 space-y-4 md:space-y-5">
@@ -40,7 +46,7 @@ export default async function AdminRequestDetailPage({
         <Info label="موکل" value={`${item.client.fullName} — ${toFaDigits(item.client.phone)}`} />
         <Info label="کانال" value={item.channelLabel} />
         <Info label="شهر" value={item.city || "—"} />
-        <Info label="وکیل" value={item.lawyerName || "—"} />
+        <Info label="وکیل" value={item.lawyerName || "هنوز تخصیص نشده"} />
         <Info label="مبلغ" value={formatTomanAmount(item.feeToman)} />
         <Info label="پرداخت" value={item.paymentStatus} />
         <Info label="ثبت" value={formatFaDateTime(item.createdAt)} />
@@ -48,12 +54,11 @@ export default async function AdminRequestDetailPage({
       </div>
 
       {includeSecrets ? (
-        <AdminSectionCard title="شرح درخواست (فقط مدیر — مشاهده)">
+        <AdminSectionCard title="شرح درخواست">
           <p className="whitespace-pre-wrap text-sm leading-7 text-navy/75">{item.secrets?.message}</p>
-
           {item.secrets?.messages && item.secrets.messages.length > 0 ? (
             <>
-              <h3 className="mt-8 text-sm font-semibold text-navy">پیام‌های گفتگو (فقط مشاهده)</h3>
+              <h3 className="mt-8 text-sm font-semibold text-navy">پیام‌های گفتگو</h3>
               <ul className="mt-3 space-y-3">
                 {item.secrets.messages.map((msg) => (
                   <li key={msg.id} className="rounded-lg bg-navy/[0.03] px-3 py-3 text-sm">
@@ -86,6 +91,17 @@ export default async function AdminRequestDetailPage({
           </ul>
         </AdminSectionCard>
       ) : null}
+
+      <AdminRequestDesk
+        trackingCode={item.trackingCode}
+        currentLawyerSlug={item.lawyerSlug}
+        lawyers={lawyers.map((lawyer) => ({
+          slug: lawyer.slug,
+          fullName: lawyer.fullName,
+          active: lawyer.active,
+        }))}
+        proposals={proposals}
+      />
     </div>
   );
 }

@@ -82,11 +82,16 @@ model Consultation {
   lastRejectReason String?
   rejectedLawyerSlugs Json?
   refundedToman    Int            @default(0)
+  documentsPurgedAt DateTime?
+  clientVisibleResult String?     @db.Text
+  paymentNote      String?        @db.VarChar(400)
+  assignedAt       DateTime?
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversation     Conversation?
   documents        ConsultationDocument[]
   case             Case?
   documentRequests DocumentRequest[]
+  proposals        WorkProposal[]
 
   @@index([userId])
   @@index([lawyerSlug, status])
@@ -370,6 +375,47 @@ model SupportTicket {
 
   @@index([status, createdAt])
   @@index([phone])
+}
+
+model WorkProposal {
+  id                    String       @id @default(uuid())
+  consultationId        String
+  caseId                String?
+  kind                  String
+  status                String       @default("pending")
+  title                 String       @db.VarChar(180)
+  body                  String       @db.Text
+  payload               Json?
+  proposedByRole        String
+  proposedByLawyerSlug  String?
+  reviewedByUserId      String?
+  reviewedAt            DateTime?
+  reviewNote            String?      @db.Text
+  createdAt             DateTime     @default(now())
+  consultation          Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId, status])
+  @@index([status, createdAt])
+}
+
+model EducationArticle {
+  id                  String   @id @default(uuid())
+  slug                String   @unique @db.VarChar(120)
+  categorySlug        String   @db.VarChar(60)
+  title               String   @db.VarChar(220)
+  excerpt             String   @db.VarChar(400)
+  issue               String   @db.Text
+  answer              String   @db.Text
+  exceptions          String?  @db.Text
+  documentsNeeded     String?  @db.Text
+  actionPath          String?  @db.Text
+  warnings            String?  @db.Text
+  relatedServiceSlug  String?  @db.VarChar(80)
+  published           Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([categorySlug, published])
 }
 
 model CooperationApplication {

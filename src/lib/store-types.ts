@@ -45,6 +45,8 @@ export type StoredConsultation = ConsultationInput & {
   lastRejectReason?: string;
   rejectedLawyerSlugs?: string[];
   documents: { id: string; originalName: string; size: number }[];
+  clientVisibleResult?: string;
+  documentsPurgedAt?: string;
 };
 
 export type ClientConsultation = {
@@ -81,4 +83,6 @@ export type ClientConsultation = {
   lastRejectReason?: string;
   rejectedLawyerSlugs?: string[];
   documents: { id: string; originalName: string; size: number }[];
+  clientVisibleResult?: string;
+  documentsPurgedAt?: string;
 };

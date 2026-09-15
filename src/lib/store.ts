@@ -2,7 +2,6 @@ import type { Consultation } from "@/generated/prisma";
 import { Prisma } from "@/generated/prisma";
 
 import {
-  consultBaseFeeToman,
   initialConsultationStatus,
   lawyerLabel,
   serviceTitle,
@@ -16,7 +15,6 @@ import {
 } from "@/lib/consult-draft";
 import { attachPendingDocuments, removeStoredFiles } from "@/lib/consult-documents";
 import { prisma } from "@/lib/db";
-import { quotePayment } from "@/lib/promos";
 import type { ConsultationInput } from "@/lib/validations";
 import type { ClientConsultation, StoredConsultation } from "@/lib/store-types";
 
@@ -76,6 +74,8 @@ export function toClientConsultation(item: StoredConsultation): ClientConsultati
     lastRejectReason: item.lastRejectReason,
     rejectedLawyerSlugs: item.rejectedLawyerSlugs,
     documents: item.documents ?? [],
+    clientVisibleResult: item.clientVisibleResult,
+    documentsPurgedAt: item.documentsPurgedAt,
   };
 }
 
@@ -120,6 +120,8 @@ function toStoredConsultation(
       ? row.rejectedLawyerSlugs.filter((item): item is string => typeof item === "string")
       : undefined,
     documents: row.documents ?? [],
+    clientVisibleResult: row.clientVisibleResult ?? undefined,
+    documentsPurgedAt: row.documentsPurgedAt?.toISOString(),
   };
 }
 
@@ -143,18 +145,13 @@ async function nextTrackingCode() {
 }
 
 export async function saveConsultation(entry: ConsultationInput, userId: string, documentIds: string[] = []) {
-  const quoted = quotePayment(consultBaseFeeToman(entry.service, entry.urgency), entry.discountCode);
-  if ("error" in quoted) {
-    return { error: quoted.error } as const;
-  }
-
   const payload = {
     userId,
     channel: entry.channel,
     service: entry.service,
-    lawyerMode: entry.lawyerMode,
-    lawyerSlug: entry.lawyerMode === "chosen" ? entry.lawyerSlug : null,
-    lawyerVisible: entry.lawyerMode === "chosen",
+    lawyerMode: "assign" as const,
+    lawyerSlug: null,
+    lawyerVisible: false,
     subject: entry.subject,
     message: entry.message,
     urgency: entry.urgency,
@@ -166,12 +163,12 @@ export async function saveConsultation(entry: ConsultationInput, userId: string,
     phone: entry.phone,
     email: entry.email ?? null,
     consent: true,
-    discountCode: quoted.discountCode ?? null,
-    originalFeeToman: quoted.originalToman,
-    feeToman: quoted.feeToman,
-    discountPercent: quoted.discountPercent,
-    paymentStatus: quoted.feeToman <= 0 ? "free" : "stub-paid",
-    status: initialConsultationStatus(entry.lawyerMode, entry.service),
+    discountCode: null,
+    originalFeeToman: 0,
+    feeToman: 0,
+    discountPercent: 0,
+    paymentStatus: "unpaid",
+    status: initialConsultationStatus(),
   };
 
   let row: Consultation | null = null;

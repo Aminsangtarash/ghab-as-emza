@@ -2,7 +2,7 @@ export const site = {
   name: "قبل از امضا",
   tagline: "مشاوره و خدمات حقوقی",
   description:
-    "مشاوره حقوقی تخصصی برای قراردادها، اسناد و پرونده‌ها؛ با اولویت امنیت اطلاعات و کیفیت کارشناسی.",
+    "مرجع خدمات حقوقی آنلاین؛ از آموزش ساده تا ثبت درخواست، تخصیص وکیل توسط مدیر و پیگیری پرونده.",
   url: "https://ghablazemza.ir",
   email: "info@ghablazemza.ir",
   phone: "۰۲۱-۹۱۰۰۹۱۰۰",
@@ -19,9 +19,7 @@ export const site = {
 export const navItems = [
   { href: "/", label: "صفحه اصلی" },
   { href: "/services", label: "خدمات حقوقی" },
-  { href: "/articles", label: "مقالات" },
-  { href: "/lawyers", label: "وکلا و متخصصان" },
+  { href: "/learn", label: "مرکز آموزش" },
   { href: "/about", label: "درباره ما" },
-  { href: "/cooperate", label: "همکاری" },
   { href: "/contact", label: "تماس با ما" },
 ] as const;

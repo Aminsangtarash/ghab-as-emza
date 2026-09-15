@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { parseCaseStage, parseCaseStatus } from "@/lib/case-model";
-import { createCase, listLawyerCases } from "@/lib/cases";
-import { asDate, asInt, asText, readJson, requireLawyer } from "@/lib/lawyer-guard";
+import { listLawyerCases } from "@/lib/cases";
+import { asInt, asText, readJson, requireLawyer } from "@/lib/lawyer-guard";
 
 export async function GET(request: NextRequest) {
   const guard = await requireLawyer(request);
@@ -26,20 +26,45 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "عنوان و شرح پرونده لازم است." }, { status: 422 });
   }
 
-  const result = await createCase({
-    lawyerSlug: guard.lawyer.lawyerSlug,
-    conversationId: asText(body.conversationId, 60),
-    userId: asText(body.userId, 60),
-    title,
-    summary,
-    stage,
-    authority: asText(body.authority, 120),
-    courtBranch: asText(body.courtBranch, 120),
-    fileNumber: asText(body.fileNumber, 60),
-    feeToman: asInt(body.feeToman) ?? 0,
-    nextActionAt: asDate(body.nextActionAt),
-    nextActionNote: asText(body.nextActionNote, 300),
-  });
-  if ("error" in result) return NextResponse.json({ error: result.error }, { status: 422 });
-  return NextResponse.json(result);
+  let tracking = asText(body.trackingCode, 40);
+  const conversationId = asText(body.conversationId, 60);
+  if (!tracking && conversationId) {
+    const { prisma } = await import("@/lib/db");
+    const conversation = await prisma.conversation.findFirst({
+      where: { id: conversationId, lawyerSlug: guard.lawyer.lawyerSlug },
+      select: { consultation: { select: { trackingCode: true } } },
+    });
+    tracking = conversation?.consultation.trackingCode ?? "";
+  }
+  if (!tracking) {
+    return NextResponse.json(
+      { error: "تشکیل پرونده باید از مسیر تأیید مدیر انجام شود." },
+      { status: 422 },
+    );
+  }
+
+  const { createLawyerProposal } = await import("@/lib/desk-workflow");
+    const proposed = await createLawyerProposal({
+      trackingCode: tracking,
+      lawyerSlug: guard.lawyer.lawyerSlug,
+      kind: "form-case",
+      title,
+      body: summary,
+      payload: {
+        title,
+        summary,
+        stage,
+        authority: asText(body.authority, 120),
+        courtBranch: asText(body.courtBranch, 120),
+        fileNumber: asText(body.fileNumber, 60),
+        feeToman: asInt(body.feeToman) ?? 0,
+        nextActionNote: asText(body.nextActionNote, 300),
+      },
+    });
+    if ("error" in proposed) return NextResponse.json({ error: proposed.error }, { status: 422 });
+    return NextResponse.json({
+      ok: true,
+      pendingApproval: true,
+      message: "تشکیل پرونده برای تأیید مدیر ارسال شد.",
+    });
 }

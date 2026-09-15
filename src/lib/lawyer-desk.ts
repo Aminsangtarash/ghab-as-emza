@@ -34,10 +34,7 @@ export async function getLawyerStats(lawyerSlug: string): Promise<LawyerStats> {
     needingReply,
   ] = await Promise.all([
     prisma.consultation.count({
-      where: {
-        status: { in: ["awaiting-lawyer", "awaiting-operator"] },
-        OR: [{ lawyerSlug }, { lawyerSlug: null, lawyerMode: "assign" }],
-      },
+      where: { lawyerSlug, status: { in: ["assigned", "in-progress"] } },
     }),
     prisma.conversation.count({ where: { lawyerSlug, closedAt: null } }),
     prisma.conversation.count({ where: { lawyerSlug, closedAt: { not: null } } }),
