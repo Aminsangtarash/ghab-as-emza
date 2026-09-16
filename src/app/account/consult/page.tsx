@@ -38,7 +38,7 @@ export default async function AccountConsultPage({
           <Link href="/services" className="text-gold-deep hover:underline">
             فهرست خدمات
           </Link>{" "}
-          زیرشاخه را انتخاب کنید.
+          موضوع را انتخاب کنید.
         </p>
       )}
     </div>

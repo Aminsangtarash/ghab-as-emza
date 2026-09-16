@@ -22,7 +22,7 @@ export function ConsultationCta() {
             موضوع خود را پیدا کنید
           </h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-white/75 sm:text-base">
-            دسته را انتخاب کنید و درخواست بگذارید. مدیر آن را به وکیل مناسب می‌سپارد.
+            موضوع را انتخاب کنید و درخواست بگذارید. مدیر آن را به وکیل مناسب می‌سپارد.
           </p>
         </div>
         <Link

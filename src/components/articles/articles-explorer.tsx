@@ -111,7 +111,7 @@ export function ArticlesExplorer() {
             {visible.length === 0 ? (
               <div className="rounded-2xl bg-white px-6 py-16 text-center shadow-sm ring-1 ring-navy/8">
                 <p className="font-heading text-lg font-semibold text-navy">مقاله‌ای پیدا نشد</p>
-                <p className="mt-2 text-sm text-navy/60">جستجو یا دسته را تغییر دهید.</p>
+                <p className="mt-2 text-sm text-navy/60">جستجو یا موضوع را تغییر دهید.</p>
               </div>
             ) : (
               <div className="grid gap-5 sm:grid-cols-2">

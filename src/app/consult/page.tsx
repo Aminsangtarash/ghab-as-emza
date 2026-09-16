@@ -46,7 +46,7 @@ export default async function ConsultPage({ searchParams }: PageProps<"/consult"
     <>
       <PageHero
         title="ثبت درخواست"
-        description="ابتدا دسته و زیرشاخه را انتخاب کنید تا فرم کوتاه برایتان باز شود."
+        description="ابتدا موضوع را انتخاب کنید تا فرم کوتاه برایتان باز شود."
       />
       <section className="relative z-10 bg-paper px-4 pb-16 pt-10 text-center sm:pt-12">
         <Link href="/services" className="text-sm font-medium text-gold-deep hover:underline">

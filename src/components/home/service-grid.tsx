@@ -9,10 +9,10 @@ export function ServiceGrid() {
           <div className="mb-10 text-center">
             <p className="text-sm font-medium text-gold-deep">خدمات حقوقی</p>
             <h2 className="mt-2 font-heading text-2xl font-bold text-navy sm:text-3xl">
-              دسته را انتخاب کنید
+              موضوع را انتخاب کنید
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-navy/70">
-              روی دسته کلی بزنید، زیرشاخه را ببینید و خیلی سریع درخواست ثبت کنید. تخصیص وکیل فقط با مدیر است.
+              روی موضوع کلی بزنید، جزئیات را ببینید و خیلی سریع درخواست ثبت کنید. تخصیص وکیل فقط با مدیر است.
             </p>
           </div>
         </ScrollReveal>

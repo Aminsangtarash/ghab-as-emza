@@ -19,6 +19,7 @@ export const site = {
 export const navItems = [
   { href: "/", label: "صفحه اصلی" },
   { href: "/services", label: "خدمات حقوقی" },
+  { href: "/articles", label: "مقالات" },
   { href: "/learn", label: "مرکز آموزش" },
   { href: "/about", label: "درباره ما" },
   { href: "/contact", label: "تماس با ما" },

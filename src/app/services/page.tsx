@@ -7,7 +7,7 @@ import { ServicesHero } from "@/components/services/services-hero";
 export const metadata: Metadata = {
   title: "خدمات حقوقی",
   description:
-    "دسته‌بندی کامل خدمات حقوقی؛ انتخاب زیرشاخه و ثبت سریع درخواست برای بررسی مدیر.",
+    "فهرست کامل موضوعات حقوقی؛ انتخاب موضوع و ثبت سریع درخواست برای بررسی مدیر.",
 };
 
 export default function ServicesPage() {

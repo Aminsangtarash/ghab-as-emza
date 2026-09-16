@@ -23,7 +23,7 @@ export function ServiceCards() {
               href={category.href}
               className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-navy transition-colors hover:text-gold-deep"
             >
-              مشاهده زیرشاخه‌ها
+              مشاهده موضوعات
               <ChevronLeftIcon className="size-4" />
             </Link>
           </CardContent>

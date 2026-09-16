@@ -28,7 +28,7 @@ export default async function ServiceCategoryPage({
   if (!category) {
     return (
       <>
-        <PageHero title="خدمت یافت نشد" description="این دسته در فهرست خدمات نیست." />
+        <PageHero title="خدمت یافت نشد" description="این موضوع در فهرست خدمات نیست." />
         <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <Link href="/services" className="text-sm text-gold-deep hover:underline">
             بازگشت به خدمات
