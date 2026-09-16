@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageHero } from "@/components/page-hero";
+import { RequestServiceCta } from "@/components/request/request-service-button";
 import { buttonVariants } from "@/components/ui/button";
 import {
   getLearnArticle,
@@ -66,12 +67,20 @@ export default async function LearnArticlePage({
               اگر نیاز به بررسی دقیق پرونده دارید، درخواست {article.relatedServiceLabel} را ثبت کنید. اگر نیاز به تنظیم
               متن دارید، از بخش اوراق قضایی استفاده کنید.
             </p>
-            <Link
-              href={requestHref}
-              className={cn(buttonVariants(), "mt-5 bg-gold text-navy-deep hover:bg-gold-bright")}
-            >
-              ثبت درخواست {article.relatedServiceLabel}
-            </Link>
+            {service ? (
+              <RequestServiceCta
+                serviceSlug={service.slug}
+                label={`ثبت درخواست ${article.relatedServiceLabel}`}
+                className="mt-5"
+              />
+            ) : (
+              <Link
+                href={requestHref}
+                className={cn(buttonVariants(), "mt-5 bg-gold text-navy-deep hover:bg-gold-bright")}
+              >
+                ثبت درخواست {article.relatedServiceLabel}
+              </Link>
+            )}
           </div>
           {related.length > 0 ? (
             <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-navy/8">

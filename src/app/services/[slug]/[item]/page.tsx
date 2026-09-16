@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { PageHero } from "@/components/page-hero";
 import { PrivacyPromise } from "@/components/privacy-promise";
-import { QuickRequestForm } from "@/components/request/quick-request-form";
+import { OpenServiceRequest, RequestServiceCta } from "@/components/request/request-service-button";
 import { getCatalogCategory, getCatalogItem } from "@/lib/legal-catalog";
 
 export async function generateMetadata({
@@ -34,6 +34,7 @@ export default async function ServiceItemPage({
 
   return (
     <>
+      <OpenServiceRequest serviceSlug={service.slug} />
       <PageHero title={service.title} description={service.short} />
       <section className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 pt-10 sm:px-6 sm:pt-12 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
@@ -49,7 +50,14 @@ export default async function ServiceItemPage({
             مطالعه آموزش مرتبط در مرکز آموزش
           </Link>
         </div>
-        <QuickRequestForm serviceSlug={service.slug} categoryTitle={category.title} />
+        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-navy/8 sm:p-8">
+          <p className="text-sm font-medium text-gold-deep">ثبت سریع</p>
+          <h2 className="mt-2 font-heading text-xl font-semibold text-navy">فقط عنوان و توضیح کوتاه</h2>
+          <p className="mt-3 text-sm leading-7 text-navy/70">
+            اگر وارد حساب شده‌اید، همین حالا پنجره ثبت درخواست باز می‌شود. در غیر این صورت ابتدا ورود، سپس ثبت.
+          </p>
+          <RequestServiceCta serviceSlug={service.slug} label="ثبت درخواست" className="mt-6" />
+        </div>
       </section>
     </>
   );

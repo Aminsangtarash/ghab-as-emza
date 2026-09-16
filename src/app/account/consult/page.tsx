@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { QuickRequestForm } from "@/components/request/quick-request-form";
+import { OpenServiceRequest, RequestServiceCta } from "@/components/request/request-service-button";
 import { getServerUser } from "@/lib/auth";
 import { getCatalogItem } from "@/lib/legal-catalog";
 
@@ -21,6 +21,7 @@ export default async function AccountConsultPage({
 
   return (
     <div>
+      {item ? <OpenServiceRequest serviceSlug={item.slug} /> : null}
       <p className="mb-1 text-sm font-medium text-gold-deep">درخواست</p>
       <span className="mb-4 mt-3 block h-1 w-12 rounded-full bg-gold" />
       <h1 className="font-heading text-2xl font-bold text-navy">
@@ -30,7 +31,7 @@ export default async function AccountConsultPage({
         درخواست شما اول به مدیر می‌رسد. وکیل تا تخصیص مدیر آن را نمی‌بیند و مبلغ را مدیر اعلام می‌کند.
       </p>
       {item ? (
-        <QuickRequestForm serviceSlug={item.slug} categoryTitle={item.categoryTitle} embedded />
+        <RequestServiceCta serviceSlug={item.slug} label="ثبت درخواست" />
       ) : (
         <p className="text-sm text-navy/60">
           برای ثبت سریع، ابتدا از{" "}

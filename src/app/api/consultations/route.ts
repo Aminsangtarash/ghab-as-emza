@@ -48,7 +48,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "ساختار درخواست نامعتبر است." }, { status: 400 });
   }
 
-  const parsed = consultationSchema.safeParse(body);
+  const parsed = consultationSchema.safeParse({
+    ...(body && typeof body === "object" && !Array.isArray(body) ? body : {}),
+    fullName: user.fullName.trim().length >= 3 ? user.fullName.trim() : "کاربر سامانه",
+    phone: user.phone,
+    consent: true,
+  });
   if (!parsed.success) {
     return NextResponse.json(
       {

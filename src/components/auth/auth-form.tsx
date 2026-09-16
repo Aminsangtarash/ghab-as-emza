@@ -23,11 +23,13 @@ export function AuthForm({
   variant = "page",
   nextHref,
   onModeChange,
+  onSuccess,
 }: {
   mode: AuthMode;
   variant?: "page" | "dialog";
   nextHref?: string;
   onModeChange?: (mode: AuthMode) => void;
+  onSuccess?: () => void;
 }) {
   const router = useRouter();
   const { refresh } = useAuth();
@@ -59,6 +61,10 @@ export function AuthForm({
 
   async function finishAuth(userRole?: string) {
     await refresh();
+    if (onSuccess) {
+      onSuccess();
+      return;
+    }
     if (variant === "page") {
       router.push(nextHref || panelHome(userRole));
       router.refresh();

@@ -3,6 +3,7 @@ import { Vazirmatn } from "next/font/google";
 
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { AppFrame } from "@/components/layout/app-frame";
+import { ServiceRequestProvider } from "@/components/request/service-request-provider";
 import { DirectionProvider } from "@/components/ui/direction";
 import { site } from "@/lib/site";
 
@@ -32,7 +33,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-dvh bg-white font-sans text-navy">
         <DirectionProvider direction="rtl">
           <AuthProvider>
-            <AppFrame>{children}</AppFrame>
+            <ServiceRequestProvider>
+              <AppFrame>{children}</AppFrame>
+            </ServiceRequestProvider>
           </AuthProvider>
         </DirectionProvider>
       </body>

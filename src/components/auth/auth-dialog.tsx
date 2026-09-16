@@ -3,15 +3,29 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog } from "@base-ui/react/dialog";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, XIcon } from "lucide-react";
 
 import { AuthForm } from "@/components/auth/auth-form";
 
-export function AuthDialog({ open }: { open: boolean }) {
+export function AuthDialog({
+  open,
+  onOpenChange,
+  onAuthenticated,
+  dismissible = false,
+}: {
+  open: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onAuthenticated?: () => void;
+  dismissible?: boolean;
+}) {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
 
   function goBack() {
+    if (onOpenChange) {
+      onOpenChange(false);
+      return;
+    }
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
       return;
@@ -20,7 +34,18 @@ export function AuthDialog({ open }: { open: boolean }) {
   }
 
   return (
-    <Dialog.Root open={open} modal disablePointerDismissal onOpenChange={() => undefined}>
+    <Dialog.Root
+      open={open}
+      modal
+      disablePointerDismissal={!dismissible}
+      onOpenChange={(next) => {
+        if (!next) {
+          if (dismissible) onOpenChange?.(false);
+          return;
+        }
+        onOpenChange?.(true);
+      }}
+    >
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-navy-deep/60 backdrop-blur-[2px] transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
@@ -29,7 +54,7 @@ export function AuthDialog({ open }: { open: boolean }) {
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gold-deep">حساب کاربری</p>
                 <Dialog.Title className="mt-1 font-heading text-xl font-bold text-navy sm:text-2xl">
-                  {mode === "login" ? "ورود برای ثبت درخواست" : "ثبت نام برای ثبت درخواست"}
+                  {mode === "login" ? "ورود به حساب" : "ثبت نام"}
                 </Dialog.Title>
               </div>
               <button
@@ -37,17 +62,21 @@ export function AuthDialog({ open }: { open: boolean }) {
                 onClick={goBack}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-navy/10 bg-white px-3 py-2 text-sm font-medium text-navy/70 transition hover:border-navy/20 hover:text-navy"
               >
-                <ArrowRightIcon className="size-4" />
-                بازگشت
+                {dismissible ? <XIcon className="size-4" /> : <ArrowRightIcon className="size-4" />}
+                {dismissible ? "بستن" : "بازگشت"}
               </button>
             </div>
             <span className="mt-3 block h-1 w-12 rounded-full bg-gold" />
             <Dialog.Description className="mt-3 text-sm leading-7 text-navy/70">
-              ثبت درخواست مشاوره فقط پس از ورود یا ایجاد حساب انجام می‌شود. کد تأیید به شماره موبایل
-              شما پیامک می‌شود.
+              برای ادامه با شماره موبایل وارد شوید. کد تأیید پیامک می‌شود.
             </Dialog.Description>
             <div className="mt-5">
-              <AuthForm mode={mode} variant="dialog" onModeChange={setMode} />
+              <AuthForm
+                mode={mode}
+                variant="dialog"
+                onModeChange={setMode}
+                onSuccess={onAuthenticated}
+              />
             </div>
           </Dialog.Popup>
         </Dialog.Viewport>

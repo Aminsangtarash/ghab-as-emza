@@ -13,11 +13,11 @@ const consultationFields = z.object({
     .optional()
     .transform((value) => (value ? value : undefined))
     .refine((value) => !value || /^[a-z0-9-]+$/.test(value), "شناسه وکیل نامعتبر است."),
-  subject: z.string().trim().min(5, "موضوع را کمی دقیق‌تر بنویسید.").max(120),
+  subject: z.string().trim().min(3, "عنوان درخواست را بنویسید.").max(120),
   message: z
     .string()
     .trim()
-    .min(20, "شرح موضوع باید حداقل ۲۰ نویسه باشد.")
+    .min(8, "توضیح کوتاه موضوع را بنویسید.")
     .max(3000, "شرح موضوع بیش از حد طولانی است."),
   urgency: z.enum(["normal", "soon", "urgent"]),
   caseStage: z.enum(["before-sign", "dispute", "in-court", "other"]),
@@ -65,11 +65,11 @@ export type ConsultationInput = z.infer<typeof consultationSchema>;
 export const quickRequestSchema = z.object({
   service: z.string().min(1, "نوع خدمت را انتخاب کنید."),
   channel: z.enum(["text", "phone", "video"]).default("text"),
-  subject: z.string().trim().min(5, "موضوع را کمی دقیق‌تر بنویسید.").max(120),
+  subject: z.string().trim().min(3, "عنوان درخواست را بنویسید.").max(120),
   message: z
     .string()
     .trim()
-    .min(12, "شرح موضوع باید حداقل ۱۲ نویسه باشد.")
+    .min(8, "توضیح کوتاه موضوع را بنویسید.")
     .max(3000, "شرح موضوع بیش از حد طولانی است."),
   city: z
     .string()

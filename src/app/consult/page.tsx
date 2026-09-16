@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageHero } from "@/components/page-hero";
-import { QuickRequestForm } from "@/components/request/quick-request-form";
+import { OpenServiceRequest, RequestServiceCta } from "@/components/request/request-service-button";
 import { getCatalogItem } from "@/lib/legal-catalog";
 
 export async function generateMetadata({
@@ -28,9 +28,15 @@ export default async function ConsultPage({ searchParams }: PageProps<"/consult"
   if (item) {
     return (
       <>
+        <OpenServiceRequest serviceSlug={item.slug} />
         <PageHero title={item.title} description="درخواست ابتدا به مدیر می‌رسد و سپس به وکیل مناسب سپرده می‌شود." />
         <section className="relative z-10 mx-auto max-w-3xl bg-paper px-4 pb-16 pt-10 sm:px-6 sm:pt-12">
-          <QuickRequestForm serviceSlug={item.slug} categoryTitle={item.categoryTitle} />
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-navy/8 sm:p-8">
+            <p className="text-sm leading-7 text-navy/70">
+              عنوان و یک توضیح کوتاه کافی است. درخواست با شماره حساب شما ثبت می‌شود.
+            </p>
+            <RequestServiceCta serviceSlug={item.slug} label="ثبت درخواست" className="mt-5" />
+          </div>
         </section>
       </>
     );
