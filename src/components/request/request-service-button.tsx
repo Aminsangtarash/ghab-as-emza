@@ -18,14 +18,20 @@ export function ServiceCategoryItems({ category }: { category: CatalogCategory }
         <div key={group.title} className="mb-12 last:mb-0">
           <h2 className="font-heading text-xl font-semibold text-navy">{group.title}</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {group.items.map((item) => (
+            {group.items.map((item, index) => (
               <button
                 key={item.slug}
                 type="button"
                 onClick={() => openRequest(item.slug)}
                 className="cursor-pointer rounded-2xl bg-white p-5 text-start shadow-sm ring-1 ring-navy/8 transition hover:-translate-y-0.5 hover:shadow-md"
               >
-                <span className="mb-3 flex size-10 items-center justify-center rounded-xl bg-navy/5 text-navy">
+                <span
+                  className={
+                    index % 2 === 1
+                      ? "mb-3 flex size-10 items-center justify-center rounded-xl bg-gold/15 text-gold"
+                      : "mb-3 flex size-10 items-center justify-center rounded-xl bg-navy/5 text-navy"
+                  }
+                >
                   <ServiceIcon name={category.icon} className="size-5" />
                 </span>
                 <h3 className="font-heading text-base font-bold text-navy">{item.title}</h3>
